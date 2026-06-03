@@ -1,0 +1,34 @@
+# Dart & Flutter
+*.dart linguist-language=Dart
+*.yaml linguist-language=YAML
+*.yml linguist-language=YAML
+
+# Treat generated files as vendored (don't count toward language stats)
+**/*.g.dart linguist-vendored=true
+**/*.freezed.dart linguist-vendored=true
+**/*.gr.dart linguist-vendored=true
+**/*.isar.g.dart linguist-vendored=true
+**/generated_plugin_registrant.dart linguist-vendored=true
+
+# Large files / binaries
+*.png linguist-vendored=true
+*.jpg linguist-vendored=true
+*.jpeg linguist-vendored=true
+*.gif linguist-vendored=true
+*.svg linguist-vendored=true
+*.ttf linguist-vendored=true
+*.woff2 linguist-vendored=true
+
+# Config files
+*.json linguist-vendored=true
+pubspec.lock linguist-vendored=true
+
+# Android & iOS native (optional)
+*.java linguist-vendored=true
+*.kt linguist-vendored=true
+*.swift linguist-vendored=true
+*.m linguist-vendored=true
+*.gradle linguist-vendored=true
+
+# HTML (if you keep the mockup file)
+*.html linguist-vendored=true

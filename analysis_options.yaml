@@ -1,0 +1,21 @@
+include: package:very_good_analysis/analysis_options.10.2.0.yaml
+
+analyzer:
+  exclude:
+    - build/**
+    - "**/*.g.dart"
+    - "**/*.gr.dart"
+    - "**/*.freezed.dart"
+    - "**/*.isar.g.dart"
+
+linter:
+  rules:
+    # Custom rules you want to adjust/override
+    prefer_single_quotes: true
+    require_trailing_commas: true
+    avoid_print: true
+    use_key_in_widget_constructors: true
+    
+    # You can relax these if they become too noisy during development
+    public_member_api_docs: false
+    # sort_pub_dependencies: false
