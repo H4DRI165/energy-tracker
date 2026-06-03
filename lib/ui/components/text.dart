@@ -109,8 +109,14 @@ class AppTextField extends StatelessWidget {
               width: isFocused ? 1.0 : 0.5,
             ),
           );
-        default:
-          return const UnderlineInputBorder();
+        case null:
+          return OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(
+              color: borderColor,
+              width: isFocused ? 1.0 : 0.5,
+            ),
+          );
       }
     }
 
@@ -119,7 +125,7 @@ class AppTextField extends StatelessWidget {
 
     if (controller != null) {
       final controllerText = controller!.text;
-      if (enabled && clearable && controllerText.isNotEmpty) {
+      if (enabled && !readonly && clearable && controllerText.isNotEmpty) {
         suffixIcon = IconButton(
           icon: const Icon(Icons.cancel),
           color: enabled && hasError ? errorTextColor : borderColor,

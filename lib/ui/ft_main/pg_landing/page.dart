@@ -42,10 +42,12 @@ class _LandingPageState extends State<LandingPage>
     _heroSlide = Tween<Offset>(
       begin: const Offset(0, 0.06),
       end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(0.1, 0.55, curve: Curves.easeOut),
-    ),);
+    ).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.1, 0.55, curve: Curves.easeOut),
+      ),
+    );
 
     _heroFade = CurvedAnimation(
       parent: _controller,
@@ -266,7 +268,6 @@ class _LandingPageState extends State<LandingPage>
 }
 
 class _FeaturePill extends StatelessWidget {
-
   const _FeaturePill({
     required this.icon,
     required this.label,
@@ -299,12 +300,19 @@ class _FeaturePill extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          Text(
-            label,
-            style: AppTextStyles.bodyMd.copyWith(fontWeight: FontWeight.w500),
+          Expanded(
+            child: Text(
+              label,
+              style: AppTextStyles.bodyMd.copyWith(fontWeight: FontWeight.w500),
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
-          const Spacer(),
-          const Icon(Icons.arrow_forward_ios_rounded, size: 12, color: AppColors.text3),
+          const SizedBox(width: 12),
+          const Icon(
+            Icons.arrow_forward_ios_rounded,
+            size: 12,
+            color: AppColors.text3,
+          ),
         ],
       ),
     );

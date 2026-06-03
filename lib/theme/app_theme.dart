@@ -95,7 +95,7 @@ abstract class AppTheme {
       // ─── Elevated button (primary CTA) ─────────────────────────────────────
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ButtonStyle(
-          backgroundColor: const WidgetStatePropertyAll(Colors.transparent),
+          backgroundColor: const WidgetStatePropertyAll(AppColors.accent),
           foregroundColor: const WidgetStatePropertyAll(Colors.black),
           elevation: const WidgetStatePropertyAll(0),
           shadowColor: const WidgetStatePropertyAll(Colors.transparent),

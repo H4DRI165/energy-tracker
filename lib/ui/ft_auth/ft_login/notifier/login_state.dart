@@ -14,22 +14,27 @@ class LoginPageState {
   final bool isLoading;
   final String? emailError;
   final String? passwordError;
+  static const Object _unset = Object();
 
   LoginPageState copyWith({
     String? email,
     String? password,
     bool? obscurePassword,
     bool? isLoading,
-    String? emailError,
-    String? passwordError,
+    Object? emailError = _unset,
+    Object? passwordError = _unset,
   }) {
     return LoginPageState(
       email: email ?? this.email,
       password: password ?? this.password,
       obscurePassword: obscurePassword ?? this.obscurePassword,
       isLoading: isLoading ?? this.isLoading,
-      emailError: emailError,
-      passwordError: passwordError,
+      emailError: identical(emailError, _unset)
+          ? this.emailError
+          : emailError as String?,
+      passwordError: identical(passwordError, _unset)
+          ? this.passwordError
+          : passwordError as String?,
     );
   }
 }
