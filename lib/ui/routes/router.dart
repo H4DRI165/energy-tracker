@@ -10,6 +10,7 @@ final GoRouter appRouter = GoRouter(
   redirect: (context, state) {
     final isLoggedIn = AuthService().currentUser != null;
     final isOnAuth = state.matchedLocation == AppRoutes.login ||
+        state.matchedLocation == AppRoutes.register ||
         state.matchedLocation == AppRoutes.landing ||
         state.matchedLocation == AppRoutes.splash;
 
@@ -19,7 +20,7 @@ final GoRouter appRouter = GoRouter(
     // If not logged in and trying to access dashboard → go to login
     if (!isLoggedIn && !isOnAuth) return AppRoutes.login;
 
-    return null; // no redirect
+    return null;
   },
   routes: [
     GoRoute(
@@ -50,7 +51,20 @@ final GoRouter appRouter = GoRouter(
         transitionDuration: const Duration(milliseconds: 400),
       ),
     ),
-    // Add dashboard route
+    GoRoute(
+      path: AppRoutes.register,
+      name: 'register',
+      pageBuilder: (context, state) => CustomTransitionPage(
+        child: const RegisterPage(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(
+            opacity: CurveTween(curve: Curves.easeInOut).animate(animation),
+            child: child,
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 400),
+      ),
+    ),
     GoRoute(
       path: AppRoutes.dashboard,
       name: 'dashboard',

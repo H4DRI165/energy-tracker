@@ -1,6 +1,7 @@
 import 'package:energy_tracker/app.dart';
 import 'package:energy_tracker/ui/ft_auth/ft_login/notifier/login_notifier.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -215,7 +216,7 @@ class _BodyContentState extends State<_BodyContent> {
                 child: Row(
                   children: [
                     const Icon(Icons.error_outline,
-                        color: Colors.red, size: 16),
+                        color: Colors.red, size: 16,),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -320,7 +321,7 @@ class _RegisterAccountRow extends StatelessWidget {
           ),
         ),
         GestureDetector(
-          onTap: () {},
+          onTap: () => context.pushNamed('register'),
           child: Text(
             'Register',
             style: AppTextStyles.bodyMd.copyWith(

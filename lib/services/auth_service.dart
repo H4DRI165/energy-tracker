@@ -44,6 +44,16 @@ class AuthService {
     await _auth.signOut();
   }
 
+  Future<UserCredential> createUserWithEmailAndPassword({
+    required String email,
+    required String password,
+  }) async {
+    return FirebaseAuth.instance.createUserWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+  }
+
   String _handleError(FirebaseAuthException e) {
     switch (e.code) {
       case 'user-not-found':
