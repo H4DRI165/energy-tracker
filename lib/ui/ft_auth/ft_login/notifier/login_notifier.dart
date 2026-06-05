@@ -1,9 +1,12 @@
+import 'package:energy_tracker/services/auth_service.dart';
 import 'package:energy_tracker/ui/ft_auth/ft_login/notifier/login_state.dart';
 import 'package:flutter/material.dart';
 
 class LoginNotifier extends ChangeNotifier {
   LoginPageState _state = const LoginPageState();
   LoginPageState get state => _state;
+
+  final _authService = AuthService();
 
   void setEmail(String value) {
     _state = _state.copyWith(email: value, emailError: null);
@@ -22,14 +25,32 @@ class LoginNotifier extends ChangeNotifier {
 
   Future<void> login() async {
     if (!_validate()) return;
-    _state = _state.copyWith(isLoading: true);
+
+    _state = _state.copyWith(isLoading: true, authError: null);
     notifyListeners();
 
-    // TODO: wire auth
-    await Future.delayed(const Duration(milliseconds: 1500));
+    try {
+      await _authService.signInWithEmail(_state.email, _state.password);
+    } catch (e) {
+      _state = _state.copyWith(authError: e.toString());
+    } finally {
+      _state = _state.copyWith(isLoading: false);
+      notifyListeners();
+    }
+  }
 
-    _state = _state.copyWith(isLoading: false);
+  Future<void> loginWithGoogle() async {
+    _state = _state.copyWith(isLoading: true, authError: null);
     notifyListeners();
+
+    try {
+      await _authService.signInWithGoogle();
+    } catch (e) {
+      _state = _state.copyWith(authError: e.toString());
+    } finally {
+      _state = _state.copyWith(isLoading: false);
+      notifyListeners();
+    }
   }
 
   bool _validate() {

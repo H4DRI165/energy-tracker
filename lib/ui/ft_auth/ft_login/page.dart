@@ -202,6 +202,32 @@ class _BodyContentState extends State<_BodyContent> {
               ),
             ),
             const SizedBox(height: 24),
+            if (state.authError != null) ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Colors.red.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.error_outline,
+                        color: Colors.red, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        state.authError!,
+                        style: AppTextStyles.bodySm.copyWith(color: Colors.red),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
             _GradientButton(
               label: 'Sign In',
               isLoading: _notifier.state.isLoading,
@@ -211,7 +237,7 @@ class _BodyContentState extends State<_BodyContent> {
             const AppDivider(middleText: 'or continue with'),
             const SizedBox(height: 16),
             OutlinedButton(
-              onPressed: () {},
+              onPressed: _notifier.loginWithGoogle,
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 52),
               ),

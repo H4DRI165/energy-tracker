@@ -1,9 +1,26 @@
+import 'dart:async';
+
 import 'package:energy_tracker/app.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 final GoRouter appRouter = GoRouter(
   initialLocation: AppRoutes.splash,
+  refreshListenable: GoRouterRefreshStream(AuthService().authStateChanges),
+  redirect: (context, state) {
+    final isLoggedIn = AuthService().currentUser != null;
+    final isOnAuth = state.matchedLocation == AppRoutes.login ||
+        state.matchedLocation == AppRoutes.landing ||
+        state.matchedLocation == AppRoutes.splash;
+
+    // If logged in and on auth screens → go to dashboard
+    if (isLoggedIn && isOnAuth) return AppRoutes.dashboard;
+
+    // If not logged in and trying to access dashboard → go to login
+    if (!isLoggedIn && !isOnAuth) return AppRoutes.login;
+
+    return null; // no redirect
+  },
   routes: [
     GoRoute(
       path: AppRoutes.splash,
@@ -33,5 +50,28 @@ final GoRouter appRouter = GoRouter(
         transitionDuration: const Duration(milliseconds: 400),
       ),
     ),
+    // Add dashboard route
+    GoRoute(
+      path: AppRoutes.dashboard,
+      name: 'dashboard',
+      pageBuilder: (context, state) => const NoTransitionPage(
+        child: DashboardPage(),
+      ),
+    ),
   ],
 );
+
+class GoRouterRefreshStream extends ChangeNotifier {
+  GoRouterRefreshStream(Stream<dynamic> stream) {
+    notifyListeners();
+    _subscription = stream.listen((_) => notifyListeners());
+  }
+
+  late final StreamSubscription<dynamic> _subscription;
+
+  @override
+  void dispose() {
+    unawaited(_subscription.cancel());
+    super.dispose();
+  }
+}

@@ -6,6 +6,7 @@ class LoginPageState {
     this.isLoading = false,
     this.emailError,
     this.passwordError,
+    this.authError,
   });
 
   final String email;
@@ -14,6 +15,7 @@ class LoginPageState {
   final bool isLoading;
   final String? emailError;
   final String? passwordError;
+  final String? authError;
   static const Object _unset = Object();
 
   LoginPageState copyWith({
@@ -23,6 +25,7 @@ class LoginPageState {
     bool? isLoading,
     Object? emailError = _unset,
     Object? passwordError = _unset,
+    Object? authError = _unset,
   }) {
     return LoginPageState(
       email: email ?? this.email,
@@ -35,6 +38,8 @@ class LoginPageState {
       passwordError: identical(passwordError, _unset)
           ? this.passwordError
           : passwordError as String?,
+      authError:
+          identical(authError, _unset) ? this.authError : authError as String?,
     );
   }
 }
