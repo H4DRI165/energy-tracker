@@ -58,12 +58,15 @@ class OnboardingNotifier extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _firestore.collection('users').doc(uid).update({
-        'tariffType': _state.selectedTariff.value,
-        'monthlyBudget': _state.monthlyBudget,
-        'onboardingCompleted': true,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+      await _firestore.collection('users').doc(uid).set(
+        {
+          'tariffType': _state.selectedTariff.value,
+          'monthlyBudget': _state.monthlyBudget,
+          'onboardingCompleted': true,
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true),
+      );
       return true;
     } catch (e) {
       _state = _state.copyWith(

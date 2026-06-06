@@ -24,6 +24,8 @@ class LoginNotifier extends ChangeNotifier {
   }
 
   Future<void> login() async {
+    if (_state.isLoading) return;
+
     if (!_validate()) return;
 
     _state = _state.copyWith(isLoading: true, authError: null);
@@ -40,6 +42,8 @@ class LoginNotifier extends ChangeNotifier {
   }
 
   Future<void> loginWithGoogle() async {
+    if (_state.isLoading) return;
+
     _state = _state.copyWith(isLoading: true, authError: null);
     notifyListeners();
 

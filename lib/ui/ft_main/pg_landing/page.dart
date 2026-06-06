@@ -1,10 +1,9 @@
+import 'dart:async';
+
 import 'package:energy_tracker/app.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-/// Landing page sits between splash and login.
-/// It shows the brand value props for ~2.5 seconds then
-/// auto-navigates to the login screen.
 class LandingPage extends StatefulWidget {
   const LandingPage({super.key});
 
@@ -14,6 +13,7 @@ class LandingPage extends StatefulWidget {
 
 class _LandingPageState extends State<LandingPage>
     with SingleTickerProviderStateMixin {
+  Timer? _redirectTimer;
   late final AnimationController _controller;
 
   // Staggered reveal animations
@@ -78,8 +78,23 @@ class _LandingPageState extends State<LandingPage>
   }
 
   void _scheduleRedirect() {
-    // Hold for 2.5s so user can read the value props
-    Future.delayed(const Duration(milliseconds: 2500), () {
+    // Skip timer if user has accessibility needs (reduced motion / slow animations)
+    final accessibilityFeatures = WidgetsBinding.instance.accessibilityFeatures;
+    final mediaQuery = MediaQueryData.fromView(
+      WidgetsBinding.instance.platformDispatcher.views.first,
+    );
+    final prefersReducedMotion =
+        mediaQuery.disableAnimations || accessibilityFeatures.reduceMotion;
+
+    if (prefersReducedMotion) {
+      // Go immediately — don't force a timed wait on accessibility users
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) context.go(AppRoutes.login);
+      });
+      return;
+    }
+
+    _redirectTimer = Timer(const Duration(milliseconds: 2500), () {
       if (mounted) context.go(AppRoutes.login);
     });
   }
@@ -87,6 +102,7 @@ class _LandingPageState extends State<LandingPage>
   @override
   void dispose() {
     _controller.dispose();
+    _redirectTimer?.cancel();
     super.dispose();
   }
 
@@ -96,7 +112,6 @@ class _LandingPageState extends State<LandingPage>
       backgroundColor: AppColors.bgDeep,
       body: Stack(
         children: [
-          // ── Background gradient glow ───────────────────────────────────────
           FadeTransition(
             opacity: _bgFade,
             child: Container(
@@ -109,8 +124,6 @@ class _LandingPageState extends State<LandingPage>
               ),
             ),
           ),
-
-          // Accent radial behind hero
           FadeTransition(
             opacity: _bgFade,
             child: Align(
@@ -130,8 +143,6 @@ class _LandingPageState extends State<LandingPage>
               ),
             ),
           ),
-
-          // ── Main content ──────────────────────────────────────────────────
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(
@@ -141,8 +152,6 @@ class _LandingPageState extends State<LandingPage>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 48),
-
-                  // Overline
                   FadeTransition(
                     opacity: _heroFade,
                     child: SlideTransition(
@@ -153,10 +162,7 @@ class _LandingPageState extends State<LandingPage>
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 16),
-
-                  // Hero headline
                   FadeTransition(
                     opacity: _heroFade,
                     child: SlideTransition(
@@ -175,10 +181,7 @@ class _LandingPageState extends State<LandingPage>
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 16),
-
-                  // Subtitle
                   FadeTransition(
                     opacity: _heroFade,
                     child: SlideTransition(
@@ -192,10 +195,7 @@ class _LandingPageState extends State<LandingPage>
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 40),
-
-                  // ── Feature pills ──────────────────────────────────────────
                   FadeTransition(
                     opacity: _pill1Fade,
                     child: const _FeaturePill(
@@ -205,7 +205,6 @@ class _LandingPageState extends State<LandingPage>
                     ),
                   ),
                   const SizedBox(height: 10),
-
                   FadeTransition(
                     opacity: _pill2Fade,
                     child: const _FeaturePill(
@@ -215,7 +214,6 @@ class _LandingPageState extends State<LandingPage>
                     ),
                   ),
                   const SizedBox(height: 10),
-
                   FadeTransition(
                     opacity: _pill3Fade,
                     child: const _FeaturePill(
@@ -224,34 +222,45 @@ class _LandingPageState extends State<LandingPage>
                       color: AppColors.accent3,
                     ),
                   ),
-
                   const Spacer(),
-
-                  // ── Bottom area ────────────────────────────────────────────
                   FadeTransition(
                     opacity: _bottomFade,
                     child: Column(
                       children: [
-                        // Auto-redirect indicator
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            SizedBox(
-                              width: 14,
-                              height: 14,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 1.5,
-                                color: AppColors.accent.withValues(alpha: 0.6),
+                        GestureDetector(
+                          onTap: () {
+                            _redirectTimer?.cancel();
+                            if (mounted) context.go(AppRoutes.login);
+                          },
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 1.5,
+                                  color:
+                                      AppColors.accent.withValues(alpha: 0.6),
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 10),
-                            Text(
-                              'Taking you to sign in...',
-                              style: AppTextStyles.caption.copyWith(
-                                color: AppColors.text3,
+                              const SizedBox(width: 10),
+                              Text(
+                                'Taking you to sign in...',
+                                style: AppTextStyles.caption.copyWith(
+                                  color: AppColors.text3,
+                                ),
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 6),
+                              Text(
+                                'Tap to skip',
+                                style: AppTextStyles.caption.copyWith(
+                                  color: AppColors.accent,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                         const SizedBox(height: 32),
                       ],
@@ -303,7 +312,9 @@ class _FeaturePill extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: AppTextStyles.bodyMd.copyWith(fontWeight: FontWeight.w500),
+              style: AppTextStyles.bodyMd.copyWith(
+                fontWeight: FontWeight.w500,
+              ),
               overflow: TextOverflow.ellipsis,
             ),
           ),

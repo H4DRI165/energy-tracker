@@ -350,7 +350,14 @@ class _BodyContentState extends State<_BodyContent> {
 
     if (!mounted) return;
 
-    if (_notifier.state.authError == null && !_notifier.state.isLoading) {
+    final s = _notifier.state;
+    final hasValidationErrors = s.fullNameError != null ||
+        s.emailError != null ||
+        s.tnbAccountError != null ||
+        s.passwordError != null ||
+        s.confirmedPasswordError != null;
+
+    if (s.authError == null && !s.isLoading && !hasValidationErrors) {
       context.go(AppRoutes.onboarding);
     }
   }

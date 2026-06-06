@@ -1,13 +1,29 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:energy_tracker/services/app_user_notifier.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService {
   factory AuthService() => _instance;
-  AuthService._internal();
+  AuthService._internal() {
+    // Listen to auth changes and sync onboarding state
+    _auth.authStateChanges().listen((user) async {
+      if (user == null) {
+        userNotifier.reset();
+        return;
+      }
+      final doc = await _firestore.collection('users').doc(user.uid).get();
+      final completed = doc.data()?['onboardingCompleted'] as bool? ?? false;
+      userNotifier.setOnboardingCompleted(completed);
+    });
+  }
+
   static final AuthService _instance = AuthService._internal();
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final AppUserNotifier userNotifier = AppUserNotifier();
 
   Stream<User?> get authStateChanges => _auth.authStateChanges();
   User? get currentUser => _auth.currentUser;
@@ -40,8 +56,11 @@ class AuthService {
   }
 
   Future<void> signOut() async {
-    await _googleSignIn.signOut();
-    await _auth.signOut();
+    try {
+      await _googleSignIn.signOut();
+    } finally {
+      await _auth.signOut();
+    }
   }
 
   Future<UserCredential> createUserWithEmailAndPassword({

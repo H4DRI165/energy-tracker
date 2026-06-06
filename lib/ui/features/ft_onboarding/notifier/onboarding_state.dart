@@ -55,6 +55,7 @@ class OnboardingPageState {
   final double monthlyBudget;
   final bool isLoading;
   final String? errorMessage;
+  static const Object _noChange = Object();
 
   static const int totalSteps = 3;
   static const double minBudget = 50;
@@ -74,14 +75,16 @@ class OnboardingPageState {
     TariffType? selectedTariff,
     double? monthlyBudget,
     bool? isLoading,
-    String? errorMessage,
+    Object? errorMessage = _noChange,
   }) {
     return OnboardingPageState(
       currentStep: currentStep ?? this.currentStep,
       selectedTariff: selectedTariff ?? this.selectedTariff,
       monthlyBudget: monthlyBudget ?? this.monthlyBudget,
       isLoading: isLoading ?? this.isLoading,
-      errorMessage: errorMessage,
+      errorMessage: identical(errorMessage, _noChange)
+          ? this.errorMessage
+          : errorMessage as String?,
     );
   }
 }

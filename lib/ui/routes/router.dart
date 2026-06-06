@@ -4,21 +4,42 @@ import 'package:energy_tracker/app.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+final _authService = AuthService();
+
 final GoRouter appRouter = GoRouter(
   initialLocation: AppRoutes.splash,
-  refreshListenable: GoRouterRefreshStream(AuthService().authStateChanges),
+  refreshListenable: Listenable.merge([
+    GoRouterRefreshStream(_authService.authStateChanges),
+    _authService.userNotifier,
+  ]),
   redirect: (context, state) {
-    final isLoggedIn = AuthService().currentUser != null;
-    final isOnAuth = state.matchedLocation == AppRoutes.login ||
+    final isLoggedIn = _authService.currentUser != null;
+    final onboardingCompleted = _authService.userNotifier.onboardingCompleted;
+
+    final isPublicAuthRoute = state.matchedLocation == AppRoutes.login ||
         state.matchedLocation == AppRoutes.register ||
         state.matchedLocation == AppRoutes.landing ||
         state.matchedLocation == AppRoutes.splash;
 
-    // If logged in and on auth screens → go to dashboard
-    if (isLoggedIn && isOnAuth) return AppRoutes.dashboard;
+    // Still loading onboarding state from Firestore — stay put
+    if (isLoggedIn && onboardingCompleted == null) return null;
 
-    // If not logged in and trying to access dashboard → go to login
-    if (!isLoggedIn && !isOnAuth) return AppRoutes.login;
+    // Logged in, onboarding incomplete → go to onboarding
+    if (isLoggedIn &&
+        onboardingCompleted == false &&
+        state.matchedLocation != AppRoutes.onboarding) {
+      return AppRoutes.onboarding;
+    }
+
+    // Logged in, onboarding done → go to dashboard
+    if (isLoggedIn &&
+        onboardingCompleted == true &&
+        (isPublicAuthRoute || state.matchedLocation == AppRoutes.onboarding)) {
+      return AppRoutes.dashboard;
+    }
+
+    // Not logged in, trying to access protected route → go to login
+    if (!isLoggedIn && !isPublicAuthRoute) return AppRoutes.login;
 
     return null;
   },

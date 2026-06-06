@@ -18,7 +18,7 @@ class RegisterNotifier extends ChangeNotifier {
   RegisterPageState get state => _state;
 
   void setFullName(String fullName) {
-    _state = _state.copyWith(fullName: fullName);
+    _state = _state.copyWith(fullName: fullName, fullNameError: null);
     notifyListeners();
   }
 
@@ -163,6 +163,7 @@ class RegisterNotifier extends ChangeNotifier {
     _state = _state.copyWith(isLoading: true);
     notifyListeners();
 
+    User? createdUser;
     try {
       final userCredential = await _auth.createUserWithEmailAndPassword(
         email: _state.email.trim(),
@@ -173,6 +174,7 @@ class RegisterNotifier extends ChangeNotifier {
       if (user == null) {
         throw Exception('Registration failed. Please try again.');
       }
+      createdUser = user;
 
       await user.updateDisplayName(_state.fullName.trim());
       await _firestore.collection('users').doc(user.uid).set({
@@ -191,10 +193,18 @@ class RegisterNotifier extends ChangeNotifier {
 
       // TODO(dev): enable when want to test email verification flow
       // await user.sendEmailVerification();
-    } on FirebaseAuthException catch (e) {
-      _state = _state.copyWith(authError: _getFirebaseErrorMessage(e.code));
     } catch (e) {
-      _state = _state.copyWith(authError: e.toString());
+      if (createdUser != null) {
+        try {
+          await createdUser.delete();
+        } catch (_) {}
+        await _auth.signOut();
+      }
+
+      final errorMessage = e is FirebaseAuthException
+          ? _getFirebaseErrorMessage(e.code)
+          : e.toString();
+      _state = _state.copyWith(authError: errorMessage);
     } finally {
       _state = _state.copyWith(isLoading: false);
       notifyListeners();
