@@ -186,7 +186,7 @@ class _BodyContentState extends State<_BodyContent> {
               prefixIcon: const Icon(
                 Icons.person_outline,
                 size: 20,
-                color: Colors.grey,
+                color: AppColors.text3,
               ),
               errorText: state.fullNameError,
               clearable: true,
@@ -201,7 +201,7 @@ class _BodyContentState extends State<_BodyContent> {
               prefixIcon: const Icon(
                 Icons.email_outlined,
                 size: 20,
-                color: Colors.grey,
+                color: AppColors.text3,
               ),
               errorText: state.emailError,
               clearable: true,
@@ -216,7 +216,7 @@ class _BodyContentState extends State<_BodyContent> {
               prefixIcon: const Icon(
                 Icons.receipt_long_outlined,
                 size: 20,
-                color: Colors.grey,
+                color: AppColors.text3,
               ),
               errorText: state.tnbAccountError,
               clearable: true,
@@ -230,7 +230,7 @@ class _BodyContentState extends State<_BodyContent> {
               prefixIcon: const Icon(
                 Icons.lock_outlined,
                 size: 20,
-                color: Colors.grey,
+                color: AppColors.text3,
               ),
               errorText: state.passwordError,
               obscureText: state.obscurePassword,
@@ -263,7 +263,7 @@ class _BodyContentState extends State<_BodyContent> {
               prefixIcon: const Icon(
                 Icons.lock_outline,
                 size: 20,
-                color: Colors.grey,
+                color: AppColors.text3,
               ),
               errorText: state.confirmedPasswordError,
               obscureText: state.obscureConfirmedPassword,
@@ -283,24 +283,25 @@ class _BodyContentState extends State<_BodyContent> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.red.withValues(alpha: 0.1),
+                  color: AppColors.danger.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: Colors.red.withValues(alpha: 0.3),
+                    color: AppColors.danger.withValues(alpha: 0.3),
                   ),
                 ),
                 child: Row(
                   children: [
                     const Icon(
                       Icons.error_outline,
-                      color: Colors.red,
+                      color: AppColors.danger,
                       size: 16,
                     ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         state.authError!,
-                        style: AppTextStyles.bodySm.copyWith(color: Colors.red),
+                        style: AppTextStyles.bodySm
+                            .copyWith(color: AppColors.danger),
                       ),
                     ),
                   ],

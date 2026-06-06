@@ -19,7 +19,8 @@ final GoRouter appRouter = GoRouter(
     final isPublicAuthRoute = state.matchedLocation == AppRoutes.login ||
         state.matchedLocation == AppRoutes.register ||
         state.matchedLocation == AppRoutes.landing ||
-        state.matchedLocation == AppRoutes.splash;
+        state.matchedLocation == AppRoutes.splash ||
+        state.matchedLocation == AppRoutes.forgotPassword;
 
     // Still loading onboarding state from Firestore — stay put
     if (isLoggedIn && onboardingCompleted == null) return null;
@@ -75,15 +76,8 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: AppRoutes.register,
       name: 'register',
-      pageBuilder: (context, state) => CustomTransitionPage(
-        child: const RegisterPage(),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(
-            opacity: CurveTween(curve: Curves.easeInOut).animate(animation),
-            child: child,
-          );
-        },
-        transitionDuration: const Duration(milliseconds: 400),
+      pageBuilder: (context, state) => const NoTransitionPage(
+        child: RegisterPage(),
       ),
     ),
     GoRoute(
@@ -91,6 +85,13 @@ final GoRouter appRouter = GoRouter(
       name: 'onboarding',
       pageBuilder: (context, state) => const NoTransitionPage(
         child: OnboardingPage(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.forgotPassword,
+      name: 'forgot_password',
+      pageBuilder: (context, state) => const NoTransitionPage(
+        child: ForgotPasswordPage(),
       ),
     ),
     GoRoute(

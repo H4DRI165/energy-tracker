@@ -155,7 +155,7 @@ class _BodyContentState extends State<_BodyContent> {
               prefixIcon: const Icon(
                 Icons.email_outlined,
                 size: 20,
-                color: Colors.grey,
+                color: AppColors.text3,
               ),
               errorText: state.emailError,
               clearable: true,
@@ -169,7 +169,7 @@ class _BodyContentState extends State<_BodyContent> {
               prefixIcon: const Icon(
                 Icons.lock_outlined,
                 size: 20,
-                color: Colors.grey,
+                color: AppColors.text3,
               ),
               errorText: state.passwordError,
               obscureText: state.obscurePassword,
@@ -188,7 +188,7 @@ class _BodyContentState extends State<_BodyContent> {
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(
-                onPressed: () {},
+                onPressed: () => context.pushNamed(AppRoutes.forgotPassword),
                 style: TextButton.styleFrom(
                   padding: EdgeInsets.zero,
                   minimumSize: Size.zero,
@@ -207,24 +207,25 @@ class _BodyContentState extends State<_BodyContent> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.red.withValues(alpha: 0.1),
+                  color: AppColors.danger.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: Colors.red.withValues(alpha: 0.3),
+                    color: AppColors.danger.withValues(alpha: 0.3),
                   ),
                 ),
                 child: Row(
                   children: [
                     const Icon(
                       Icons.error_outline,
-                      color: Colors.red,
+                      color: AppColors.danger,
                       size: 16,
                     ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         state.authError!,
-                        style: AppTextStyles.bodySm.copyWith(color: Colors.red),
+                        style: AppTextStyles.bodySm
+                            .copyWith(color: AppColors.danger),
                       ),
                     ),
                   ],
@@ -297,7 +298,7 @@ class _RegisterAccountRow extends StatelessWidget {
           ),
         ),
         GestureDetector(
-          onTap: () => context.pushNamed('register'),
+          onTap: () => context.pushNamed(AppRoutes.register),
           child: Text(
             'Register',
             style: AppTextStyles.bodyMd.copyWith(

@@ -49,7 +49,8 @@ class OnboardingNotifier extends ChangeNotifier {
     final uid = _auth.currentUser?.uid;
     if (uid == null) {
       _state = _state.copyWith(
-          errorMessage: 'User session expired. Please sign in again.');
+        errorMessage: 'User session expired. Please sign in again.',
+      );
       notifyListeners();
       return false;
     }
