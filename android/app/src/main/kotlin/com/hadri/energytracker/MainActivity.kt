@@ -1,4 +1,4 @@
-package com.example.energy
+package com.hadri.energytracker
 
 import io.flutter.embedding.android.FlutterActivity
 

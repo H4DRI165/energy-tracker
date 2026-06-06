@@ -1,0 +1,162 @@
+import 'dart:async';
+
+import 'package:energy_tracker/app.dart';
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+final _authService = AuthService();
+
+final GoRouter appRouter = GoRouter(
+  initialLocation: AppRoutes.splash,
+  refreshListenable: Listenable.merge([
+    GoRouterRefreshStream(_authService.authStateChanges),
+    _authService.userNotifier,
+  ]),
+  redirect: (context, state) {
+    final isLoggedIn = _authService.currentUser != null;
+    final onboardingStatus = _authService.userNotifier.status;
+
+    final isPublicAuthRoute = state.matchedLocation == AppRoutes.login ||
+        state.matchedLocation == AppRoutes.register ||
+        state.matchedLocation == AppRoutes.landing ||
+        state.matchedLocation == AppRoutes.splash ||
+        state.matchedLocation == AppRoutes.forgotPassword;
+
+    // Still loading — stay put
+    if (isLoggedIn && onboardingStatus == OnboardingStatus.loading) return null;
+
+    // Firestore error — don't redirect to onboarding, go to a safe screen
+    // and let the user retry rather than overwriting their data
+    if (isLoggedIn && onboardingStatus == OnboardingStatus.error) {
+      return state.matchedLocation == AppRoutes.error ? null : AppRoutes.error;
+    }
+
+    // Onboarding incomplete → go to onboarding
+    if (isLoggedIn &&
+        onboardingStatus == OnboardingStatus.incomplete &&
+        state.matchedLocation != AppRoutes.onboarding) {
+      return AppRoutes.onboarding;
+    }
+
+    // Onboarding complete → go to dashboard
+    if (isLoggedIn &&
+        onboardingStatus == OnboardingStatus.complete &&
+        (isPublicAuthRoute || state.matchedLocation == AppRoutes.onboarding)) {
+      return AppRoutes.dashboard;
+    }
+
+    // Not logged in, protected route → login
+    if (!isLoggedIn && !isPublicAuthRoute) return AppRoutes.login;
+
+    return null;
+  },
+  routes: [
+    GoRoute(
+      path: AppRoutes.splash,
+      name: 'splash',
+      pageBuilder: (context, state) => const NoTransitionPage(
+        child: SplashPage(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.landing,
+      name: 'landing',
+      pageBuilder: (context, state) => const NoTransitionPage(
+        child: LandingPage(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.login,
+      name: 'login',
+      pageBuilder: (context, state) => CustomTransitionPage(
+        child: const LoginPage(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(
+            opacity: CurveTween(curve: Curves.easeInOut).animate(animation),
+            child: child,
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 400),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.register,
+      name: 'register',
+      pageBuilder: (context, state) => const NoTransitionPage(
+        child: RegisterPage(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.onboarding,
+      name: 'onboarding',
+      pageBuilder: (context, state) => const NoTransitionPage(
+        child: OnboardingPage(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.forgotPassword,
+      name: 'forgot_password',
+      pageBuilder: (context, state) => const NoTransitionPage(
+        child: ForgotPasswordPage(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.dashboard,
+      name: 'dashboard',
+      pageBuilder: (context, state) => const NoTransitionPage(
+        child: DashboardPage(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.error,
+      name: 'error',
+      pageBuilder: (context, state) => NoTransitionPage(
+        child: Scaffold(
+          backgroundColor: AppColors.bgDeep,
+          body: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('⚠️', style: TextStyle(fontSize: 48)),
+                const SizedBox(height: 16),
+                Text(
+                  'Failed to load your profile',
+                  style: AppTextStyles.titleMd,
+                ),
+                const SizedBox(height: 8),
+                Text('Check your connection and try again',
+                    style: AppTextStyles.bodyMd.copyWith(
+                      color: AppColors.text2,
+                    )),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () async {
+                    // Re-trigger the auth listener by resetting notifier
+                    _authService.userNotifier.reset();
+                    await _authService.retryLoadUser();
+                  },
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ),
+  ],
+);
+
+class GoRouterRefreshStream extends ChangeNotifier {
+  GoRouterRefreshStream(Stream<dynamic> stream) {
+    notifyListeners();
+    _subscription = stream.listen((_) => notifyListeners());
+  }
+
+  late final StreamSubscription<dynamic> _subscription;
+
+  @override
+  void dispose() {
+    unawaited(_subscription.cancel());
+    super.dispose();
+  }
+}
