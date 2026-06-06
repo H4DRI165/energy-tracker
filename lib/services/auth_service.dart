@@ -19,10 +19,14 @@ class AuthService {
         if (_auth.currentUser?.uid != uid) return;
 
         final raw = doc.data()?['onboardingCompleted'];
-        userNotifier.setOnboardingCompleted(value: raw is bool && raw);
+        if (raw is bool && raw) {
+          userNotifier.setComplete();
+        } else {
+          userNotifier.setIncomplete();
+        }
       } on Exception catch (_) {
         if (_auth.currentUser?.uid == uid) {
-          userNotifier.setOnboardingCompleted(value: false);
+          userNotifier.setError();
         }
       }
     });
@@ -73,5 +77,23 @@ class AuthService {
       email: email,
       password: password,
     );
+  }
+
+  Future<void> retryLoadUser() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    final uid = user.uid;
+    try {
+      final doc = await _firestore.collection('users').doc(uid).get();
+      final raw = doc.data()?['onboardingCompleted'];
+      if (raw is bool && raw) {
+        userNotifier.setComplete();
+      } else {
+        userNotifier.setIncomplete();
+      }
+    } on Exception catch (_) {
+      userNotifier.setError();
+    }
   }
 }

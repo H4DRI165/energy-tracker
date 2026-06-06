@@ -14,7 +14,7 @@ final GoRouter appRouter = GoRouter(
   ]),
   redirect: (context, state) {
     final isLoggedIn = _authService.currentUser != null;
-    final onboardingCompleted = _authService.userNotifier.onboardingCompleted;
+    final onboardingStatus = _authService.userNotifier.status;
 
     final isPublicAuthRoute = state.matchedLocation == AppRoutes.login ||
         state.matchedLocation == AppRoutes.register ||
@@ -22,28 +22,30 @@ final GoRouter appRouter = GoRouter(
         state.matchedLocation == AppRoutes.splash ||
         state.matchedLocation == AppRoutes.forgotPassword;
 
-    // Still loading onboarding state from Firestore — only hold on boot routes
-    if (isLoggedIn && onboardingCompleted == null) {
-      final isBootRoute = state.matchedLocation == AppRoutes.splash ||
-          state.matchedLocation == AppRoutes.landing;
-      return isBootRoute ? null : AppRoutes.onboarding;
+    // Still loading — stay put
+    if (isLoggedIn && onboardingStatus == OnboardingStatus.loading) return null;
+
+    // Firestore error — don't redirect to onboarding, go to a safe screen
+    // and let the user retry rather than overwriting their data
+    if (isLoggedIn && onboardingStatus == OnboardingStatus.error) {
+      return state.matchedLocation == AppRoutes.error ? null : AppRoutes.error;
     }
 
-    // Logged in, onboarding incomplete → go to onboarding
+    // Onboarding incomplete → go to onboarding
     if (isLoggedIn &&
-        onboardingCompleted == false &&
+        onboardingStatus == OnboardingStatus.incomplete &&
         state.matchedLocation != AppRoutes.onboarding) {
       return AppRoutes.onboarding;
     }
 
-    // Logged in, onboarding done → go to dashboard
+    // Onboarding complete → go to dashboard
     if (isLoggedIn &&
-        onboardingCompleted == true &&
+        onboardingStatus == OnboardingStatus.complete &&
         (isPublicAuthRoute || state.matchedLocation == AppRoutes.onboarding)) {
       return AppRoutes.dashboard;
     }
 
-    // Not logged in, trying to access protected route → go to login
+    // Not logged in, protected route → login
     if (!isLoggedIn && !isPublicAuthRoute) return AppRoutes.login;
 
     return null;
@@ -103,6 +105,42 @@ final GoRouter appRouter = GoRouter(
       name: 'dashboard',
       pageBuilder: (context, state) => const NoTransitionPage(
         child: DashboardPage(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.error,
+      name: 'error',
+      pageBuilder: (context, state) => NoTransitionPage(
+        child: Scaffold(
+          backgroundColor: AppColors.bgDeep,
+          body: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('⚠️', style: TextStyle(fontSize: 48)),
+                const SizedBox(height: 16),
+                Text(
+                  'Failed to load your profile',
+                  style: AppTextStyles.titleMd,
+                ),
+                const SizedBox(height: 8),
+                Text('Check your connection and try again',
+                    style: AppTextStyles.bodyMd.copyWith(
+                      color: AppColors.text2,
+                    )),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () async {
+                    // Re-trigger the auth listener by resetting notifier
+                    _authService.userNotifier.reset();
+                    await _authService.retryLoadUser();
+                  },
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     ),
   ],
