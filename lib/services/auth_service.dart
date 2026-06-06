@@ -8,39 +8,12 @@ import 'package:google_sign_in/google_sign_in.dart';
 class AuthService {
   factory AuthService() => _instance;
   AuthService._internal() {
-    _auth.authStateChanges().listen((user) async {
-      if (user == null) {
-        userNotifier.reset();
-        _userDocSubscription?.cancel(); // ← cancel previous listener
-        return;
-      }
-
-      final uid = user.uid;
-
-      // Cancel any previous subscription first
-      await _userDocSubscription?.cancel();
-
-      // Real-time listener — fires immediately + on every change
-      _userDocSubscription =
-          _firestore.collection('users').doc(uid).snapshots().listen(
-        (doc) {
-          if (_auth.currentUser?.uid != uid) return;
-          final raw = doc.data()?['onboardingCompleted'];
-          if (raw is bool && raw) {
-            userNotifier.setComplete();
-          } else {
-            userNotifier.setIncomplete();
-          }
-        },
-        onError: (_) {
-          if (_auth.currentUser?.uid == uid) {
-            userNotifier.setError();
-          }
-        },
-      );
+    _auth.authStateChanges().listen((user) {
+      unawaited(_syncOnboardingListener(user));
     });
   }
 
+  int _authSyncEpoch = 0;
   StreamSubscription<DocumentSnapshot>? _userDocSubscription;
   static final AuthService _instance = AuthService._internal();
 
@@ -109,5 +82,41 @@ class AuthService {
       },
       onError: (_) => userNotifier.setError(),
     );
+  }
+
+  Future<void> _syncOnboardingListener(User? user) async {
+    final epoch = ++_authSyncEpoch;
+    await _userDocSubscription?.cancel();
+    _userDocSubscription = null;
+    if (epoch != _authSyncEpoch) return;
+
+    if (user == null) {
+      userNotifier.reset();
+      return;
+    }
+
+    final uid = user.uid;
+    final sub = _firestore.collection('users').doc(uid).snapshots().listen(
+      (doc) {
+        if (epoch != _authSyncEpoch || _auth.currentUser?.uid != uid) return;
+        final raw = doc.data()?['onboardingCompleted'];
+        if (raw is bool && raw) {
+          userNotifier.setComplete();
+        } else {
+          userNotifier.setIncomplete();
+        }
+      },
+      onError: (_) {
+        if (epoch == _authSyncEpoch && _auth.currentUser?.uid == uid) {
+          userNotifier.setError();
+        }
+      },
+    );
+
+    if (epoch != _authSyncEpoch) {
+      await sub.cancel();
+      return;
+    }
+    _userDocSubscription = sub;
   }
 }
