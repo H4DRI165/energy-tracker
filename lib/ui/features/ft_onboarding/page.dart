@@ -4,7 +4,6 @@ import 'package:energy_tracker/app.dart';
 import 'package:energy_tracker/ui/features/ft_onboarding/notifier/onboarding_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_onboarding/notifier/onboarding_state.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -94,10 +93,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   Future<void> _handleComplete() async {
-    final success = await _notifier.completeOnboarding();
-    if (success && mounted) {
-      context.go(AppRoutes.dashboard);
-    }
+    await _notifier.completeOnboarding();
   }
 }
 

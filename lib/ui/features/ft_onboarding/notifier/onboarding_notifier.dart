@@ -13,34 +13,39 @@ class OnboardingNotifier extends ChangeNotifier {
 
   final FirebaseAuth _auth;
   final FirebaseFirestore _firestore;
+  bool _disposed = false;
 
   OnboardingPageState _state = const OnboardingPageState();
   OnboardingPageState get state => _state;
 
+  void _notify() {
+    if (!_disposed) notifyListeners();
+  }
+
   void selectTariff(TariffType tariff) {
     _state = _state.copyWith(selectedTariff: tariff);
-    notifyListeners();
+    _notify();
   }
 
   void nextFromTariff() {
     _state = _state.copyWith(currentStep: 1);
-    notifyListeners();
+    _notify();
   }
 
   void setBudget(double budget) {
     _state = _state.copyWith(monthlyBudget: budget);
-    notifyListeners();
+    _notify();
   }
 
   void nextFromBudget() {
     _state = _state.copyWith(currentStep: 2);
-    notifyListeners();
+    _notify();
   }
 
   void goBack() {
     if (_state.currentStep > 0) {
       _state = _state.copyWith(currentStep: _state.currentStep - 1);
-      notifyListeners();
+      _notify();
     }
   }
 
@@ -53,12 +58,12 @@ class OnboardingNotifier extends ChangeNotifier {
       _state = _state.copyWith(
         errorMessage: 'User session expired. Please sign in again.',
       );
-      notifyListeners();
+      _notify();
       return false;
     }
 
     _state = _state.copyWith(isLoading: true);
-    notifyListeners();
+    _notify();
 
     try {
       await _firestore.collection('users').doc(uid).set(
@@ -75,7 +80,7 @@ class OnboardingNotifier extends ChangeNotifier {
       _state = _state.copyWith(
         errorMessage: _mapFirestoreError(e.code),
       );
-      notifyListeners();
+      _notify();
       return false;
     } on Exception catch (e, stack) {
       AppLogger.error('Onboarding unexpected exception: ', e, stack);
@@ -83,11 +88,11 @@ class OnboardingNotifier extends ChangeNotifier {
       _state = _state.copyWith(
         errorMessage: 'Failed to save settings. Please try again.',
       );
-      notifyListeners();
+      _notify();
       return false;
     } finally {
       _state = _state.copyWith(isLoading: false);
-      notifyListeners();
+      _notify();
     }
   }
 
@@ -102,5 +107,11 @@ class OnboardingNotifier extends ChangeNotifier {
       default:
         return 'Failed to save settings. Please try again.';
     }
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
   }
 }

@@ -8,25 +8,30 @@ class ForgotPasswordNotifier extends ChangeNotifier {
       : _auth = auth ?? FirebaseAuth.instance;
 
   final FirebaseAuth _auth;
+  bool _disposed = false;
 
   ForgotPasswordPageState _state = const ForgotPasswordPageState();
   ForgotPasswordPageState get state => _state;
 
+  void _notify() {
+    if (!_disposed) notifyListeners();
+  }
+
   void setEmail(String value) {
     _state = _state.copyWith(email: value, emailError: null);
-    notifyListeners();
+    _notify();
   }
 
   Future<void> sendResetEmail() async {
     if (_state.isLoading) return;
 
     _state = _state.copyWith(emailError: null, errorMessage: null);
-    notifyListeners();
+    _notify();
 
     final email = _state.email.trim();
     if (email.isEmpty) {
       _state = _state.copyWith(emailError: 'Email address is required');
-      notifyListeners();
+      _notify();
       return;
     }
 
@@ -34,12 +39,12 @@ class ForgotPasswordNotifier extends ChangeNotifier {
     if (!emailRegex.hasMatch(email)) {
       _state =
           _state.copyWith(emailError: 'Please enter a valid email address');
-      notifyListeners();
+      _notify();
       return;
     }
 
     _state = _state.copyWith(isLoading: true);
-    notifyListeners();
+    _notify();
 
     try {
       await _auth.sendPasswordResetEmail(email: email);
@@ -60,7 +65,7 @@ class ForgotPasswordNotifier extends ChangeNotifier {
         errorMessage: 'Something went wrong. Please try again.',
       );
     }
-    notifyListeners();
+    _notify();
   }
 
   String _mapError(String code) {
@@ -76,5 +81,11 @@ class ForgotPasswordNotifier extends ChangeNotifier {
       default:
         return 'Failed to send reset email. Please try again.';
     }
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
   }
 }

@@ -353,8 +353,6 @@ class _BodyContentState extends State<_BodyContent> {
   Future<void> _handleRegister() async {
     await _notifier.register();
 
-    if (!mounted) return;
-
     final s = _notifier.state;
     final hasValidationErrors = s.fullNameError != null ||
         s.emailError != null ||
@@ -362,7 +360,12 @@ class _BodyContentState extends State<_BodyContent> {
         s.passwordError != null ||
         s.confirmedPasswordError != null;
 
-    if (s.authError == null && !s.isLoading && !hasValidationErrors) {
+    final shouldNavigate =
+        s.authError == null && !s.isLoading && !hasValidationErrors;
+
+    if (!mounted) return;
+
+    if (shouldNavigate) {
       context.go(AppRoutes.onboarding);
     }
   }
