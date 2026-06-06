@@ -1,17 +1,34 @@
 import 'package:flutter/foundation.dart';
 
+enum OnboardingStatus { loading, complete, incomplete, error }
+
 class AppUserNotifier extends ChangeNotifier {
-  bool? _onboardingCompleted;
+  OnboardingStatus _status = OnboardingStatus.loading;
 
-  bool? get onboardingCompleted => _onboardingCompleted;
+  OnboardingStatus get status => _status;
 
-  void setOnboardingCompleted({required bool value}) {
-    _onboardingCompleted = value;
+  bool get isLoading => _status == OnboardingStatus.loading;
+  bool get isComplete => _status == OnboardingStatus.complete;
+  bool get isIncomplete => _status == OnboardingStatus.incomplete;
+  bool get isError => _status == OnboardingStatus.error;
+
+  void setComplete() {
+    _status = OnboardingStatus.complete;
+    notifyListeners();
+  }
+
+  void setIncomplete() {
+    _status = OnboardingStatus.incomplete;
+    notifyListeners();
+  }
+
+  void setError() {
+    _status = OnboardingStatus.error;
     notifyListeners();
   }
 
   void reset() {
-    _onboardingCompleted = null;
+    _status = OnboardingStatus.loading;
     notifyListeners();
   }
 }
