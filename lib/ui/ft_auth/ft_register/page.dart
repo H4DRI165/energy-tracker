@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:energy_tracker/app.dart';
 import 'package:energy_tracker/ui/ft_auth/ft_register/notifier/register_notifier.dart';
 import 'package:flutter/material.dart';
@@ -23,7 +25,9 @@ class _RegisterPageState extends State<RegisterPage>
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
-    )..forward();
+    );
+
+    unawaited(_controller.forward());
 
     _fadeIn = CurvedAnimation(
       parent: _controller,

@@ -1,3 +1,4 @@
+import 'package:energy_tracker/ui/components/logger.dart';
 import 'package:energy_tracker/ui/ft_auth/ft_forgot_password/notifier/forgot_password_state.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -49,7 +50,9 @@ class ForgotPasswordNotifier extends ChangeNotifier {
         isLoading: false,
         errorMessage: _mapError(e.code),
       );
-    } catch (e) {
+    } on Exception catch (e, stack) {
+      AppLogger.error('Forgot Password error: ', e, stack);
+
       _state = _state.copyWith(
         isLoading: false,
         errorMessage: 'Something went wrong. Please try again.',

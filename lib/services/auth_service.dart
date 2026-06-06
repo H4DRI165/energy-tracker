@@ -14,7 +14,7 @@ class AuthService {
       }
       final doc = await _firestore.collection('users').doc(user.uid).get();
       final completed = doc.data()?['onboardingCompleted'] as bool? ?? false;
-      userNotifier.setOnboardingCompleted(completed);
+      userNotifier.setOnboardingCompleted(value: completed);
     });
   }
 

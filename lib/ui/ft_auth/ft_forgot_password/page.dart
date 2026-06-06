@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:energy_tracker/theme/theme.dart';
 import 'package:energy_tracker/ui/components/buttons.dart';
 import 'package:energy_tracker/ui/components/icons.dart';
@@ -26,7 +28,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
-    )..forward();
+    );
+
+    unawaited(_animationController.forward());
 
     _fadeIn =
         CurvedAnimation(parent: _animationController, curve: Curves.easeOut);
@@ -117,7 +121,8 @@ class _Header extends StatelessWidget {
         Text('Reset Password', style: AppTextStyles.displayMd),
         const SizedBox(height: 8),
         Text(
-          "Enter your registered email and we'll send you a link to reset your password.",
+          "Enter your registered email and we'll send you a "
+          'link to reset your password.',
           style: AppTextStyles.bodyMd.copyWith(
             color: AppColors.text2,
             height: 1.6,
@@ -198,8 +203,8 @@ class _BodyContentState extends State<_BodyContent> {
             const SizedBox(height: 20),
             const _InfoCard(
               icon: Icons.info_outline_rounded,
-              text:
-                  "Check your spam folder if you don't see the email within a few minutes.",
+              text: "Check your spam folder if you don't "
+                  'see the email within a few minutes.',
             ),
           ],
         );

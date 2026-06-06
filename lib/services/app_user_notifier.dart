@@ -5,7 +5,7 @@ class AppUserNotifier extends ChangeNotifier {
 
   bool? get onboardingCompleted => _onboardingCompleted;
 
-  void setOnboardingCompleted(bool value) {
+  void setOnboardingCompleted({required bool value}) {
     _onboardingCompleted = value;
     notifyListeners();
   }

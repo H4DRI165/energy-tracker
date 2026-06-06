@@ -74,7 +74,7 @@ class _LandingPageState extends State<LandingPage>
       curve: const Interval(0.65, 1, curve: Curves.easeOut),
     );
 
-    _controller.forward().then((_) => _scheduleRedirect());
+    unawaited(_controller.forward().then((_) => _scheduleRedirect()));
   }
 
   void _scheduleRedirect() {
@@ -187,7 +187,8 @@ class _LandingPageState extends State<LandingPage>
                     child: SlideTransition(
                       position: _heroSlide,
                       child: Text(
-                        'Monitor usage, set budgets, and\nnever get surprised by your bill again.',
+                        'Monitor usage, set budgets, and\n'
+                        'never get surprised by your bill again.',
                         style: AppTextStyles.bodyMd.copyWith(
                           color: AppColors.text2,
                           height: 1.6,

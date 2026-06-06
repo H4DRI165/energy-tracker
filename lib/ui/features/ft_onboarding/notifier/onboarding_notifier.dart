@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:energy_tracker/ui/components/logger.dart';
 import 'package:energy_tracker/ui/features/ft_onboarding/notifier/onboarding_state.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -47,6 +48,7 @@ class OnboardingNotifier extends ChangeNotifier {
 
   Future<bool> completeOnboarding() async {
     final uid = _auth.currentUser?.uid;
+
     if (uid == null) {
       _state = _state.copyWith(
         errorMessage: 'User session expired. Please sign in again.',
@@ -69,7 +71,15 @@ class OnboardingNotifier extends ChangeNotifier {
         SetOptions(merge: true),
       );
       return true;
-    } catch (e) {
+    } on FirebaseException catch (e) {
+      _state = _state.copyWith(
+        errorMessage: _mapFirestoreError(e.code),
+      );
+      notifyListeners();
+      return false;
+    } on Exception catch (e, stack) {
+      AppLogger.error('Onboarding unexpected exception: ', e, stack);
+
       _state = _state.copyWith(
         errorMessage: 'Failed to save settings. Please try again.',
       );
@@ -78,6 +88,19 @@ class OnboardingNotifier extends ChangeNotifier {
     } finally {
       _state = _state.copyWith(isLoading: false);
       notifyListeners();
+    }
+  }
+
+  String _mapFirestoreError(String code) {
+    switch (code) {
+      case 'permission-denied':
+        return 'Permission denied. Please check your account status.';
+      case 'unavailable':
+        return 'Service temporarily unavailable. Please try again later.';
+      case 'network-request-failed':
+        return 'No internet connection. Please check your network.';
+      default:
+        return 'Failed to save settings. Please try again.';
     }
   }
 }

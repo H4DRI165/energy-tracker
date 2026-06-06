@@ -47,21 +47,21 @@ final GoRouter appRouter = GoRouter(
   routes: [
     GoRoute(
       path: AppRoutes.splash,
-      name: 'splash',
+      name: AppRoutes.splash,
       pageBuilder: (context, state) => const NoTransitionPage(
         child: SplashPage(),
       ),
     ),
     GoRoute(
       path: AppRoutes.landing,
-      name: 'landing',
+      name: AppRoutes.landing,
       pageBuilder: (context, state) => const NoTransitionPage(
         child: LandingPage(),
       ),
     ),
     GoRoute(
       path: AppRoutes.login,
-      name: 'login',
+      name: AppRoutes.login,
       pageBuilder: (context, state) => CustomTransitionPage(
         child: const LoginPage(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
@@ -75,28 +75,28 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: AppRoutes.register,
-      name: 'register',
+      name: AppRoutes.register,
       pageBuilder: (context, state) => const NoTransitionPage(
         child: RegisterPage(),
       ),
     ),
     GoRoute(
       path: AppRoutes.onboarding,
-      name: 'onboarding',
+      name: AppRoutes.onboarding,
       pageBuilder: (context, state) => const NoTransitionPage(
         child: OnboardingPage(),
       ),
     ),
     GoRoute(
       path: AppRoutes.forgotPassword,
-      name: 'forgot_password',
+      name: AppRoutes.forgotPassword,
       pageBuilder: (context, state) => const NoTransitionPage(
         child: ForgotPasswordPage(),
       ),
     ),
     GoRoute(
       path: AppRoutes.dashboard,
-      name: 'dashboard',
+      name: AppRoutes.dashboard,
       pageBuilder: (context, state) => const NoTransitionPage(
         child: DashboardPage(),
       ),

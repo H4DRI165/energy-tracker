@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:energy_tracker/app.dart';
 import 'package:energy_tracker/ui/features/ft_onboarding/notifier/onboarding_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_onboarding/notifier/onboarding_state.dart';
@@ -25,10 +27,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   void _onStateChanged() {
     if (_pageController.hasClients) {
-      _pageController.animateToPage(
-        _notifier.state.currentStep,
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeInOut,
+      unawaited(
+        _pageController.animateToPage(
+          _notifier.state.currentStep,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeInOut,
+        ),
       );
     }
     if (mounted) setState(() {});

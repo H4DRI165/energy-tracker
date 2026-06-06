@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:energy_tracker/app.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -51,7 +53,7 @@ class _SplashPageState extends State<SplashPage>
       curve: const Interval(0.65, 1, curve: Curves.easeOut),
     );
 
-    _controller.forward().then((_) => _navigateToLanding());
+    unawaited(_controller.forward().then((_) => _navigateToLanding()));
   }
 
   void _navigateToLanding() {
@@ -83,7 +85,7 @@ class _SplashPageState extends State<SplashPage>
                     center: Alignment(0, -0.1),
                     radius: 0.65,
                     colors: [
-                      Color(0x1E00D4AA), 
+                      Color(0x1E00D4AA),
                       Colors.transparent,
                     ],
                   ),
@@ -95,7 +97,6 @@ class _SplashPageState extends State<SplashPage>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Logo icon
                 ScaleTransition(
                   scale: _scaleIn,
                   child: FadeTransition(

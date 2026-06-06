@@ -84,7 +84,7 @@ class AppTextField extends StatelessWidget {
   // --------------------------------- METHODS ---------------------------------
   @override
   Widget build(BuildContext context) {
-    InputBorder createBorder(Color borderColor, bool isFocused) {
+    InputBorder createBorder(Color borderColor, {required bool isFocused}) {
       switch (border) {
         case AppFormFieldBorder.underlined:
           return UnderlineInputBorder(
@@ -171,16 +171,25 @@ class AppTextField extends StatelessWidget {
                         enabled && hasError ? errorTextColor : labelTextColor,
                     fontSize: floatingLabelTextFontSize,
                   ),
-                  border: createBorder(borderColor ?? Colors.grey, false),
-                  enabledBorder:
-                      createBorder(borderColor ?? Colors.grey, false),
-                  focusedBorder:
-                      createBorder(focusedBorderColor ?? Colors.blue, true),
-                  errorBorder:
-                      createBorder(errorTextColor ?? Colors.red, false),
+                  border: createBorder(
+                    borderColor ?? Colors.grey,
+                    isFocused: false,
+                  ),
+                  enabledBorder: createBorder(
+                    borderColor ?? Colors.grey,
+                    isFocused: false,
+                  ),
+                  focusedBorder: createBorder(
+                    focusedBorderColor ?? Colors.blue,
+                    isFocused: true,
+                  ),
+                  errorBorder: createBorder(
+                    errorTextColor ?? Colors.red,
+                    isFocused: false,
+                  ),
                   focusedErrorBorder: createBorder(
                     errorTextColor ?? Colors.red,
-                    true,
+                    isFocused: true,
                   ),
                   errorText: enabled ? errorText : null,
                   errorStyle: TextStyle(color: errorTextColor ?? Colors.red),

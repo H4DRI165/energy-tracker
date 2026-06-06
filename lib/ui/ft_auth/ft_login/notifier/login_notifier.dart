@@ -1,5 +1,8 @@
 import 'package:energy_tracker/services/auth_service.dart';
+import 'package:energy_tracker/ui/components/logger.dart';
 import 'package:energy_tracker/ui/ft_auth/ft_login/notifier/login_state.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class LoginNotifier extends ChangeNotifier {
@@ -33,8 +36,16 @@ class LoginNotifier extends ChangeNotifier {
 
     try {
       await _authService.signInWithEmail(_state.email, _state.password);
-    } catch (e) {
-      _state = _state.copyWith(authError: e.toString());
+    } on FirebaseAuthException catch (e) {
+      _state = _state.copyWith(
+        authError: _mapAuthError(e.code),
+      );
+    } on Exception catch (e, stack) {
+      AppLogger.error('Sign-In error: ', e, stack);
+
+      _state = _state.copyWith(
+        authError: 'Something went wrong. Please try again.',
+      );
     } finally {
       _state = _state.copyWith(isLoading: false);
       notifyListeners();
@@ -49,11 +60,38 @@ class LoginNotifier extends ChangeNotifier {
 
     try {
       await _authService.signInWithGoogle();
-    } catch (e) {
-      _state = _state.copyWith(authError: e.toString());
+    } on FirebaseAuthException catch (e) {
+      _state = _state.copyWith(
+        authError: _mapAuthError(e.code),
+      );
+    } on Exception catch (e, stack) {
+      AppLogger.error('Google Sign-In failed: ', e, stack);
+
+      _state = _state.copyWith(
+        authError: 'Failed to sign in with Google. Please try again.',
+      );
     } finally {
       _state = _state.copyWith(isLoading: false);
       notifyListeners();
+    }
+  }
+
+  String _mapAuthError(String code) {
+    switch (code) {
+      case 'user-not-found':
+      case 'wrong-password':
+        return 'Invalid email or password.';
+      case 'invalid-email':
+        return 'Please enter a valid email address.';
+      case 'too-many-requests':
+        return 'Too many failed attempts. Please try again later.';
+      case 'network-request-failed':
+        return 'No internet connection. Please check your network.';
+      case 'account-exists-with-different-credential':
+        return 'An account already exists with the same email '
+            'but different sign-in method.';
+      default:
+        return 'Login failed. Please try again.';
     }
   }
 

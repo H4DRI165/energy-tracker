@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/theme/app_colors.dart';
+import 'package:energy_tracker/ui/components/logger.dart';
 import 'package:energy_tracker/ui/ft_auth/ft_register/notifier/register_state.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -193,19 +194,24 @@ class RegisterNotifier extends ChangeNotifier {
 
       // TODO(dev): enable when want to test email verification flow
       // await user.sendEmailVerification();
-    } catch (e) {
-      if (createdUser != null) {
+    } on FirebaseAuthException catch (e) {
+      _state = _state.copyWith(
+        authError: _getFirebaseErrorMessage(e.code),
+      );
+    } on Exception catch (e, stack) {
+      AppLogger.error('Registration error: ', e, stack);
+
+      _state = _state.copyWith(
+        authError: 'Registration failed. Please try again.',
+      );
+    } finally {
+      if (_state.authError != null && createdUser != null) {
         try {
           await createdUser.delete();
-        } catch (_) {}
+        } on Exception catch (_) {}
         await _auth.signOut();
       }
 
-      final errorMessage = e is FirebaseAuthException
-          ? _getFirebaseErrorMessage(e.code)
-          : e.toString();
-      _state = _state.copyWith(authError: errorMessage);
-    } finally {
       _state = _state.copyWith(isLoading: false);
       notifyListeners();
     }
