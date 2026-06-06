@@ -6,8 +6,10 @@ import 'package:energy_tracker/ui/components/icons.dart';
 import 'package:energy_tracker/ui/components/text.dart';
 import 'package:energy_tracker/ui/ft_auth/ft_forgot_password/notifier/forgot_password_notifier.dart';
 import 'package:energy_tracker/ui/ft_auth/ft_forgot_password/notifier/forgot_password_state.dart';
+import 'package:energy_tracker/ui/routes/routes.dart';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
@@ -66,21 +68,13 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
                       horizontal: AppDimensions.screenPaddingH,
                       vertical: AppDimensions.screenPaddingV,
                     ),
-                    child: Expanded(
-                      child: SingleChildScrollView(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: AppDimensions.screenPaddingH,
-                          vertical: AppDimensions.screenPaddingV,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _Header(),
-                            SizedBox(height: 32),
-                            _BodyContent(),
-                          ],
-                        ),
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _Header(),
+                        SizedBox(height: 32),
+                        _BodyContent(),
+                      ],
                     ),
                   ),
                 ),
@@ -351,7 +345,7 @@ class _BackToLoginRow extends StatelessWidget {
           ),
         ),
         GestureDetector(
-          onTap: () => Navigator.of(context).pop(),
+          onTap: () => context.go(AppRoutes.login),
           child: Text(
             'Sign In',
             style: AppTextStyles.bodyMd.copyWith(

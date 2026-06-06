@@ -18,6 +18,8 @@ class ForgotPasswordNotifier extends ChangeNotifier {
   }
 
   Future<void> sendResetEmail() async {
+    if (_state.isLoading) return;
+
     _state = _state.copyWith(emailError: null, errorMessage: null);
     notifyListeners();
 

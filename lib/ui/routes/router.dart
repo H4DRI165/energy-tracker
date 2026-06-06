@@ -22,8 +22,12 @@ final GoRouter appRouter = GoRouter(
         state.matchedLocation == AppRoutes.splash ||
         state.matchedLocation == AppRoutes.forgotPassword;
 
-    // Still loading onboarding state from Firestore — stay put
-    if (isLoggedIn && onboardingCompleted == null) return null;
+    // Still loading onboarding state from Firestore — only hold on boot routes
+    if (isLoggedIn && onboardingCompleted == null) {
+      final isBootRoute = state.matchedLocation == AppRoutes.splash ||
+          state.matchedLocation == AppRoutes.landing;
+      return isBootRoute ? null : AppRoutes.onboarding;
+    }
 
     // Logged in, onboarding incomplete → go to onboarding
     if (isLoggedIn &&
@@ -47,21 +51,21 @@ final GoRouter appRouter = GoRouter(
   routes: [
     GoRoute(
       path: AppRoutes.splash,
-      name: AppRoutes.splash,
+      name: 'splash',
       pageBuilder: (context, state) => const NoTransitionPage(
         child: SplashPage(),
       ),
     ),
     GoRoute(
       path: AppRoutes.landing,
-      name: AppRoutes.landing,
+      name: 'landing',
       pageBuilder: (context, state) => const NoTransitionPage(
         child: LandingPage(),
       ),
     ),
     GoRoute(
       path: AppRoutes.login,
-      name: AppRoutes.login,
+      name: 'login',
       pageBuilder: (context, state) => CustomTransitionPage(
         child: const LoginPage(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
@@ -75,28 +79,28 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: AppRoutes.register,
-      name: AppRoutes.register,
+      name: 'register',
       pageBuilder: (context, state) => const NoTransitionPage(
         child: RegisterPage(),
       ),
     ),
     GoRoute(
       path: AppRoutes.onboarding,
-      name: AppRoutes.onboarding,
+      name: 'onboarding',
       pageBuilder: (context, state) => const NoTransitionPage(
         child: OnboardingPage(),
       ),
     ),
     GoRoute(
       path: AppRoutes.forgotPassword,
-      name: AppRoutes.forgotPassword,
+      name: 'forgot_password',
       pageBuilder: (context, state) => const NoTransitionPage(
         child: ForgotPasswordPage(),
       ),
     ),
     GoRoute(
       path: AppRoutes.dashboard,
-      name: AppRoutes.dashboard,
+      name: 'dashboard',
       pageBuilder: (context, state) => const NoTransitionPage(
         child: DashboardPage(),
       ),

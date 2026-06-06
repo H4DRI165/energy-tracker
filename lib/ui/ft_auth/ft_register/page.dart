@@ -484,7 +484,7 @@ class _LoginAccountRow extends StatelessWidget {
           ),
         ),
         GestureDetector(
-          onTap: () => Navigator.of(context).pop(),
+          onTap: () => context.go(AppRoutes.login),
           child: Text(
             'Sign In',
             style: AppTextStyles.bodyMd.copyWith(

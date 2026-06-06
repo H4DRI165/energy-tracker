@@ -43,6 +43,12 @@ class _LoginPageState extends State<LoginPage>
   }
 
   @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -192,7 +198,7 @@ class _BodyContentState extends State<_BodyContent> {
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(
-                onPressed: () => context.pushNamed(AppRoutes.forgotPassword),
+                onPressed: () => context.go(AppRoutes.forgotPassword),
                 style: TextButton.styleFrom(
                   padding: EdgeInsets.zero,
                   minimumSize: Size.zero,
@@ -302,7 +308,7 @@ class _RegisterAccountRow extends StatelessWidget {
           ),
         ),
         GestureDetector(
-          onTap: () => context.pushNamed(AppRoutes.register),
+          onTap: () => context.go(AppRoutes.register),
           child: Text(
             'Register',
             style: AppTextStyles.bodyMd.copyWith(

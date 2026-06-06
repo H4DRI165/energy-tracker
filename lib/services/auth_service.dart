@@ -12,9 +12,19 @@ class AuthService {
         userNotifier.reset();
         return;
       }
-      final doc = await _firestore.collection('users').doc(user.uid).get();
-      final completed = doc.data()?['onboardingCompleted'] as bool? ?? false;
-      userNotifier.setOnboardingCompleted(value: completed);
+
+      final uid = user.uid;
+      try {
+        final doc = await _firestore.collection('users').doc(uid).get();
+        if (_auth.currentUser?.uid != uid) return;
+
+        final raw = doc.data()?['onboardingCompleted'];
+        userNotifier.setOnboardingCompleted(value: raw is bool && raw);
+      } on Exception catch (_) {
+        if (_auth.currentUser?.uid == uid) {
+          userNotifier.setOnboardingCompleted(value: false);
+        }
+      }
     });
   }
 
@@ -29,30 +39,22 @@ class AuthService {
   User? get currentUser => _auth.currentUser;
 
   Future<void> signInWithEmail(String email, String password) async {
-    try {
-      await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-    } on FirebaseAuthException catch (e) {
-      throw Exception(_handleError(e));
-    }
+    await _auth.signInWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
   }
 
   Future<void> signInWithGoogle() async {
-    try {
-      final googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) return;
+    final googleUser = await _googleSignIn.signIn();
+    if (googleUser == null) return;
 
-      final googleAuth = await googleUser.authentication;
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-      await _auth.signInWithCredential(credential);
-    } on FirebaseAuthException catch (e) {
-      throw Exception(_handleError(e));
-    }
+    final googleAuth = await googleUser.authentication;
+    final credential = GoogleAuthProvider.credential(
+      accessToken: googleAuth.accessToken,
+      idToken: googleAuth.idToken,
+    );
+    await _auth.signInWithCredential(credential);
   }
 
   Future<void> signOut() async {
@@ -71,21 +73,5 @@ class AuthService {
       email: email,
       password: password,
     );
-  }
-
-  String _handleError(FirebaseAuthException e) {
-    switch (e.code) {
-      case 'user-not-found':
-        return 'No account found with this email.';
-      case 'wrong-password':
-      case 'invalid-credential':
-        return 'Incorrect email or password.';
-      case 'invalid-email':
-        return 'Please enter a valid email address.';
-      case 'network-request-failed':
-        return 'No internet connection.';
-      default:
-        return 'Something went wrong. Please try again.';
-    }
   }
 }
