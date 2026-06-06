@@ -308,7 +308,7 @@ class _BodyContentState extends State<_BodyContent> {
               ),
               const SizedBox(height: 16),
             ],
-            _GradientButton(
+            GradientButton(
               label: 'Create Account',
               isLoading: state.isLoading,
               onTap: _handleRegister,
@@ -452,49 +452,6 @@ class _RequirementItem extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _GradientButton extends StatelessWidget {
-  const _GradientButton({
-    required this.label,
-    required this.isLoading,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool isLoading;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: isLoading ? null : onTap,
-      child: Container(
-        width: double.infinity,
-        height: 52,
-        decoration: BoxDecoration(
-          gradient: AppColors.primaryGradient,
-          borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-          boxShadow: AppColors.btnPrimaryShadow,
-        ),
-        child: Center(
-          child: isLoading
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.black,
-                  ),
-                )
-              : Text(
-                  label,
-                  style: AppTextStyles.button,
-                ),
-        ),
       ),
     );
   }

@@ -215,8 +215,11 @@ class _BodyContentState extends State<_BodyContent> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.error_outline,
-                        color: Colors.red, size: 16,),
+                    const Icon(
+                      Icons.error_outline,
+                      color: Colors.red,
+                      size: 16,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -229,7 +232,7 @@ class _BodyContentState extends State<_BodyContent> {
               ),
               const SizedBox(height: 16),
             ],
-            _GradientButton(
+            GradientButton(
               label: 'Sign In',
               isLoading: _notifier.state.isLoading,
               onTap: _notifier.login,
@@ -238,70 +241,43 @@ class _BodyContentState extends State<_BodyContent> {
             const AppDivider(middleText: 'or continue with'),
             const SizedBox(height: 16),
             OutlinedButton(
-              onPressed: _notifier.loginWithGoogle,
+              onPressed:
+                  _notifier.state.isLoading ? null : _notifier.loginWithGoogle,
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 52),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'G',
-                    style: AppTextStyles.bodyLg.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.text,
+              child: _notifier.state.isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(AppColors.text),
+                      ),
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'G',
+                          style: AppTextStyles.bodyLg.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.text,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Continue with Google',
+                          style: AppTextStyles.bodyLg
+                              .copyWith(color: AppColors.text),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    'Continue with Google',
-                    style: AppTextStyles.bodyLg.copyWith(color: AppColors.text),
-                  ),
-                ],
-              ),
             ),
           ],
         );
       },
-    );
-  }
-}
-
-class _GradientButton extends StatelessWidget {
-  const _GradientButton({
-    required this.label,
-    required this.isLoading,
-    required this.onTap,
-  });
-  final String label;
-  final bool isLoading;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: isLoading ? null : onTap,
-      child: Container(
-        width: double.infinity,
-        height: 52,
-        decoration: BoxDecoration(
-          gradient: AppColors.primaryGradient,
-          borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-          boxShadow: AppColors.btnPrimaryShadow,
-        ),
-        child: Center(
-          child: isLoading
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.black,
-                  ),
-                )
-              : Text(label, style: AppTextStyles.button),
-        ),
-      ),
     );
   }
 }

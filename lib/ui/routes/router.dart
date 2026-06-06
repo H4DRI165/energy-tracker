@@ -66,6 +66,13 @@ final GoRouter appRouter = GoRouter(
       ),
     ),
     GoRoute(
+      path: AppRoutes.onboarding,
+      name: 'onboarding',
+      pageBuilder: (context, state) => const NoTransitionPage(
+        child: OnboardingPage(),
+      ),
+    ),
+    GoRoute(
       path: AppRoutes.dashboard,
       name: 'dashboard',
       pageBuilder: (context, state) => const NoTransitionPage(
