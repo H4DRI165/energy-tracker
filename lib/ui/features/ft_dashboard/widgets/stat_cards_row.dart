@@ -28,6 +28,7 @@ class StatCardsRow extends StatelessWidget {
             badgeBg: state.dailyAvg <= 8.0
                 ? AppColors.accent.withValues(alpha: 0.12)
                 : AppColors.danger.withValues(alpha: 0.12),
+            compact: compact,
           ),
         ),
         const SizedBox(width: 10),
@@ -41,6 +42,7 @@ class StatCardsRow extends StatelessWidget {
             badge: state.tierRange,
             badgeColor: state.tierColor,
             badgeBg: state.tierColor.withValues(alpha: 0.12),
+            compact: compact,
           ),
         ),
       ],
@@ -57,6 +59,7 @@ class _StatCard extends StatelessWidget {
     required this.badge,
     required this.badgeColor,
     required this.badgeBg,
+    this.compact = false,
   });
 
   final String label;
@@ -66,11 +69,16 @@ class _StatCard extends StatelessWidget {
   final String badge;
   final Color badgeColor;
   final Color badgeBg;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(AppDimensions.cardPaddingSm),
+      padding: EdgeInsets.all(
+        compact
+            ? AppDimensions.cardPaddingSm * 0.7
+            : AppDimensions.cardPaddingSm,
+      ),
       decoration: BoxDecoration(
         color: AppColors.surface2,
         borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
@@ -95,7 +103,7 @@ class _StatCard extends StatelessWidget {
               ],
             ],
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: compact ? 4 : 6),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(

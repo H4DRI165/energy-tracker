@@ -47,6 +47,7 @@ class DashboardPageState {
   final List<DailyUsage> weeklyUsage;
   final bool hasUnreadNotifications;
   final String? errorMessage;
+  static const Object _unset = Object();
 
   double get budgetUsedPercent =>
       monthlyBudget > 0 ? (estimatedBill / monthlyBudget).clamp(0.0, 1.0) : 0;
@@ -129,10 +130,10 @@ class DashboardPageState {
     int? currentTier,
     int? daysLeft,
     double? percentageVsLastMonth,
-    double? projectedBill,
+    Object? projectedBill = _unset,
     List<DailyUsage>? weeklyUsage,
     bool? hasUnreadNotifications,
-    String? errorMessage,
+    Object? errorMessage = _unset,
   }) {
     return DashboardPageState(
       isLoading: isLoading ?? this.isLoading,
@@ -146,11 +147,15 @@ class DashboardPageState {
       daysLeft: daysLeft ?? this.daysLeft,
       percentageVsLastMonth:
           percentageVsLastMonth ?? this.percentageVsLastMonth,
-      projectedBill: projectedBill ?? this.projectedBill,
+      projectedBill: identical(projectedBill, _unset)
+          ? this.projectedBill
+          : projectedBill as double?,
       weeklyUsage: weeklyUsage ?? this.weeklyUsage,
       hasUnreadNotifications:
           hasUnreadNotifications ?? this.hasUnreadNotifications,
-      errorMessage: errorMessage,
+      errorMessage: identical(errorMessage, _unset)
+          ? this.errorMessage
+          : errorMessage as String?,
     );
   }
 }

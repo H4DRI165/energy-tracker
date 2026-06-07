@@ -65,6 +65,8 @@ final GoRouter appRouter = GoRouter(
         child: LandingPage(),
       ),
     ),
+
+    // ----------------------------AUTH ROUTES------------------------------
     GoRoute(
       path: AppRoutes.login,
       name: 'login',
@@ -100,6 +102,8 @@ final GoRouter appRouter = GoRouter(
         child: ForgotPasswordPage(),
       ),
     ),
+
+    // ----------------------------FEATURES ROUTES------------------------------
     GoRoute(
       path: AppRoutes.dashboard,
       name: 'dashboard',
@@ -107,6 +111,71 @@ final GoRouter appRouter = GoRouter(
         child: DashboardPage(),
       ),
     ),
+
+
+    // -------------------------------WIP ROUTES--------------------------------
+    GoRoute(
+      path: AppRoutes.usage,
+      name: 'usage',
+      pageBuilder: (context, state) => const NoTransitionPage(
+        child: ComingSoonPage(
+          title: 'Usage History',
+          subtitle: 'Interactive charts, daily/weekly/monthly filters, '
+              'and detailed consumption analytics are coming soon.',
+          icon: Icons.timeline_rounded,
+        ),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.devices,
+      name: 'devices',
+      pageBuilder: (context, state) => const NoTransitionPage(
+        child: ComingSoonPage(
+          title: 'My Appliances',
+          subtitle: 'Track individual appliance usage, set limits, '
+              'and get smart recommendations.',
+          icon: Icons.electrical_services_rounded,
+        ),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.settings,
+      name: 'settings',
+      pageBuilder: (context, state) => const NoTransitionPage(
+        child: ComingSoonPage(
+          title: 'Settings',
+          subtitle: 'Profile, tariff settings, notifications, '
+              'and TNB account management.',
+          icon: Icons.settings_rounded,
+        ),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.addReading,
+      name: 'add_reading',
+      pageBuilder: (context, state) => const NoTransitionPage(
+        child: ComingSoonPage(
+          title: 'Add Meter Reading',
+          subtitle:
+              'Manual entry and bill scanner with ML Kit OCR coming soon.',
+          icon: Icons.add_circle_outline_rounded,
+        ),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.scanBill,
+      name: 'scan_bill',
+      pageBuilder: (context, state) => const NoTransitionPage(
+        child: ComingSoonPage(
+          title: 'Scan TNB Bill',
+          subtitle: 'Point your camera at your bill and '
+              'let AI extract the data automatically.',
+          icon: Icons.document_scanner_rounded,
+        ),
+      ),
+    ),
+
+    // --------------------------------ERROR ROUTES--------------------------------
     GoRoute(
       path: AppRoutes.error,
       name: 'error',

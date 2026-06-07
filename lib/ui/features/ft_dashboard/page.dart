@@ -65,6 +65,34 @@ class _DashboardPageState extends State<DashboardPage> {
                     child: CircularProgressIndicator(color: AppColors.accent),
                   ),
                 )
+              else if (state.errorMessage != null)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppDimensions.screenPaddingH,
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            state.errorMessage!,
+                            textAlign: TextAlign.center,
+                            style: AppTextStyles.bodyMd.copyWith(
+                              color: AppColors.text2,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          FilledButton(
+                            onPressed: _notifier.refresh,
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                )
               else
                 _BodyContent(state: state),
             ],

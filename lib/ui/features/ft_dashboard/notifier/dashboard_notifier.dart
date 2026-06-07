@@ -82,7 +82,6 @@ class DashboardNotifier extends ChangeNotifier {
 
       // Fetch last month readings for comparison
       final startOfLastMonth = DateTime(now.year, now.month - 1);
-      final endOfLastMonth = DateTime(now.year, now.month, 0);
       final lastMonthSnap = await _firestore
           .collection('users')
           .doc(uid)
@@ -93,8 +92,9 @@ class DashboardNotifier extends ChangeNotifier {
           )
           .where(
             'date',
-            isLessThanOrEqualTo: Timestamp.fromDate(endOfLastMonth),
+            isLessThan: Timestamp.fromDate(startOfMonth),
           )
+          .orderBy('date', descending: false)
           .get();
 
       // Calculate kWh used this month
@@ -104,7 +104,7 @@ class DashboardNotifier extends ChangeNotifier {
             (readingsSnap.docs.first.data()['reading'] as num).toDouble();
         final last =
             (readingsSnap.docs.last.data()['reading'] as num).toDouble();
-        kwhUsed = last - first;
+        kwhUsed = (last - first).clamp(0, double.infinity).toDouble();
       } else if (readingsSnap.docs.isNotEmpty) {
         kwhUsed =
             (readingsSnap.docs.last.data()['kwh'] as num?)?.toDouble() ?? 0;
@@ -117,7 +117,7 @@ class DashboardNotifier extends ChangeNotifier {
             (lastMonthSnap.docs.first.data()['reading'] as num).toDouble();
         final last =
             (lastMonthSnap.docs.last.data()['reading'] as num).toDouble();
-        lastMonthKwh = last - first;
+        lastMonthKwh = (last - first).clamp(0, double.infinity).toDouble();
       }
 
       final percentVsLast = lastMonthKwh > 0
@@ -138,12 +138,16 @@ class DashboardNotifier extends ChangeNotifier {
       final projectedBill = _calculateBill(projectedKwh);
 
       // 7-day usage — fetch last 7 readings
+      final startOf7DayWindow = DateTime(now.year, now.month, now.day - 6);
       final weekSnap = await _firestore
           .collection('users')
           .doc(uid)
           .collection('readings')
+          .where(
+            'date',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(startOf7DayWindow),
+          )
           .orderBy('date', descending: true)
-          .limit(7)
           .get();
 
       final weeklyUsage = _buildWeeklyUsage(weekSnap.docs, now);

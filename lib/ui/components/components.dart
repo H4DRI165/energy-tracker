@@ -1,4 +1,5 @@
 export 'buttons.dart';
+export 'coming_soon.dart';
 export 'divider.dart';
 export 'icons.dart';
 export 'logger.dart';
