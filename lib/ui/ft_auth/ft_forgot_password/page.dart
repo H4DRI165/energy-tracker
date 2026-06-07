@@ -62,13 +62,13 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
             position: _slideIn,
             child: Column(
               children: [
-                const Expanded(
+                Expanded(
                   child: SingleChildScrollView(
                     padding: EdgeInsets.symmetric(
                       horizontal: AppDimensions.screenPaddingH,
                       vertical: AppDimensions.screenPaddingV,
                     ),
-                    child: Column(
+                    child: const Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _Header(),
@@ -79,7 +79,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(
+                  padding: EdgeInsets.symmetric(
                     horizontal: AppDimensions.screenPaddingH,
                     vertical: 24,
                   ),

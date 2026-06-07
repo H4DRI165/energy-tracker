@@ -7,6 +7,16 @@ abstract class AppRoutes {
   static const String forgotPassword = '/forgot_password';
   static const String register = '/register';
   static const String onboarding = '/onboarding';
+
+  // dashboard
   static const String dashboard = '/dashboard';
+
+  // WIP
+  static const String usage = '/usage';
+  static const String devices = '/devices';
+  static const String settings = '/settings';
+  static const String addReading = '/add_reading';
+  static const String scanBill = '/scan_bill';
+
   static const String error = '/error';
 }

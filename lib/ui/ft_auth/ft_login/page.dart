@@ -58,7 +58,7 @@ class _LoginPageState extends State<LoginPage>
           opacity: _fadeIn,
           child: SlideTransition(
             position: _slideIn,
-            child: const Column(
+            child:  Column(
               children: [
                 Expanded(
                   child: SingleChildScrollView(
@@ -66,7 +66,7 @@ class _LoginPageState extends State<LoginPage>
                       horizontal: AppDimensions.screenPaddingH,
                       vertical: AppDimensions.screenPaddingV,
                     ),
-                    child: Column(
+                    child: const Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         SizedBox(height: 8),
@@ -82,7 +82,7 @@ class _LoginPageState extends State<LoginPage>
                     horizontal: AppDimensions.screenPaddingH,
                     vertical: 16,
                   ),
-                  child: _RegisterAccountRow(),
+                  child: const _RegisterAccountRow(),
                 ),
               ],
             ),

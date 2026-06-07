@@ -145,7 +145,7 @@ class _LandingPageState extends State<LandingPage>
           ),
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(
+              padding: EdgeInsets.symmetric(
                 horizontal: AppDimensions.screenPaddingH,
               ),
               child: Column(
