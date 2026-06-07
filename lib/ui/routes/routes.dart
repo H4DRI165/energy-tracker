@@ -10,11 +10,15 @@ abstract class AppRoutes {
 
   // dashboard
   static const String dashboard = '/dashboard';
+  static const String settings = '/settings';
+  static const String tariffCalculator = '/tariff-calculator';
+  static const String editProfile = '/edit-profile';
+  static const String tariffSettings = '/tariff-settings';
+  static const String budgetSettings = '/budget-settings';
 
   // WIP
   static const String usage = '/usage';
   static const String devices = '/devices';
-  static const String settings = '/settings';
   static const String addReading = '/add_reading';
   static const String scanBill = '/scan_bill';
 
