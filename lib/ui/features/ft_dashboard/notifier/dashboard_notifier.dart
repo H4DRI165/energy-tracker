@@ -1,0 +1,244 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_state.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
+class DashboardNotifier extends ChangeNotifier {
+  DashboardNotifier({
+    FirebaseAuth? auth,
+    FirebaseFirestore? firestore,
+  })  : _auth = auth ?? FirebaseAuth.instance,
+        _firestore = firestore ?? FirebaseFirestore.instance;
+
+  final FirebaseAuth _auth;
+  final FirebaseFirestore _firestore;
+
+  DashboardPageState _state = const DashboardPageState();
+  DashboardPageState get state => _state;
+  bool _disposed = false;
+
+  void _notify() {
+    if (!_disposed) notifyListeners();
+  }
+
+  Future<void> init() async {
+    _state = _state.copyWith(isLoading: true);
+    _notify();
+    await Future.wait([_loadUserProfile(), _loadUsageData()]);
+    _state = _state.copyWith(isLoading: false);
+    _notify();
+  }
+
+  Future<void> _loadUserProfile() async {
+    try {
+      final uid = _auth.currentUser?.uid;
+      if (uid == null) return;
+
+      final doc = await _firestore.collection('users').doc(uid).get();
+      if (!doc.exists) return;
+
+      final data = doc.data()!;
+      final fullName = data['fullName'] as String? ?? '';
+      final firstName = fullName.split(' ').first;
+      final budget = (data['monthlyBudget'] as num?)?.toDouble() ?? 150.0;
+
+      _state = _state.copyWith(
+        userName: firstName,
+        monthlyBudget: budget,
+      );
+    } catch (e) {
+      _state = _state.copyWith(errorMessage: 'Failed to load profile.');
+    }
+  }
+
+  Future<void> _loadUsageData() async {
+    try {
+      final uid = _auth.currentUser?.uid;
+      if (uid == null) return;
+
+      final now = DateTime.now();
+      final monthLabel = DateFormat('MMMM yyyy').format(now);
+      final daysLeft = DateUtils.getDaysInMonth(now.year, now.month) - now.day;
+
+      // Fetch meter readings for current month
+      final startOfMonth = DateTime(now.year, now.month);
+      final readingsSnap = await _firestore
+          .collection('users')
+          .doc(uid)
+          .collection('readings')
+          .where(
+            'date',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth),
+          )
+          .orderBy('date', descending: false)
+          .get();
+
+      // Fetch last month readings for comparison
+      final startOfLastMonth = DateTime(now.year, now.month - 1);
+      final endOfLastMonth = DateTime(now.year, now.month, 0);
+      final lastMonthSnap = await _firestore
+          .collection('users')
+          .doc(uid)
+          .collection('readings')
+          .where(
+            'date',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(startOfLastMonth),
+          )
+          .where(
+            'date',
+            isLessThanOrEqualTo: Timestamp.fromDate(endOfLastMonth),
+          )
+          .get();
+
+      // Calculate kWh used this month
+      double kwhUsed = 0;
+      if (readingsSnap.docs.length >= 2) {
+        final first =
+            (readingsSnap.docs.first.data()['reading'] as num).toDouble();
+        final last =
+            (readingsSnap.docs.last.data()['reading'] as num).toDouble();
+        kwhUsed = last - first;
+      } else if (readingsSnap.docs.isNotEmpty) {
+        kwhUsed =
+            (readingsSnap.docs.last.data()['kwh'] as num?)?.toDouble() ?? 0;
+      }
+
+      // Calculate last month kWh
+      double lastMonthKwh = 0;
+      if (lastMonthSnap.docs.length >= 2) {
+        final first =
+            (lastMonthSnap.docs.first.data()['reading'] as num).toDouble();
+        final last =
+            (lastMonthSnap.docs.last.data()['reading'] as num).toDouble();
+        lastMonthKwh = last - first;
+      }
+
+      final percentVsLast = lastMonthKwh > 0
+          ? ((kwhUsed - lastMonthKwh) / lastMonthKwh) * 100
+          : 0.0;
+
+      // Estimated bill (TNB domestic tariff)
+      final bill = _calculateBill(kwhUsed);
+      final tier = _getTier(kwhUsed);
+
+      // Daily average
+      final daysElapsed = now.day;
+      final dailyAvg = daysElapsed > 0 ? kwhUsed / daysElapsed : 0.0;
+
+      // Projected bill
+      final projectedKwh =
+          dailyAvg * DateUtils.getDaysInMonth(now.year, now.month);
+      final projectedBill = _calculateBill(projectedKwh);
+
+      // 7-day usage — fetch last 7 readings
+      final weekSnap = await _firestore
+          .collection('users')
+          .doc(uid)
+          .collection('readings')
+          .orderBy('date', descending: true)
+          .limit(7)
+          .get();
+
+      final weeklyUsage = _buildWeeklyUsage(weekSnap.docs, now);
+
+      _state = _state.copyWith(
+        monthLabel: monthLabel,
+        kwhUsed: kwhUsed,
+        estimatedBill: bill,
+        currentTier: tier,
+        dailyAvg: dailyAvg,
+        daysLeft: daysLeft,
+        percentageVsLastMonth: percentVsLast,
+        projectedBill: projectedBill,
+        weeklyUsage: weeklyUsage,
+      );
+    } catch (e) {
+      _state = _state.copyWith(errorMessage: 'Failed to load usage data.');
+    }
+  }
+
+  // ── TNB Domestic Tariff Calculator ─────────────────────────────────────────
+  double _calculateBill(double kwh) {
+    double bill = 0;
+    if (kwh <= 0) return 0;
+
+    // Tier 1: 1–200 kWh @ 21.8 sen
+    final t1 = kwh.clamp(0, 200);
+    bill += t1 * 0.218;
+
+    // Tier 2: 201–300 kWh @ 33.4 sen
+    if (kwh > 200) {
+      final t2 = (kwh - 200).clamp(0, 100);
+      bill += t2 * 0.334;
+    }
+
+    // Tier 3: 301–600 kWh @ 51.6 sen
+    if (kwh > 300) {
+      final t3 = (kwh - 300).clamp(0, 300);
+      bill += t3 * 0.516;
+    }
+
+    // Tier 4: 601+ kWh @ 54.6 sen
+    if (kwh > 600) {
+      bill += (kwh - 600) * 0.546;
+    }
+
+    // Minimum charge RM 3.00
+    return bill < 3.0 ? 3.0 : bill;
+  }
+
+  int _getTier(double kwh) {
+    if (kwh <= 200) return 1;
+    if (kwh <= 300) return 2;
+    if (kwh <= 600) return 3;
+    return 4;
+  }
+
+  List<DailyUsage> _buildWeeklyUsage(
+    List<QueryDocumentSnapshot> docs,
+    DateTime now,
+  ) {
+    const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+    // Fill last 7 days with whatever data we have, zeroing missing days
+    final result = <DailyUsage>[];
+    for (var i = 6; i >= 0; i--) {
+      final day = now.subtract(Duration(days: i));
+      final label = i == 0 ? 'Today' : dayLabels[day.weekday - 1];
+
+      // Find matching reading if exists
+      final match = docs.where((d) {
+        final ts = d.data() as Map<String, dynamic>;
+        final date = (ts['date'] as Timestamp).toDate();
+        return date.year == day.year &&
+            date.month == day.month &&
+            date.day == day.day;
+      }).firstOrNull;
+
+      final kwh = match != null
+          ? ((match.data() as Map<String, dynamic>)['kwh'] as num?)
+                  ?.toDouble() ??
+              0.0
+          : 0.0;
+
+      result.add(DailyUsage(label: label, kwh: kwh, isToday: i == 0));
+    }
+    return result;
+  }
+
+  Future<void> refresh() => init();
+
+  String get greeting {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good morning,';
+    if (hour < 17) return 'Good afternoon,';
+    return 'Good evening,';
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
+}
