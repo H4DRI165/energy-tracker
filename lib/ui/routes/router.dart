@@ -124,10 +124,12 @@ final GoRouter appRouter = GoRouter(
                   style: AppTextStyles.titleMd,
                 ),
                 const SizedBox(height: 8),
-                Text('Check your connection and try again',
-                    style: AppTextStyles.bodyMd.copyWith(
-                      color: AppColors.text2,
-                    )),
+                Text(
+                  'Check your connection and try again',
+                  style: AppTextStyles.bodyMd.copyWith(
+                    color: AppColors.text2,
+                  ),
+                ),
                 const SizedBox(height: 24),
                 ElevatedButton(
                   onPressed: () async {

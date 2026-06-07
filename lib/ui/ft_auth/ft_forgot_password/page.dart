@@ -9,7 +9,6 @@ import 'package:energy_tracker/ui/ft_auth/ft_forgot_password/notifier/forgot_pas
 import 'package:energy_tracker/ui/routes/routes.dart';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 class ForgotPasswordPage extends StatefulWidget {

@@ -82,7 +82,7 @@ class _RegisterPageState extends State<RegisterPage>
                     horizontal: AppDimensions.screenPaddingH,
                     vertical: 24,
                   ),
-                  child: _LoginAccountRow(),
+                  child: const _LoginAccountRow(),
                 ),
               ],
             ),

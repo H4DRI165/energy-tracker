@@ -47,8 +47,14 @@ class DashboardNotifier extends ChangeNotifier {
         userName: firstName,
         monthlyBudget: budget,
       );
-    } catch (e) {
-      _state = _state.copyWith(errorMessage: 'Failed to load profile.');
+    } on FirebaseException catch (e) {
+      _state = _state.copyWith(
+        errorMessage: 'Failed to load profile: ${e.message}',
+      );
+    } on Exception catch (_) {
+      _state = _state.copyWith(
+        errorMessage: 'Failed to load profile.',
+      );
     }
   }
 
@@ -153,8 +159,14 @@ class DashboardNotifier extends ChangeNotifier {
         projectedBill: projectedBill,
         weeklyUsage: weeklyUsage,
       );
-    } catch (e) {
-      _state = _state.copyWith(errorMessage: 'Failed to load usage data.');
+    } on FirebaseException catch (e) {
+      _state = _state.copyWith(
+        errorMessage: 'Failed to usage data: ${e.message}',
+      );
+    } on Exception catch (_) {
+      _state = _state.copyWith(
+        errorMessage: 'Failed to usage data.',
+      );
     }
   }
 
@@ -209,7 +221,7 @@ class DashboardNotifier extends ChangeNotifier {
 
       // Find matching reading if exists
       final match = docs.where((d) {
-        final ts = d.data() as Map<String, dynamic>;
+        final ts = d.data()! as Map<String, dynamic>;
         final date = (ts['date'] as Timestamp).toDate();
         return date.year == day.year &&
             date.month == day.month &&
@@ -217,7 +229,7 @@ class DashboardNotifier extends ChangeNotifier {
       }).firstOrNull;
 
       final kwh = match != null
-          ? ((match.data() as Map<String, dynamic>)['kwh'] as num?)
+          ? ((match.data()! as Map<String, dynamic>)['kwh'] as num?)
                   ?.toDouble() ??
               0.0
           : 0.0;
