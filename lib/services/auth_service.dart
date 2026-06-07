@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/services/app_user_notifier.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -6,32 +8,13 @@ import 'package:google_sign_in/google_sign_in.dart';
 class AuthService {
   factory AuthService() => _instance;
   AuthService._internal() {
-    // Listen to auth changes and sync onboarding state
-    _auth.authStateChanges().listen((user) async {
-      if (user == null) {
-        userNotifier.reset();
-        return;
-      }
-
-      final uid = user.uid;
-      try {
-        final doc = await _firestore.collection('users').doc(uid).get();
-        if (_auth.currentUser?.uid != uid) return;
-
-        final raw = doc.data()?['onboardingCompleted'];
-        if (raw is bool && raw) {
-          userNotifier.setComplete();
-        } else {
-          userNotifier.setIncomplete();
-        }
-      } on Exception catch (_) {
-        if (_auth.currentUser?.uid == uid) {
-          userNotifier.setError();
-        }
-      }
+    _auth.authStateChanges().listen((user) {
+      unawaited(_syncOnboardingListener(user));
     });
   }
 
+  int _authSyncEpoch = 0;
+  StreamSubscription<DocumentSnapshot>? _userDocSubscription;
   static final AuthService _instance = AuthService._internal();
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -83,17 +66,57 @@ class AuthService {
     final user = _auth.currentUser;
     if (user == null) return;
 
+    userNotifier.reset();
+    await _userDocSubscription?.cancel();
+
     final uid = user.uid;
-    try {
-      final doc = await _firestore.collection('users').doc(uid).get();
-      final raw = doc.data()?['onboardingCompleted'];
-      if (raw is bool && raw) {
-        userNotifier.setComplete();
-      } else {
-        userNotifier.setIncomplete();
-      }
-    } on Exception catch (_) {
-      userNotifier.setError();
+    _userDocSubscription =
+        _firestore.collection('users').doc(uid).snapshots().listen(
+      (doc) {
+        final raw = doc.data()?['onboardingCompleted'];
+        if (raw is bool && raw) {
+          userNotifier.setComplete();
+        } else {
+          userNotifier.setIncomplete();
+        }
+      },
+      onError: (_) => userNotifier.setError(),
+    );
+  }
+
+  Future<void> _syncOnboardingListener(User? user) async {
+    final epoch = ++_authSyncEpoch;
+    await _userDocSubscription?.cancel();
+    _userDocSubscription = null;
+    if (epoch != _authSyncEpoch) return;
+
+    if (user == null) {
+      userNotifier.reset();
+      return;
     }
+
+    final uid = user.uid;
+    final sub = _firestore.collection('users').doc(uid).snapshots().listen(
+      (doc) {
+        if (epoch != _authSyncEpoch || _auth.currentUser?.uid != uid) return;
+        final raw = doc.data()?['onboardingCompleted'];
+        if (raw is bool && raw) {
+          userNotifier.setComplete();
+        } else {
+          userNotifier.setIncomplete();
+        }
+      },
+      onError: (_) {
+        if (epoch == _authSyncEpoch && _auth.currentUser?.uid == uid) {
+          userNotifier.setError();
+        }
+      },
+    );
+
+    if (epoch != _authSyncEpoch) {
+      await sub.cancel();
+      return;
+    }
+    _userDocSubscription = sub;
   }
 }

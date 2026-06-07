@@ -1,3 +1,4 @@
+import 'package:energy_tracker/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 
 class DashboardPage extends StatelessWidget {
@@ -5,10 +6,11 @@ class DashboardPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Column(
-      children: [
-        Text('Dashboard'),
-      ],
+    return const Scaffold(
+      backgroundColor: AppColors.bg,
+      body: Center(
+        child: Text('Dashboard'),
+      ),
     );
   }
 }

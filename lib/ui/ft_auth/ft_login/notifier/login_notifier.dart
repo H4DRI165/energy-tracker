@@ -10,20 +10,25 @@ class LoginNotifier extends ChangeNotifier {
   LoginPageState get state => _state;
 
   final _authService = AuthService();
+  bool _disposed = false;
+
+  void _notify() {
+    if (!_disposed) notifyListeners();
+  }
 
   void setEmail(String value) {
     _state = _state.copyWith(email: value, emailError: null);
-    notifyListeners();
+    _notify();
   }
 
   void setPassword(String value) {
     _state = _state.copyWith(password: value, passwordError: null);
-    notifyListeners();
+    _notify();
   }
 
   void toggleObscure() {
     _state = _state.copyWith(obscurePassword: !_state.obscurePassword);
-    notifyListeners();
+    _notify();
   }
 
   Future<void> login() async {
@@ -32,7 +37,7 @@ class LoginNotifier extends ChangeNotifier {
     if (!_validate()) return;
 
     _state = _state.copyWith(isLoading: true, authError: null);
-    notifyListeners();
+    _notify();
 
     try {
       await _authService.signInWithEmail(_state.email, _state.password);
@@ -48,7 +53,7 @@ class LoginNotifier extends ChangeNotifier {
       );
     } finally {
       _state = _state.copyWith(isLoading: false);
-      notifyListeners();
+      _notify();
     }
   }
 
@@ -56,7 +61,7 @@ class LoginNotifier extends ChangeNotifier {
     if (_state.isLoading) return;
 
     _state = _state.copyWith(isLoading: true, authError: null);
-    notifyListeners();
+    _notify();
 
     try {
       await _authService.signInWithGoogle();
@@ -72,7 +77,7 @@ class LoginNotifier extends ChangeNotifier {
       );
     } finally {
       _state = _state.copyWith(isLoading: false);
-      notifyListeners();
+      _notify();
     }
   }
 
@@ -106,7 +111,13 @@ class LoginNotifier extends ChangeNotifier {
       emailError: emailError,
       passwordError: passwordError,
     );
-    notifyListeners();
+    _notify();
     return emailError == null && passwordError == null;
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
   }
 }

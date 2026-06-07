@@ -14,30 +14,35 @@ class RegisterNotifier extends ChangeNotifier {
 
   final FirebaseAuth _auth;
   final FirebaseFirestore _firestore;
+  bool _disposed = false;
 
   RegisterPageState _state = RegisterPageState();
   RegisterPageState get state => _state;
 
+  void _notify() {
+    if (!_disposed) notifyListeners();
+  }
+
   void setFullName(String fullName) {
     _state = _state.copyWith(fullName: fullName, fullNameError: null);
-    notifyListeners();
+    _notify();
   }
 
   void setEmail(String value) {
     _state = _state.copyWith(email: value, emailError: null);
-    notifyListeners();
+    _notify();
   }
 
   void setTnbAccount(String tnbAccount) {
     _state = _state.copyWith(tnbAccount: tnbAccount, tnbAccountError: null);
-    notifyListeners();
+    _notify();
   }
 
   void setPassword(String password) {
     _state = _state.copyWith(password: password, passwordError: null);
     _evaluatePasswordStrength(password);
     _validateConfirmPassword();
-    notifyListeners();
+    _notify();
   }
 
   void setConfirmedPassword(String confirmedPassword) {
@@ -46,7 +51,7 @@ class RegisterNotifier extends ChangeNotifier {
       confirmedPasswordError: null,
     );
     _validateConfirmPassword();
-    notifyListeners();
+    _notify();
   }
 
   void _evaluatePasswordStrength(String password) {
@@ -104,14 +109,14 @@ class RegisterNotifier extends ChangeNotifier {
 
   void toggleObscurePassword() {
     _state = _state.copyWith(obscurePassword: !_state.obscurePassword);
-    notifyListeners();
+    _notify();
   }
 
   void toggleObscureConfirmedPassword() {
     _state = _state.copyWith(
       obscureConfirmedPassword: !_state.obscureConfirmedPassword,
     );
-    notifyListeners();
+    _notify();
   }
 
   bool _isValidEmail(String email) {
@@ -127,7 +132,7 @@ class RegisterNotifier extends ChangeNotifier {
       confirmedPasswordError: null,
       authError: null,
     );
-    notifyListeners();
+    _notify();
 
     var hasError = false;
 
@@ -157,12 +162,12 @@ class RegisterNotifier extends ChangeNotifier {
     }
 
     if (hasError) {
-      notifyListeners();
+      _notify();
       return;
     }
 
     _state = _state.copyWith(isLoading: true);
-    notifyListeners();
+    _notify();
 
     User? createdUser;
     try {
@@ -213,7 +218,7 @@ class RegisterNotifier extends ChangeNotifier {
       }
 
       _state = _state.copyWith(isLoading: false);
-      notifyListeners();
+      _notify();
     }
   }
 
@@ -234,5 +239,11 @@ class RegisterNotifier extends ChangeNotifier {
       default:
         return 'Registration failed. Please try again.';
     }
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
   }
 }
