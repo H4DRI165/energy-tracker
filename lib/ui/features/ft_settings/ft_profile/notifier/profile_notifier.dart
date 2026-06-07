@@ -71,13 +71,6 @@ class SettingsNotifier extends ChangeNotifier {
     await _updateFirestore({'monthlySummaryEnabled': value});
   }
 
-  Future<void> toggleDarkMode({required bool value}) async {
-    // Dark mode is always on per the mockup design — this is a UI-only toggle
-    // that would require ThemeMode switching to implement fully
-    _state = _state.copyWith(isDarkMode: value);
-    _notify();
-  }
-
   Future<bool> signOut() async {
     _state = _state.copyWith(isSigningOut: true, errorMessage: null);
     _notify();

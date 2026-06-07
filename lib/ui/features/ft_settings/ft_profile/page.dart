@@ -176,20 +176,6 @@ class _SettingsBody extends StatelessWidget {
             ],
           ),
           SizedBox(height: 20.h),
-          const SettingsSection(label: 'APPEARANCE'),
-          SizedBox(height: 8.h),
-          _SettingsGroup(
-            children: [
-              SettingsToggleTile(
-                icon: '🌙',
-                label: 'Dark Mode',
-                value: state.isDarkMode,
-                onChanged: (v) => notifier.toggleDarkMode(value: v),
-                isLast: true,
-              ),
-            ],
-          ),
-          SizedBox(height: 20.h),
           const SettingsSection(label: 'ABOUT'),
           SizedBox(height: 8.h),
           _SettingsGroup(
