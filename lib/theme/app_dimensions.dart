@@ -1,57 +1,50 @@
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+
 abstract class AppDimensions {
   // ─── Spacing scale ─────────────────────────────────────────────────────────
-  static const double s2 = 2;
-  static const double s4 = 4;
-  static const double s6 = 6;
-  static const double s8 = 8;
-  static const double s10 = 10;
-  static const double s12 = 12;
-  static const double s14 = 14;
-  static const double s16 = 16;
-  static const double s20 = 20;
-  static const double s24 = 24;
-  static const double s28 = 28;
-  static const double s32 = 32;
-  static const double s40 = 40;
-  static const double s48 = 48;
+  static double get s2 => 2.r;
+  static double get s4 => 4.r;
+  static double get s6 => 6.r;
+  static double get s8 => 8.r;
+  static double get s10 => 10.r;
+  static double get s12 => 12.r;
+  static double get s14 => 14.r;
+  static double get s16 => 16.r;
+  static double get s20 => 20.r;
+  static double get s24 => 24.r;
+  static double get s28 => 28.r;
+  static double get s32 => 32.r;
+  static double get s40 => 40.r;
+  static double get s48 => 48.r;
 
   // ─── Border radius ─────────────────────────────────────────────────────────
-  /// Default card radius: 20px
-  static const double radiusLg = 20;
-
-  /// Small card / input radius: 12px
-  static const double radiusMd = 12;
-
-  /// Chip / tag radius: 20px (pill)
-  static const double radiusPill = 20;
-
-  /// Phone shell: 36px
-  static const double radiusXl = 36;
-
-  /// Icon button: 10px
-  static const double radiusSm = 10;
+  static double get radiusLg => 20.r;
+  static double get radiusMd => 12.r;
+  static double get radiusPill => 20.r;
+  static double get radiusXl => 36.r;
+  static double get radiusSm => 10.r;
 
   // ─── Component sizes ───────────────────────────────────────────────────────
-  static const double iconBtnSize = 36;
-  static const double avatarSize = 32;
-  static const double navFabSize = 48;
-  static const double applianceIconSize = 40;
-  static const double onboardIconSize = 72;
-  static const double toggleWidth = 44;
-  static const double toggleHeight = 24;
+  static double get iconBtnSize => 36.r;
+  static double get avatarSize => 32.r;
+  static double get navFabSize => 48.r;
+  static double get applianceIconSize => 40.r;
+  static double get onboardIconSize => 72.r;
+  static double get toggleWidth => 44.r;
+  static double get toggleHeight => 24.r;
 
   // ─── Layout ────────────────────────────────────────────────────────────────
-  static const double screenPaddingH = 20;
-  static const double screenPaddingV = 16;
-  static const double cardPaddingDefault = 18;
-  static const double cardPaddingSm = 14;
-  static const double bottomNavHeight = 64;
-  static const double progressBarHeight = 6;
-  static const double progressBarHeightLg = 8;
-  static const double dividerHeight = 1;
+  static double get screenPaddingH => 20.w;
+  static double get screenPaddingV => 16.h;
+  static double get cardPaddingDefault => 18.r;
+  static double get cardPaddingSm => 14.r;
+  static double get bottomNavHeight => 64.h;
+  static double get progressBarHeight => 6.r;
+  static double get progressBarHeightLg => 8.r;
+  static double get dividerHeight => 1.r;
 
   // ─── Border widths ─────────────────────────────────────────────────────────
-  static const double borderWidth = 1;
-  static const double borderWidthAccent = 2;
-  static const double borderWidthScan = 3;
+  static double get borderWidth => 1.r;
+  static double get borderWidthAccent => 2.r;
+  static double get borderWidthScan => 3.r;
 }

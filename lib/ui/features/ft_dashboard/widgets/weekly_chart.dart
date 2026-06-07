@@ -17,7 +17,7 @@ class WeeklyChart extends StatelessWidget {
         : weeklyUsage.map((e) => e.kwh).reduce((a, b) => a > b ? a : b);
 
     return Container(
-      padding: const EdgeInsets.all(AppDimensions.cardPaddingSm),
+      padding: EdgeInsets.all(AppDimensions.cardPaddingSm),
       decoration: BoxDecoration(
         color: AppColors.surface2,
         borderRadius: BorderRadius.circular(AppDimensions.radiusLg),

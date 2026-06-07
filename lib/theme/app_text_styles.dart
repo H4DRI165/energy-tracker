@@ -1,5 +1,6 @@
 import 'package:energy_tracker/theme/theme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Display / headings → Lato (weight 700–800)
@@ -7,17 +8,17 @@ import 'package:google_fonts/google_fonts.dart';
 abstract class AppTextStyles {
   // ─── Display (Lato) ────────────────────────────────────────────────────────
 
-  /// App name / hero number — Lato 800, 40px
+  /// App name — Lato 800, 40px
   static TextStyle get displayXl => GoogleFonts.lato(
-        fontSize: 40,
+        fontSize: 40.sp,
         fontWeight: FontWeight.w800,
         color: AppColors.text,
         height: 1,
       );
 
-  /// Section hero number — Lato 800, 36px
+  /// Section number — Lato 800, 36px
   static TextStyle get displayLg => GoogleFonts.lato(
-        fontSize: 36,
+        fontSize: 36.sp,
         fontWeight: FontWeight.w800,
         color: AppColors.text,
         height: 1,
@@ -25,7 +26,7 @@ abstract class AppTextStyles {
 
   /// Card headline — Lato 800, 26px
   static TextStyle get displayMd => GoogleFonts.lato(
-        fontSize: 26,
+        fontSize: 26.sp,
         fontWeight: FontWeight.w800,
         color: AppColors.text,
         height: 1.1,
@@ -33,7 +34,7 @@ abstract class AppTextStyles {
 
   /// Screen title / nav — Lato 700, 22px
   static TextStyle get titleLg => GoogleFonts.lato(
-        fontSize: 22,
+        fontSize: 22.sp,
         fontWeight: FontWeight.w700,
         color: AppColors.text,
         height: 1.2,
@@ -41,7 +42,7 @@ abstract class AppTextStyles {
 
   /// Card title — Lato 700, 18px
   static TextStyle get titleMd => GoogleFonts.lato(
-        fontSize: 18,
+        fontSize: 18.sp,
         fontWeight: FontWeight.w700,
         color: AppColors.text,
         height: 1.2,
@@ -49,7 +50,7 @@ abstract class AppTextStyles {
 
   /// Section label / overline — Lato 700, 11px, 3px spacing, UPPERCASE
   static TextStyle get overline => GoogleFonts.lato(
-        fontSize: 11,
+        fontSize: 11.sp,
         fontWeight: FontWeight.w700,
         color: AppColors.accent,
         letterSpacing: 3,
@@ -58,7 +59,7 @@ abstract class AppTextStyles {
 
   /// Nav label overline — Lato 600, 9px
   static TextStyle get navLabel => GoogleFonts.lato(
-        fontSize: 9,
+        fontSize: 9.sp,
         fontWeight: FontWeight.w600,
         color: AppColors.text3,
         letterSpacing: 0.5,
@@ -69,7 +70,7 @@ abstract class AppTextStyles {
 
   /// Body large — DM Sans 400, 15px
   static TextStyle get bodyLg => GoogleFonts.dmSans(
-        fontSize: 15,
+        fontSize: 15.sp,
         fontWeight: FontWeight.w400,
         color: AppColors.text,
         height: 1.5,
@@ -77,7 +78,7 @@ abstract class AppTextStyles {
 
   /// Body default — DM Sans 400, 13px
   static TextStyle get bodyMd => GoogleFonts.dmSans(
-        fontSize: 13,
+        fontSize: 13.sp,
         fontWeight: FontWeight.w400,
         color: AppColors.text,
         height: 1.5,
@@ -85,7 +86,7 @@ abstract class AppTextStyles {
 
   /// Body small — DM Sans 400, 12px
   static TextStyle get bodySm => GoogleFonts.dmSans(
-        fontSize: 12,
+        fontSize: 12.sp,
         fontWeight: FontWeight.w400,
         color: AppColors.text2,
         height: 1.4,
@@ -93,7 +94,7 @@ abstract class AppTextStyles {
 
   /// Caption / meta — DM Sans 400, 11px
   static TextStyle get caption => GoogleFonts.dmSans(
-        fontSize: 11,
+        fontSize: 11.sp,
         fontWeight: FontWeight.w400,
         color: AppColors.text2,
         height: 1.3,
@@ -101,7 +102,7 @@ abstract class AppTextStyles {
 
   /// Label (input labels, section keys) — DM Sans 600, 12px
   static TextStyle get label => GoogleFonts.dmSans(
-        fontSize: 12,
+        fontSize: 12.sp,
         fontWeight: FontWeight.w600,
         color: AppColors.text2,
         letterSpacing: 0.5,
@@ -110,7 +111,7 @@ abstract class AppTextStyles {
 
   /// Button text — Lato 700, 15px, 0.5px spacing
   static TextStyle get button => GoogleFonts.lato(
-        fontSize: 15,
+        fontSize: 15.sp,
         fontWeight: FontWeight.w700,
         color: Colors.black,
         letterSpacing: 0.5,
@@ -119,7 +120,7 @@ abstract class AppTextStyles {
 
   /// Tag / badge text — DM Sans 600, 11px
   static TextStyle get tag => GoogleFonts.dmSans(
-        fontSize: 11,
+        fontSize: 11.sp,
         fontWeight: FontWeight.w600,
         height: 1,
       );
@@ -128,7 +129,7 @@ abstract class AppTextStyles {
 
   /// Large kWh / RM reading — Lato 800, 44px
   static TextStyle get meterXl => GoogleFonts.lato(
-        fontSize: 44,
+        fontSize: 44.sp,
         fontWeight: FontWeight.w800,
         color: AppColors.accent,
         letterSpacing: 4,
@@ -137,13 +138,11 @@ abstract class AppTextStyles {
 
   /// Medium stat number — Lato 700, 20px
   static TextStyle get statMd => GoogleFonts.lato(
-        fontSize: 20,
+        fontSize: 20.sp,
         fontWeight: FontWeight.w700,
         color: AppColors.text,
         height: 1,
       );
-
-  // ─── Muted / variant helpers ───────────────────────────────────────────────
 
   static TextStyle muted(TextStyle base) =>
       base.copyWith(color: AppColors.text2);

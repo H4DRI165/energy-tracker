@@ -7,6 +7,7 @@ import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_state
 import 'package:energy_tracker/ui/features/ft_dashboard/widgets/widgets.dart';
 import 'package:energy_tracker/ui/routes/routes.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -89,11 +90,11 @@ class _Header extends StatelessWidget {
     final isAlert = state.isNearBudget || state.isOverBudget;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
+      padding: EdgeInsets.fromLTRB(
         AppDimensions.screenPaddingH,
-        12,
+        12.sp,
         AppDimensions.screenPaddingH,
-        16,
+        16.sp,
       ),
       child: Row(
         children: [
@@ -188,7 +189,7 @@ class _BodyContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SliverPadding(
-      padding: const EdgeInsets.symmetric(
+      padding: EdgeInsets.symmetric(
         horizontal: AppDimensions.screenPaddingH,
       ),
       sliver: SliverList(

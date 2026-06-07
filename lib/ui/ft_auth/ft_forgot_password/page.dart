@@ -9,6 +9,7 @@ import 'package:energy_tracker/ui/ft_auth/ft_forgot_password/notifier/forgot_pas
 import 'package:energy_tracker/ui/routes/routes.dart';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
@@ -62,13 +63,13 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
             position: _slideIn,
             child: Column(
               children: [
-                const Expanded(
+                Expanded(
                   child: SingleChildScrollView(
                     padding: EdgeInsets.symmetric(
                       horizontal: AppDimensions.screenPaddingH,
                       vertical: AppDimensions.screenPaddingV,
                     ),
-                    child: Column(
+                    child: const Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _Header(),
@@ -79,7 +80,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(
+                  padding: EdgeInsets.symmetric(
                     horizontal: AppDimensions.screenPaddingH,
                     vertical: 24,
                   ),
