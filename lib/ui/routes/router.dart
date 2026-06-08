@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:energy_tracker/app.dart';
-import 'package:energy_tracker/ui/features/ft_settings/ft_tariff_calculator/page.dart';
+import 'package:energy_tracker/ui/features/ft_settings/tariff_calculator/page.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -144,11 +144,7 @@ final GoRouter appRouter = GoRouter(
       path: AppRoutes.editProfile,
       name: 'edit_profile',
       pageBuilder: (context, state) => const NoTransitionPage(
-        child: ComingSoonPage(
-          title: 'Edit Profile',
-          subtitle: 'Update your name, email and TNB account number.',
-          icon: Icons.person_outline_rounded,
-        ),
+        child: EditProfilePage(),
       ),
     ),
     GoRoute(
