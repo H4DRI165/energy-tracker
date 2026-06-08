@@ -2,6 +2,7 @@ class EditProfilePageState {
   const EditProfilePageState({
     this.isLoading = true,
     this.isSaving = false,
+    this.hasChanges = false,
     this.fullName = '',
     this.email = '',
     this.tnbAccountNo = '',
@@ -13,6 +14,7 @@ class EditProfilePageState {
 
   final bool isLoading;
   final bool isSaving;
+  final bool hasChanges;
   final String fullName;
   final String email;
   final String tnbAccountNo;
@@ -38,11 +40,10 @@ class EditProfilePageState {
     return '?';
   }
 
-  bool get hasChanges => fullName.isNotEmpty || tnbAccountNo.isNotEmpty;
-
   EditProfilePageState copyWith({
     bool? isLoading,
     bool? isSaving,
+    bool? hasChanges,
     String? fullName,
     String? email,
     String? tnbAccountNo,
@@ -54,6 +55,7 @@ class EditProfilePageState {
     return EditProfilePageState(
       isLoading: isLoading ?? this.isLoading,
       isSaving: isSaving ?? this.isSaving,
+      hasChanges: hasChanges ?? this.hasChanges,
       fullName: fullName ?? this.fullName,
       email: email ?? this.email,
       tnbAccountNo: tnbAccountNo ?? this.tnbAccountNo,
