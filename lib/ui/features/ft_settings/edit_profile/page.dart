@@ -49,7 +49,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    final profileAsync = ref.watch(editProfileProvider);
+    final state = ref.watch(editProfileProvider);
     ref.listen(editProfileProvider, (previous, next) {
       if (!_controllersPopulated) {
         next.whenData((s) {
@@ -62,20 +62,20 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
       }
     });
 
-    final hasChanges = profileAsync.value?.hasChanges ?? false;
+    final hasChanges = state.value?.hasChanges ?? false;
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: const Color.fromARGB(255, 24, 37, 75),
       body: SafeArea(
         child: Column(
           children: [
             _Header(
-              isSaving: profileAsync.value?.isSaving ?? false,
+              isSaving: state.value?.isSaving ?? false,
               hasChanges: hasChanges,
               onSave: _handleSave,
             ),
             Expanded(
-              child: profileAsync.when(
+              child: state.when(
                 loading: () => const Center(
                   child: CircularProgressIndicator(color: AppColors.accent),
                 ),

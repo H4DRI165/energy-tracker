@@ -21,7 +21,7 @@ class SettingsPage extends ConsumerStatefulWidget {
 class _SettingsPageState extends ConsumerState<SettingsPage> {
   @override
   Widget build(BuildContext context) {
-    final settingAsync = ref.watch(settingsProvider);
+    final state = ref.watch(settingsProvider);
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -30,7 +30,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           children: [
             _Header(),
             Expanded(
-              child: settingAsync.when(
+              child: state.when(
                 loading: () => const Center(
                   child: CircularProgressIndicator(color: AppColors.accent),
                 ),

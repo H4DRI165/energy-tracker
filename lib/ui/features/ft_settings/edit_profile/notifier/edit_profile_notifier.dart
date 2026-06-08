@@ -76,7 +76,7 @@ class EditProfileNotifier extends AsyncNotifier<EditProfilePageState> {
       ),
     );
 
-    bool hasError = false;
+    var hasError = false;
 
     if (current.fullName.trim().isEmpty) {
       state = state.whenData(
