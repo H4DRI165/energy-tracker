@@ -66,21 +66,27 @@ class OnboardingNotifier extends Notifier<OnboardingPageState> {
       );
       return true;
     } on FirebaseException catch (e) {
-      state = state.copyWith(
-        errorMessage: _mapFirestoreError(e.code),
-      );
+      if (ref.mounted) {
+        state = state.copyWith(
+          errorMessage: _mapFirestoreError(e.code),
+        );
+      }
 
       return false;
     } on Exception catch (e, stack) {
-      AppLogger.error('Onboarding unexpected exception: ', e, stack);
+      if (ref.mounted) {
+        AppLogger.error('Onboarding unexpected exception: ', e, stack);
 
-      state = state.copyWith(
-        errorMessage: 'Failed to save settings. Please try again.',
-      );
+        state = state.copyWith(
+          errorMessage: 'Failed to save settings. Please try again.',
+        );
+      }
 
       return false;
     } finally {
-      state = state.copyWith(isLoading: false);
+      if (ref.mounted) {
+        state = state.copyWith(isLoading: false);
+      }
     }
   }
 

@@ -359,10 +359,12 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
   }
 
   Future<void> _handleRegister() async {
-    await ref.read(registerProvider.notifier).register();
+    final notifier = ref.read(registerProvider.notifier);
+    await notifier.register();
+
+    if (!mounted) return;
 
     final state = ref.read(registerProvider);
-    if (!mounted) return;
 
     final hasValidationErrors = state.fullNameError != null ||
         state.emailError != null ||

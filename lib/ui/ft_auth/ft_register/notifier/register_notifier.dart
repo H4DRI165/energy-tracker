@@ -183,24 +183,30 @@ class RegisterNotifier extends Notifier<RegisterPageState> {
       // TODO(dev): enable when want to test email verification flow
       // await user.sendEmailVerification();
     } on FirebaseAuthException catch (e) {
-      state = state.copyWith(
-        authError: _getFirebaseErrorMessage(e.code),
-      );
-    } on Exception catch (e, stack) {
-      AppLogger.error('Registration error: ', e, stack);
-
-      state = state.copyWith(
-        authError: 'Registration failed. Please try again.',
-      );
-    } finally {
-      if (state.authError != null && createdUser != null) {
-        try {
-          await createdUser.delete();
-        } on Exception catch (_) {}
-        await _auth.signOut();
+      if (ref.mounted) {
+        state = state.copyWith(
+          authError: _getFirebaseErrorMessage(e.code),
+        );
       }
+    } on Exception catch (e, stack) {
+      if (ref.mounted) {
+        AppLogger.error('Registration error: ', e, stack);
 
-      state = state.copyWith(isLoading: false);
+        state = state.copyWith(
+          authError: 'Registration failed. Please try again.',
+        );
+      }
+    } finally {
+      if (ref.mounted) {
+        if (state.authError != null && createdUser != null) {
+          try {
+            await createdUser.delete();
+          } on Exception catch (_) {}
+          await _auth.signOut();
+        }
+
+        state = state.copyWith(isLoading: false);
+      }
     }
   }
 
