@@ -129,11 +129,13 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
   @override
   void initState() {
     super.initState();
+    final state = ref.read(loginProvider.notifier);
+
     _emailController.addListener(() {
-      ref.read(loginProvider.notifier).setEmail(_emailController.text);
+      state.setEmail(_emailController.text);
     });
     _passwordController.addListener(() {
-      ref.read(loginProvider.notifier).setPassword(_passwordController.text);
+      state.setPassword(_passwordController.text);
     });
   }
 

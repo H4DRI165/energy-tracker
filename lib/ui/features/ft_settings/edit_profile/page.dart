@@ -65,7 +65,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     final hasChanges = state.value?.hasChanges ?? false;
 
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 24, 37, 75),
+      backgroundColor: AppColors.bg,
       body: SafeArea(
         child: Column(
           children: [
