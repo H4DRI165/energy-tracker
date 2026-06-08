@@ -18,15 +18,25 @@ class SettingsNotifier extends AsyncNotifier<SettingsPageState> {
   }
 
   Future<SettingsPageState> _fetchSettings() async {
-    final uid = _auth.currentUser?.uid;
-    if (uid == null) return const SettingsPageState();
+    final user = _auth.currentUser;
+    if (user == null) return const SettingsPageState();
+
+    final uid = user.uid;
+
+    // Fallback to auth display name if Firestore is slow
+    final authName = user.displayName ?? '';
 
     final doc = await _firestore.collection('users').doc(uid).get();
-    if (!doc.exists) return const SettingsPageState();
+    if (!doc.exists) {
+      return SettingsPageState(
+        fullName: authName,
+        email: user.email ?? '',
+      );
+    }
 
     final data = doc.data()!;
     return SettingsPageState(
-      fullName: data['fullName'] as String? ?? '',
+      fullName: data['fullName'] as String? ?? authName,
       email: _auth.currentUser?.email ?? '',
       tnbAccountNo: data['tnbAccountNo'] as String? ?? '',
       tariffType: data['tariffType'] as String? ?? 'domestic',
