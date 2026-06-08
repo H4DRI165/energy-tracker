@@ -23,7 +23,12 @@ class EditProfilePageState {
   static const Object _unset = Object();
 
   String get initials {
-    final parts = fullName.trim().split(' ');
+    final parts = fullName
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((p) => p.isNotEmpty)
+        .toList();
+
     if (parts.length >= 2) {
       return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
     }

@@ -19,8 +19,8 @@ class TariffCalculatorState {
   double get tier4 => tier4Kwh * 0.546;
 
   double get subtotal => tier1 + tier2 + tier3 + tier4;
-  double get minCharge => subtotal < 3.0 ? 3.0 - subtotal : 0;
-  double get total => subtotal < 3.0 ? 3.0 : subtotal;
+  double get minCharge => kwh <= 0 ? 0 : (subtotal < 3.0 ? 3.0 - subtotal : 0);
+  double get total => kwh <= 0 ? 0 : (subtotal < 3.0 ? 3.0 : subtotal);
 
   bool get hasTier4 => kwh > 600;
 

@@ -31,6 +31,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _notifier.addListener(_onStateChanged);
     unawaited(
       _notifier.init().then((_) {
+        if (!mounted) return;
+
         _fullNameController.text = _notifier.state.fullName;
         _tnbController.text = _notifier.state.tnbAccountNo;
       }),
@@ -174,7 +176,7 @@ class _Header extends StatelessWidget {
             child: Text('Edit Profile', style: AppTextStyles.titleMd),
           ),
           GestureDetector(
-            onTap: isSaving ? null : onSave,
+            onTap: (isSaving || !hasChanges) ? null : onSave,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               padding: EdgeInsets.symmetric(

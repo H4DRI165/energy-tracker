@@ -129,17 +129,18 @@ class _Header extends StatelessWidget {
       ),
       child: Row(
         children: [
-          GestureDetector(
-            onTap: () => Navigator.of(context).pop(),
-            child: Container(
-              width: 36.r,
-              height: 36.r,
-              decoration: BoxDecoration(
-                color: AppColors.surface2,
-                borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Icon(
+          Container(
+            width: 36.r,
+            height: 36.r,
+            decoration: BoxDecoration(
+              color: AppColors.surface2,
+              borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: IconButton(
+              tooltip: 'Back',
+              onPressed: () => Navigator.of(context).pop(),
+              icon: Icon(
                 Icons.arrow_back_ios_new_rounded,
                 size: 16.r,
                 color: AppColors.text2,

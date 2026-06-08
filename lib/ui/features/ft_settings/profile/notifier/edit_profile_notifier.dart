@@ -122,17 +122,16 @@ class EditProfileNotifier extends ChangeNotifier {
     _notify();
 
     try {
-      final uid = _auth.currentUser?.uid;
-      if (uid == null) throw Exception('Session expired.');
+      final user = _auth.currentUser;
+      if (user == null) throw Exception('Session expired.');
+      final uid = user.uid;
 
-      await Future.wait([
-        _firestore.collection('users').doc(uid).update({
-          'fullName': _state.fullName.trim(),
-          'tnbAccountNo': _state.tnbAccountNo.trim(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        }),
-        _auth.currentUser!.updateDisplayName(_state.fullName.trim()),
-      ]);
+      await _firestore.collection('users').doc(uid).update({
+        'fullName': _state.fullName.trim(),
+        'tnbAccountNo': _state.tnbAccountNo.trim(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      await user.updateDisplayName(_state.fullName.trim());
 
       _originalFullName = _state.fullName.trim();
       _originalTnbAccountNo = _state.tnbAccountNo.trim();

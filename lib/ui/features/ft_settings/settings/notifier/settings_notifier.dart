@@ -59,9 +59,20 @@ class SettingsNotifier extends ChangeNotifier {
   }
 
   Future<void> toggleBudgetAlerts({required bool value}) async {
+    final previous = _state.budgetAlertsEnabled;
+
     _state = _state.copyWith(budgetAlertsEnabled: value);
     _notify();
-    await _updateFirestore({'budgetAlertsEnabled': value});
+
+    final ok = await _updateFirestore({'budgetAlertsEnabled': value});
+    
+    if (!ok) {
+      _state = _state.copyWith(
+        budgetAlertsEnabled: previous,
+        errorMessage: 'Failed to update setting. Please try again.',
+      );
+      _notify();
+    }
   }
 
   Future<void> toggleBillReminders({required bool value}) async {
@@ -95,16 +106,20 @@ class SettingsNotifier extends ChangeNotifier {
     }
   }
 
-  Future<void> _updateFirestore(Map<String, dynamic> data) async {
+  Future<bool> _updateFirestore(Map<String, dynamic> data) async {
     try {
       final uid = _auth.currentUser?.uid;
-      if (uid == null) return;
+
+      if (uid == null) return false;
+
       await _firestore.collection('users').doc(uid).update({
         ...data,
         'updatedAt': FieldValue.serverTimestamp(),
       });
+
+      return true;
     } on Exception catch (_) {
-      // Silent fail for toggle updates
+      return false;
     }
   }
 

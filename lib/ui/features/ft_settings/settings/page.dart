@@ -32,16 +32,6 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        unawaited(_notifier.refresh());
-      }
-    });
-  }
-
-  @override
   void dispose() {
     _notifier
       ..removeListener(_onChanged)
@@ -132,8 +122,7 @@ class _SettingsBody extends StatelessWidget {
                 icon: '👤',
                 label: 'Edit Profile',
                 onTap: () async {
-                  await context.push(AppRoutes.editProfile);
-                  await notifier.refresh();
+                  context.go(AppRoutes.editProfile);
                 },
               ),
               SettingsListTile(
