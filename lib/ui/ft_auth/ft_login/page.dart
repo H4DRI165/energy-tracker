@@ -156,7 +156,7 @@ class _BodyContentState extends State<_BodyContent> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AppTextField(
+            AppTextFloatingLabelField(
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
               labelText: 'Email',
@@ -171,7 +171,7 @@ class _BodyContentState extends State<_BodyContent> {
               clearable: true,
             ),
             const SizedBox(height: 16),
-            AppTextField(
+            AppTextFloatingLabelField(
               controller: _passwordController,
               labelText: 'Password',
               hintText: 'Enter your password',

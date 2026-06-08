@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:energy_tracker/app.dart';
+import 'package:energy_tracker/ui/features/ft_settings/tariff_calculator/page.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -111,7 +112,63 @@ final GoRouter appRouter = GoRouter(
         child: DashboardPage(),
       ),
     ),
-
+    GoRoute(
+      path: AppRoutes.settings,
+      name: 'settings',
+      pageBuilder: (context, state) => const NoTransitionPage(
+        child: SettingsPage(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.tariffCalculator,
+      name: 'tariff_calculator',
+      pageBuilder: (context, state) => CustomTransitionPage(
+        child: const TariffCalculatorPage(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(1, 0),
+              end: Offset.zero,
+            ).animate(
+              CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeOut,
+              ),
+            ),
+            child: child,
+          );
+        },
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.editProfile,
+      name: 'edit_profile',
+      pageBuilder: (context, state) => const NoTransitionPage(
+        child: EditProfilePage(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.tariffSettings,
+      name: 'tariff_settings',
+      pageBuilder: (context, state) => const NoTransitionPage(
+        child: ComingSoonPage(
+          title: 'Tariff Type',
+          subtitle: 'Switch between Domestic and Commercial tariff.',
+          icon: Icons.home_outlined,
+        ),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.budgetSettings,
+      name: 'budget_settings',
+      pageBuilder: (context, state) => const NoTransitionPage(
+        child: ComingSoonPage(
+          title: 'Monthly Budget',
+          subtitle: 'Update your monthly spending target.',
+          icon: Icons.flag_outlined,
+        ),
+      ),
+    ),
 
     // -------------------------------WIP ROUTES--------------------------------
     GoRoute(
@@ -135,18 +192,6 @@ final GoRouter appRouter = GoRouter(
           subtitle: 'Track individual appliance usage, set limits, '
               'and get smart recommendations.',
           icon: Icons.electrical_services_rounded,
-        ),
-      ),
-    ),
-    GoRoute(
-      path: AppRoutes.settings,
-      name: 'settings',
-      pageBuilder: (context, state) => const NoTransitionPage(
-        child: ComingSoonPage(
-          title: 'Settings',
-          subtitle: 'Profile, tariff settings, notifications, '
-              'and TNB account management.',
-          icon: Icons.settings_rounded,
         ),
       ),
     ),
@@ -175,7 +220,7 @@ final GoRouter appRouter = GoRouter(
       ),
     ),
 
-    // --------------------------------ERROR ROUTES--------------------------------
+    // --------------------------------ERROR ROUTES-----------------------------
     GoRoute(
       path: AppRoutes.error,
       name: 'error',

@@ -182,7 +182,7 @@ class _BodyContentState extends State<_BodyContent> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AppTextField(
+            AppTextFloatingLabelField(
               controller: _fullNameController,
               labelText: 'Full Name',
               hintText: 'Enter your full name',
@@ -196,7 +196,7 @@ class _BodyContentState extends State<_BodyContent> {
               clearable: true,
             ),
             const SizedBox(height: 16),
-            AppTextField(
+            AppTextFloatingLabelField(
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
               labelText: 'Email Address',
@@ -211,7 +211,7 @@ class _BodyContentState extends State<_BodyContent> {
               clearable: true,
             ),
             const SizedBox(height: 16),
-            AppTextField(
+            AppTextFloatingLabelField(
               controller: _tnbAccountController,
               keyboardType: TextInputType.number,
               labelText: 'TNB Account No.',
@@ -224,9 +224,10 @@ class _BodyContentState extends State<_BodyContent> {
               ),
               errorText: state.tnbAccountError,
               clearable: true,
+              maxLength: 12,
             ),
             const SizedBox(height: 16),
-            AppTextField(
+            AppTextFloatingLabelField(
               controller: _passwordController,
               labelText: 'Password',
               hintText: 'Create a strong password',
@@ -259,7 +260,7 @@ class _BodyContentState extends State<_BodyContent> {
               ),
             ],
             const SizedBox(height: 16),
-            AppTextField(
+            AppTextFloatingLabelField(
               controller: _confirmedPasswordController,
               labelText: 'Confirm Password',
               hintText: 'Confirm your password',
