@@ -1,1 +1,2 @@
-export 'ft_profile/page.dart';
+export 'profile/page.dart';
+export 'settings/page.dart';
