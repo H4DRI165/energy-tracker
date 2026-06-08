@@ -161,9 +161,14 @@ class RegisterNotifier extends Notifier<RegisterPageState> {
 
     User? createdUser;
     try {
+      final fullName = state.fullName.trim();
+      final email = state.email.trim();
+      final tnbAccount = state.tnbAccount.trim();
+      final password = state.password;
+
       final userCredential = await _auth.createUserWithEmailAndPassword(
-        email: state.email.trim(),
-        password: state.password,
+        email: email,
+        password: password,
       );
 
       final user = userCredential.user;
@@ -172,20 +177,22 @@ class RegisterNotifier extends Notifier<RegisterPageState> {
       }
       createdUser = user;
 
-      await user.updateDisplayName(state.fullName.trim());
-      await _firestore.collection('users').doc(user.uid).set({
-        'uid': user.uid,
-        'fullName': state.fullName.trim(),
-        'email': state.email.trim(),
-        'tnbAccountNo': state.tnbAccount.trim(),
-        'tariffType': 'domestic',
-        'monthlyBudget': 150.0,
-        'onboardingCompleted': false,
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-        'photoURL': null,
-        'isGuest': false,
-      });
+      await Future.wait([
+        user.updateDisplayName(fullName),
+        _firestore.collection('users').doc(user.uid).set({
+          'uid': user.uid,
+          'fullName': fullName,
+          'email': email,
+          'tnbAccountNo': tnbAccount,
+          'tariffType': 'domestic',
+          'monthlyBudget': 150.0,
+          'onboardingCompleted': false,
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+          'photoURL': null,
+          'isGuest': false,
+        }),
+      ]);
 
       // TODO(dev): enable when want to test email verification flow
       // await user.sendEmailVerification();
@@ -196,9 +203,9 @@ class RegisterNotifier extends Notifier<RegisterPageState> {
         );
       }
     } on Exception catch (e, stack) {
-      if (ref.mounted) {
-        AppLogger.error('Registration error: ', e, stack);
+      AppLogger.error('Registration error: ', e, stack);
 
+      if (ref.mounted) {
         state = state.copyWith(
           authError: 'Registration failed. Please try again.',
         );
