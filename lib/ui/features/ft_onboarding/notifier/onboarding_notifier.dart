@@ -2,74 +2,63 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/ui/components/logger.dart';
 import 'package:energy_tracker/ui/features/ft_onboarding/notifier/onboarding_state.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class OnboardingNotifier extends ChangeNotifier {
-  OnboardingNotifier({
-    FirebaseAuth? auth,
-    FirebaseFirestore? firestore,
-  })  : _auth = auth ?? FirebaseAuth.instance,
-        _firestore = firestore ?? FirebaseFirestore.instance;
+final NotifierProvider<OnboardingNotifier, OnboardingPageState>
+    onboardingProvider =
+    NotifierProvider.autoDispose<OnboardingNotifier, OnboardingPageState>(
+  OnboardingNotifier.new,
+);
 
-  final FirebaseAuth _auth;
-  final FirebaseFirestore _firestore;
-  bool _disposed = false;
+class OnboardingNotifier extends Notifier<OnboardingPageState> {
+  FirebaseAuth get _auth => FirebaseAuth.instance;
+  FirebaseFirestore get _firestore => FirebaseFirestore.instance;
 
-  OnboardingPageState _state = const OnboardingPageState();
-  OnboardingPageState get state => _state;
-
-  void _notify() {
-    if (!_disposed) notifyListeners();
-  }
+  @override
+  OnboardingPageState build() => const OnboardingPageState();
 
   void selectTariff(TariffType tariff) {
-    _state = _state.copyWith(selectedTariff: tariff);
-    _notify();
+    state = state.copyWith(selectedTariff: tariff);
   }
 
   void nextFromTariff() {
-    _state = _state.copyWith(currentStep: 1);
-    _notify();
+    state = state.copyWith(currentStep: 1);
   }
 
   void setBudget(double budget) {
-    _state = _state.copyWith(monthlyBudget: budget);
-    _notify();
+    state = state.copyWith(monthlyBudget: budget);
   }
 
   void nextFromBudget() {
-    _state = _state.copyWith(currentStep: 2);
-    _notify();
+    state = state.copyWith(currentStep: 2);
   }
 
   void goBack() {
-    if (_state.currentStep > 0) {
-      _state = _state.copyWith(currentStep: _state.currentStep - 1);
-      _notify();
+    if (state.currentStep > 0) {
+      state = state.copyWith(currentStep: state.currentStep - 1);
     }
   }
 
-  bool get canGoBack => _state.currentStep > 0;
+  bool get canGoBack => state.currentStep > 0;
 
   Future<bool> completeOnboarding() async {
     final uid = _auth.currentUser?.uid;
 
     if (uid == null) {
-      _state = _state.copyWith(
+      state = state.copyWith(
         errorMessage: 'User session expired. Please sign in again.',
       );
-      _notify();
+
       return false;
     }
 
-    _state = _state.copyWith(isLoading: true);
-    _notify();
+    state = state.copyWith(isLoading: true);
 
     try {
       await _firestore.collection('users').doc(uid).set(
         {
-          'tariffType': _state.selectedTariff.value,
-          'monthlyBudget': _state.monthlyBudget,
+          'tariffType': state.selectedTariff.value,
+          'monthlyBudget': state.monthlyBudget,
           'onboardingCompleted': true,
           'updatedAt': FieldValue.serverTimestamp(),
         },
@@ -77,22 +66,21 @@ class OnboardingNotifier extends ChangeNotifier {
       );
       return true;
     } on FirebaseException catch (e) {
-      _state = _state.copyWith(
+      state = state.copyWith(
         errorMessage: _mapFirestoreError(e.code),
       );
-      _notify();
+
       return false;
     } on Exception catch (e, stack) {
       AppLogger.error('Onboarding unexpected exception: ', e, stack);
 
-      _state = _state.copyWith(
+      state = state.copyWith(
         errorMessage: 'Failed to save settings. Please try again.',
       );
-      _notify();
+
       return false;
     } finally {
-      _state = _state.copyWith(isLoading: false);
-      _notify();
+      state = state.copyWith(isLoading: false);
     }
   }
 
@@ -107,11 +95,5 @@ class OnboardingNotifier extends ChangeNotifier {
       default:
         return 'Failed to save settings. Please try again.';
     }
-  }
-
-  @override
-  void dispose() {
-    _disposed = true;
-    super.dispose();
   }
 }
