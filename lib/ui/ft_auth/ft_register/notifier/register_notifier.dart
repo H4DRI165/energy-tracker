@@ -126,13 +126,20 @@ class RegisterNotifier extends Notifier<RegisterPageState> {
     if (state.fullName.trim().isEmpty) {
       state = state.copyWith(fullNameError: 'Full name is required');
       hasError = true;
+    } else if (state.fullName.trim().length < 2) {
+      state = state.copyWith(fullNameError: 'Name is too short');
+      hasError = true;
     }
+
     if (state.email.trim().isEmpty || !_isValidEmail(state.email)) {
       state = state.copyWith(emailError: 'Valid email is required');
       hasError = true;
     }
-    if (state.tnbAccount.trim().isEmpty) {
-      state = state.copyWith(tnbAccountError: 'TNB Account Number is required');
+    if (state.tnbAccount.trim().isEmpty &&
+        state.tnbAccount.trim().length < 12) {
+      state = state.copyWith(
+        tnbAccountError: 'TNB Account Number must be exactly 12 digits',
+      );
       hasError = true;
     }
     if (state.password.isEmpty || state.password.length < 8) {

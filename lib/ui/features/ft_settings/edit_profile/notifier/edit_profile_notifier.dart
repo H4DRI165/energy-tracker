@@ -91,10 +91,10 @@ class EditProfileNotifier extends AsyncNotifier<EditProfilePageState> {
     }
 
     if (current.tnbAccountNo.trim().isNotEmpty &&
-        current.tnbAccountNo.trim().length < 6) {
+        current.tnbAccountNo.trim().length < 12) {
       state = state.whenData(
         (s) => s.copyWith(
-          tnbAccountError: 'TNB account number seems too short',
+          tnbAccountError: 'TNB Account Number must be exactly 12 digits',
         ),
       );
       hasError = true;
