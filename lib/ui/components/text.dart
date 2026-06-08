@@ -1,4 +1,7 @@
+import 'package:energy_tracker/theme/theme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 enum AppFormFieldBorder {
   underlined,
@@ -7,9 +10,9 @@ enum AppFormFieldBorder {
   roundedOutlined,
 }
 
-class AppTextField extends StatelessWidget {
+class AppTextFloatingLabelField extends StatelessWidget {
   // ------------------------------- CONSTRUCTORS ------------------------------
-  const AppTextField({
+  const AppTextFloatingLabelField({
     super.key,
     this.controller,
     this.focusNode,
@@ -218,6 +221,118 @@ class AppTextField extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class AppTextField extends StatelessWidget {
+  const AppTextField({
+    required this.label,
+    required this.controller,
+    required this.hintText,
+    required this.prefixIcon,
+    this.keyboardType,
+    this.textCapitalization = TextCapitalization.none,
+    this.errorText,
+    this.readOnly = false,
+    this.trailingWidget,
+    this.maxLength,
+    this.inputFormatters,
+    super.key,
+  });
+
+  final String label;
+  final TextEditingController controller;
+  final String hintText;
+  final IconData prefixIcon;
+  final TextInputType? keyboardType;
+  final TextCapitalization textCapitalization;
+  final String? errorText;
+  final bool readOnly;
+  final Widget? trailingWidget;
+  final int? maxLength;
+  final List<TextInputFormatter>? inputFormatters;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: AppTextStyles.label),
+        SizedBox(height: 6.h),
+        Container(
+          decoration: BoxDecoration(
+            color: readOnly
+                ? AppColors.surface3.withValues(alpha: 0.5)
+                : AppColors.surface2,
+            borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+            border: Border.all(
+              color: errorText != null ? AppColors.danger : AppColors.border,
+              width: errorText != null ? 1.5 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              SizedBox(width: 14.w),
+              Icon(
+                prefixIcon,
+                size: 18.r,
+                color: readOnly ? AppColors.text3 : AppColors.text2,
+              ),
+              SizedBox(width: 10.w),
+              Expanded(
+                child: TextField(
+                  controller: controller,
+                  keyboardType: keyboardType,
+                  textCapitalization: textCapitalization,
+                  readOnly: readOnly,
+                  maxLength: maxLength,
+                  inputFormatters: inputFormatters,
+                  style: AppTextStyles.bodyLg.copyWith(
+                    color: readOnly ? AppColors.text3 : AppColors.text,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: hintText,
+                    hintStyle: AppTextStyles.bodyLg.copyWith(
+                      color: AppColors.text3,
+                    ),
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    filled: false,
+                    isDense: true,
+                    contentPadding: EdgeInsets.symmetric(vertical: 14.h),
+                    counterText: '',
+                  ),
+                ),
+              ),
+              if (trailingWidget != null) ...[
+                trailingWidget!,
+                SizedBox(width: 10.w),
+              ],
+            ],
+          ),
+        ),
+        if (errorText != null) ...[
+          SizedBox(height: 4.h),
+          Row(
+            children: [
+              Icon(
+                Icons.error_outline_rounded,
+                size: 12.r,
+                color: AppColors.danger,
+              ),
+              SizedBox(width: 4.w),
+              Text(
+                errorText!,
+                style: AppTextStyles.caption.copyWith(
+                  color: AppColors.danger,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
     );
   }
 }
