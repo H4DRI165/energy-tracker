@@ -2,66 +2,60 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_state.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-class DashboardNotifier extends ChangeNotifier {
-  DashboardNotifier({
-    FirebaseAuth? auth,
-    FirebaseFirestore? firestore,
-  })  : _auth = auth ?? FirebaseAuth.instance,
-        _firestore = firestore ?? FirebaseFirestore.instance;
+final dashboardProvider =
+    AsyncNotifierProvider<DashboardNotifier, DashboardPageState>(
+  DashboardNotifier.new,
+);
 
-  final FirebaseAuth _auth;
-  final FirebaseFirestore _firestore;
+class DashboardNotifier extends AsyncNotifier<DashboardPageState> {
+  FirebaseAuth get _auth => FirebaseAuth.instance;
+  FirebaseFirestore get _firestore => FirebaseFirestore.instance;
 
-  DashboardPageState _state = const DashboardPageState();
-  DashboardPageState get state => _state;
-  bool _disposed = false;
-
-  void _notify() {
-    if (!_disposed) notifyListeners();
+  @override
+  Future<DashboardPageState> build() async {
+    final results = await Future.wait([_loadUserProfile(), _loadUsageData()]);
+    return results[0].merge(results[1]);
   }
 
-  Future<void> init() async {
-    _state = _state.copyWith(isLoading: true);
-    _notify();
-    await Future.wait([_loadUserProfile(), _loadUsageData()]);
-    _state = _state.copyWith(isLoading: false);
-    _notify();
-  }
-
-  Future<void> _loadUserProfile() async {
+  Future<DashboardPageState> _loadUserProfile() async {
     try {
-      final uid = _auth.currentUser?.uid;
-      if (uid == null) return;
+      final user = _auth.currentUser;
+      if (user == null) return const DashboardPageState();
+
+      final uid = user.uid;
+
+      // Fallback to auth display name if Firestore is slow
+      final authName = user.displayName ?? '';
+      final authFirstName = authName.split(' ').first;
 
       final doc = await _firestore.collection('users').doc(uid).get();
-      if (!doc.exists) return;
+      if (!doc.exists) return DashboardPageState(userName: authFirstName);
 
       final data = doc.data()!;
-      final fullName = data['fullName'] as String? ?? '';
-      final firstName = fullName.split(' ').first;
+      final fullName = data['fullName'] as String? ?? authName;
+      final firstName =
+          fullName.isNotEmpty ? fullName.split(' ').first : authFirstName;
       final budget = (data['monthlyBudget'] as num?)?.toDouble() ?? 150.0;
 
-      _state = _state.copyWith(
-        userName: firstName,
-        monthlyBudget: budget,
-      );
+      return DashboardPageState(userName: firstName, monthlyBudget: budget);
     } on FirebaseException catch (e) {
-      _state = _state.copyWith(
+      return DashboardPageState(
         errorMessage: 'Failed to load profile: ${e.message}',
       );
     } on Exception catch (_) {
-      _state = _state.copyWith(
+      return const DashboardPageState(
         errorMessage: 'Failed to load profile.',
       );
     }
   }
 
-  Future<void> _loadUsageData() async {
+  Future<DashboardPageState> _loadUsageData() async {
     try {
       final uid = _auth.currentUser?.uid;
-      if (uid == null) return;
+      if (uid == null) return const DashboardPageState();
 
       final now = DateTime.now();
       final monthLabel = DateFormat('MMMM yyyy').format(now);
@@ -152,7 +146,7 @@ class DashboardNotifier extends ChangeNotifier {
 
       final weeklyUsage = _buildWeeklyUsage(weekSnap.docs, now);
 
-      _state = _state.copyWith(
+      return DashboardPageState(
         monthLabel: monthLabel,
         kwhUsed: kwhUsed,
         estimatedBill: bill,
@@ -164,14 +158,26 @@ class DashboardNotifier extends ChangeNotifier {
         weeklyUsage: weeklyUsage,
       );
     } on FirebaseException catch (e) {
-      _state = _state.copyWith(
-        errorMessage: 'Failed to usage data: ${e.message}',
+      return DashboardPageState(
+        errorMessage: 'Failed to load usage data: ${e.message}',
       );
     } on Exception catch (_) {
-      _state = _state.copyWith(
-        errorMessage: 'Failed to usage data.',
+      return const DashboardPageState(
+        errorMessage: 'Failed to load usage data.',
       );
     }
+  }
+
+  Future<void> refresh() async {
+    ref.invalidateSelf();
+    await future;
+  }
+
+  String get greeting {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good morning,';
+    if (hour < 17) return 'Good afternoon,';
+    return 'Good evening,';
   }
 
   // ── TNB Domestic Tariff Calculator ─────────────────────────────────────────
@@ -219,6 +225,7 @@ class DashboardNotifier extends ChangeNotifier {
 
     // Fill last 7 days with whatever data we have, zeroing missing days
     final result = <DailyUsage>[];
+
     for (var i = 6; i >= 0; i--) {
       final day = now.subtract(Duration(days: i));
       final label = i == 0 ? 'Today' : dayLabels[day.weekday - 1];
@@ -240,21 +247,7 @@ class DashboardNotifier extends ChangeNotifier {
 
       result.add(DailyUsage(label: label, kwh: kwh, isToday: i == 0));
     }
+
     return result;
-  }
-
-  Future<void> refresh() => init();
-
-  String get greeting {
-    final hour = DateTime.now().hour;
-    if (hour < 12) return 'Good morning,';
-    if (hour < 17) return 'Good afternoon,';
-    return 'Good evening,';
-  }
-
-  @override
-  void dispose() {
-    _disposed = true;
-    super.dispose();
   }
 }

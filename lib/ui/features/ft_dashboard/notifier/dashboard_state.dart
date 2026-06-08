@@ -17,7 +17,6 @@ class DailyUsage {
 
 class DashboardPageState {
   const DashboardPageState({
-    this.isLoading = true,
     this.userName = '',
     this.monthLabel = '',
     this.estimatedBill = 0,
@@ -33,7 +32,6 @@ class DashboardPageState {
     this.errorMessage,
   });
 
-  final bool isLoading;
   final String userName;
   final String monthLabel;
   final double estimatedBill;
@@ -120,7 +118,6 @@ class DashboardPageState {
   }
 
   DashboardPageState copyWith({
-    bool? isLoading,
     String? userName,
     String? monthLabel,
     double? estimatedBill,
@@ -136,7 +133,6 @@ class DashboardPageState {
     Object? errorMessage = _unset,
   }) {
     return DashboardPageState(
-      isLoading: isLoading ?? this.isLoading,
       userName: userName ?? this.userName,
       monthLabel: monthLabel ?? this.monthLabel,
       estimatedBill: estimatedBill ?? this.estimatedBill,
@@ -156,6 +152,24 @@ class DashboardPageState {
       errorMessage: identical(errorMessage, _unset)
           ? this.errorMessage
           : errorMessage as String?,
+    );
+  }
+
+  DashboardPageState merge(DashboardPageState other) {
+    return copyWith(
+      userName: other.userName.isNotEmpty ? other.userName : null,
+      monthlyBudget: other.monthlyBudget != 150 ? other.monthlyBudget : null,
+      monthLabel: other.monthLabel.isNotEmpty ? other.monthLabel : null,
+      kwhUsed: other.kwhUsed != 0 ? other.kwhUsed : null,
+      estimatedBill: other.estimatedBill != 0 ? other.estimatedBill : null,
+      currentTier: other.currentTier != 1 ? other.currentTier : null,
+      dailyAvg: other.dailyAvg != 0 ? other.dailyAvg : null,
+      daysLeft: other.daysLeft != 0 ? other.daysLeft : null,
+      percentageVsLastMonth:
+          other.percentageVsLastMonth != 0 ? other.percentageVsLastMonth : null,
+      projectedBill: other.projectedBill ?? projectedBill,
+      weeklyUsage: other.weeklyUsage.isNotEmpty ? other.weeklyUsage : null,
+      errorMessage: other.errorMessage ?? errorMessage,
     );
   }
 }
