@@ -9,16 +9,17 @@ import 'package:energy_tracker/ui/ft_auth/ft_forgot_password/notifier/forgot_pas
 import 'package:energy_tracker/ui/routes/routes.dart';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-class ForgotPasswordPage extends StatefulWidget {
+class ForgotPasswordPage extends ConsumerStatefulWidget {
   const ForgotPasswordPage({super.key});
 
   @override
-  State<ForgotPasswordPage> createState() => _ForgotPasswordPageState();
+  ConsumerState<ForgotPasswordPage> createState() => _ForgotPasswordPageState();
 }
 
-class _ForgotPasswordPageState extends State<ForgotPasswordPage>
+class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage>
     with SingleTickerProviderStateMixin {
   late final AnimationController _animationController;
   late final Animation<double> _fadeIn;
@@ -127,82 +128,74 @@ class _Header extends StatelessWidget {
   }
 }
 
-class _BodyContent extends StatefulWidget {
+class _BodyContent extends ConsumerStatefulWidget {
   const _BodyContent();
 
   @override
-  State<_BodyContent> createState() => _BodyContentState();
+  ConsumerState<_BodyContent> createState() => _BodyContentState();
 }
 
-class _BodyContentState extends State<_BodyContent> {
+class _BodyContentState extends ConsumerState<_BodyContent> {
   final _emailController = TextEditingController();
-  late final ForgotPasswordNotifier _notifier;
 
   @override
   void initState() {
     super.initState();
-    _notifier = ForgotPasswordNotifier();
     _emailController.addListener(() {
-      _notifier.setEmail(_emailController.text);
+      ref.read(forgotPasswordProvider.notifier).setEmail(_emailController.text);
     });
   }
 
   @override
   void dispose() {
     _emailController.dispose();
-    _notifier.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _notifier,
-      builder: (context, child) {
-        final state = _notifier.state;
+    final state = ref.watch(forgotPasswordProvider);
 
-        if (state.step == ForgotPasswordStep.emailSent) {
-          return ForgotPasswordSuccess(
-            email: state.email,
-          );
-        }
+    if (state.step == ForgotPasswordStep.emailSent) {
+      return ForgotPasswordSuccess(
+        email: state.email,
+      );
+    }
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AppTextFloatingLabelField(
-              controller: _emailController,
-              keyboardType: TextInputType.emailAddress,
-              labelText: 'Email',
-              hintText: 'Enter your email',
-              border: AppFormFieldBorder.roundedOutlined,
-              prefixIcon: const Icon(
-                Icons.email_outlined,
-                size: 20,
-                color: AppColors.text3,
-              ),
-              errorText: state.emailError,
-              clearable: true,
-            ),
-            if (state.errorMessage != null) ...[
-              const SizedBox(height: 16),
-              _ErrorBanner(message: state.errorMessage!),
-            ],
-            const SizedBox(height: 28),
-            GradientButton(
-              label: 'Send Reset Link',
-              isLoading: state.isLoading,
-              onTap: _notifier.sendResetEmail,
-            ),
-            const SizedBox(height: 20),
-            const _InfoCard(
-              icon: Icons.info_outline_rounded,
-              text: "Check your spam folder if you don't "
-                  'see the email within a few minutes.',
-            ),
-          ],
-        );
-      },
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AppTextFloatingLabelField(
+          controller: _emailController,
+          keyboardType: TextInputType.emailAddress,
+          labelText: 'Email',
+          hintText: 'Enter your email',
+          border: AppFormFieldBorder.roundedOutlined,
+          prefixIcon: const Icon(
+            Icons.email_outlined,
+            size: 20,
+            color: AppColors.text3,
+          ),
+          errorText: state.emailError,
+          clearable: true,
+        ),
+        if (state.errorMessage != null) ...[
+          const SizedBox(height: 16),
+          _ErrorBanner(message: state.errorMessage!),
+        ],
+        const SizedBox(height: 28),
+        GradientButton(
+          label: 'Send Reset Link',
+          isLoading: state.isLoading,
+          onTap: ref.read(forgotPasswordProvider.notifier).sendResetEmail,
+        ),
+        const SizedBox(height: 20),
+        const _InfoCard(
+          icon: Icons.info_outline_rounded,
+          text: "Check your spam folder if you don't "
+              'see the email within a few minutes.',
+        ),
+      ],
     );
   }
 }

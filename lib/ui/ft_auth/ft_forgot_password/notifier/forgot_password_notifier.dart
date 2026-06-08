@@ -1,71 +1,65 @@
 import 'package:energy_tracker/ui/components/logger.dart';
 import 'package:energy_tracker/ui/ft_auth/ft_forgot_password/notifier/forgot_password_state.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class ForgotPasswordNotifier extends ChangeNotifier {
-  ForgotPasswordNotifier({FirebaseAuth? auth})
-      : _auth = auth ?? FirebaseAuth.instance;
+final NotifierProvider<ForgotPasswordNotifier, ForgotPasswordPageState>
+    forgotPasswordProvider = NotifierProvider.autoDispose<
+        ForgotPasswordNotifier, ForgotPasswordPageState>(
+  ForgotPasswordNotifier.new,
+);
 
-  final FirebaseAuth _auth;
-  bool _disposed = false;
+class ForgotPasswordNotifier extends Notifier<ForgotPasswordPageState> {
+  FirebaseAuth get _auth => FirebaseAuth.instance;
 
-  ForgotPasswordPageState _state = const ForgotPasswordPageState();
-  ForgotPasswordPageState get state => _state;
-
-  void _notify() {
-    if (!_disposed) notifyListeners();
-  }
+  @override
+  ForgotPasswordPageState build() => const ForgotPasswordPageState();
 
   void setEmail(String value) {
-    _state = _state.copyWith(email: value, emailError: null);
-    _notify();
+    state = state.copyWith(email: value, emailError: null);
   }
 
   Future<void> sendResetEmail() async {
-    if (_state.isLoading) return;
+    if (state.isLoading) return;
 
-    _state = _state.copyWith(emailError: null, errorMessage: null);
-    _notify();
+    state = state.copyWith(emailError: null, errorMessage: null);
 
-    final email = _state.email.trim();
+    final email = state.email.trim();
+
     if (email.isEmpty) {
-      _state = _state.copyWith(emailError: 'Email address is required');
-      _notify();
+      state = state.copyWith(emailError: 'Email address is required');
+
       return;
     }
 
     final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
     if (!emailRegex.hasMatch(email)) {
-      _state =
-          _state.copyWith(emailError: 'Please enter a valid email address');
-      _notify();
+      state = state.copyWith(emailError: 'Please enter a valid email address');
+
       return;
     }
 
-    _state = _state.copyWith(isLoading: true);
-    _notify();
+    state = state.copyWith(isLoading: true);
 
     try {
       await _auth.sendPasswordResetEmail(email: email);
-      _state = _state.copyWith(
+      state = state.copyWith(
         isLoading: false,
         step: ForgotPasswordStep.emailSent,
       );
     } on FirebaseAuthException catch (e) {
-      _state = _state.copyWith(
+      state = state.copyWith(
         isLoading: false,
         errorMessage: _mapError(e.code),
       );
     } on Exception catch (e, stack) {
       AppLogger.error('Forgot Password error: ', e, stack);
 
-      _state = _state.copyWith(
+      state = state.copyWith(
         isLoading: false,
         errorMessage: 'Something went wrong. Please try again.',
       );
     }
-    _notify();
   }
 
   String _mapError(String code) {
@@ -81,11 +75,5 @@ class ForgotPasswordNotifier extends ChangeNotifier {
       default:
         return 'Failed to send reset email. Please try again.';
     }
-  }
-
-  @override
-  void dispose() {
-    _disposed = true;
-    super.dispose();
   }
 }
