@@ -148,6 +148,15 @@ final GoRouter appRouter = GoRouter(
       ),
     ),
     GoRoute(
+      path: AppRoutes.usage,
+      name: 'usage',
+      pageBuilder: (context, state) => const NoTransitionPage(
+        child: UsagePage(),
+      ),
+    ),
+
+    // -------------------------------WIP ROUTES--------------------------------
+    GoRoute(
       path: AppRoutes.tariffSettings,
       name: 'tariff_settings',
       pageBuilder: (context, state) => const NoTransitionPage(
@@ -166,20 +175,6 @@ final GoRouter appRouter = GoRouter(
           title: 'Monthly Budget',
           subtitle: 'Update your monthly spending target.',
           icon: Icons.flag_outlined,
-        ),
-      ),
-    ),
-
-    // -------------------------------WIP ROUTES--------------------------------
-    GoRoute(
-      path: AppRoutes.usage,
-      name: 'usage',
-      pageBuilder: (context, state) => const NoTransitionPage(
-        child: ComingSoonPage(
-          title: 'Usage History',
-          subtitle: 'Interactive charts, daily/weekly/monthly filters, '
-              'and detailed consumption analytics are coming soon.',
-          icon: Icons.timeline_rounded,
         ),
       ),
     ),
