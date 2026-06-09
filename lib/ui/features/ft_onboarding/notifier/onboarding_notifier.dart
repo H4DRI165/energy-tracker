@@ -52,7 +52,10 @@ class OnboardingNotifier extends Notifier<OnboardingPageState> {
       return false;
     }
 
-    state = state.copyWith(isLoading: true);
+    state = state.copyWith(
+      isLoading: true,
+      errorMessage: null,
+    );
 
     try {
       await _firestore.collection('users').doc(uid).set(

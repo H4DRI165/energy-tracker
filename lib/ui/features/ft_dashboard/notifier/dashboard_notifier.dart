@@ -35,17 +35,19 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState> {
       if (!doc.exists) return DashboardPageState(userName: authFirstName);
 
       final data = doc.data()!;
-      final fullName = data['fullName'] as String? ?? authName;
+      final rawName = data['fullName'];
+      final fullName = rawName is String ? rawName : authName;
       final firstName =
           fullName.isNotEmpty ? fullName.split(' ').first : authFirstName;
-      final budget = (data['monthlyBudget'] as num?)?.toDouble() ?? 150.0;
+      final rawBudget = data['monthlyBudget'];
+      final budget = rawBudget is num ? rawBudget.toDouble() : 150.0;
 
       return DashboardPageState(userName: firstName, monthlyBudget: budget);
     } on FirebaseException catch (e) {
       return DashboardPageState(
         errorMessage: 'Failed to load profile: ${e.message}',
       );
-    } on Exception catch (_) {
+    } on Object catch (_) {
       return const DashboardPageState(
         errorMessage: 'Failed to load profile.',
       );

@@ -72,35 +72,7 @@ class DashboardPage extends ConsumerWidget {
                     ),
                   ),
                 ),
-                data: (state) => state.errorMessage != null
-                    ? SliverFillRemaining(
-                        hasScrollBody: false,
-                        child: Center(
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: AppDimensions.screenPaddingH,
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  state.errorMessage!,
-                                  textAlign: TextAlign.center,
-                                  style: AppTextStyles.bodyMd.copyWith(
-                                    color: AppColors.text2,
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                FilledButton(
-                                  onPressed: notifier.refresh,
-                                  child: const Text('Retry'),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      )
-                    : _BodyContent(state: state),
+                data: (state) => _BodyContent(state: state, notifier: notifier),
               ),
             ],
           ),
@@ -215,47 +187,97 @@ class _Header extends StatelessWidget {
 }
 
 class _BodyContent extends StatelessWidget {
-  const _BodyContent({
-    required this.state,
-  });
+  const _BodyContent({required this.state, required this.notifier});
 
   final DashboardPageState state;
+  final DashboardNotifier notifier;
 
   @override
   Widget build(BuildContext context) {
-    return SliverPadding(
-      padding: EdgeInsets.symmetric(
-        horizontal: AppDimensions.screenPaddingH,
-      ),
-      sliver: SliverList(
-        delegate: SliverChildListDelegate(
-          [
-            if (state.isNearBudget || state.isOverBudget) ...[
-              BudgetAlertBanner(state: state),
-              const SizedBox(height: 14),
-            ],
-            BillSummaryCard(state: state),
-            const SizedBox(height: 14),
-            StatCardsRow(state: state),
-            const SizedBox(height: 14),
-            if (!state.isNearBudget && !state.isOverBudget) ...[
-              WeeklyChart(weeklyUsage: state.weeklyUsage),
-              const SizedBox(height: 14),
-            ],
-            if (state.isNearBudget || state.isOverBudget) ...[
-              const SavingTipsCard(),
-              const SizedBox(height: 14),
-              StatCardsRow(state: state, compact: true),
-              const SizedBox(height: 14),
-            ],
-            QuickActions(
-              onAddReading: () => context.push(AppRoutes.addReading),
-              onScanBill: () => context.push(AppRoutes.scanBill),
+    return SliverMainAxisGroup(
+      slivers: [
+        if (state.errorMessage != null)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: AppDimensions.screenPaddingH,
+                vertical: 8,
+              ),
+              child: Material(
+                color: AppColors.danger.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.warning_amber_rounded,
+                        color: AppColors.danger,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          state.errorMessage!,
+                          style: AppTextStyles.bodySm.copyWith(
+                            color: AppColors.danger,
+                          ),
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: notifier.refresh,
+                        child: Text(
+                          'Retry',
+                          style: AppTextStyles.bodySm.copyWith(
+                            color: AppColors.danger,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
-            const SizedBox(height: 24),
-          ],
+          ),
+        SliverPadding(
+          padding: EdgeInsets.symmetric(
+            horizontal: AppDimensions.screenPaddingH,
+          ),
+          sliver: SliverList(
+            delegate: SliverChildListDelegate(
+              [
+                if (state.isNearBudget || state.isOverBudget) ...[
+                  BudgetAlertBanner(state: state),
+                  const SizedBox(height: 14),
+                ],
+                BillSummaryCard(state: state),
+                const SizedBox(height: 14),
+                StatCardsRow(state: state),
+                const SizedBox(height: 14),
+                if (!state.isNearBudget && !state.isOverBudget) ...[
+                  WeeklyChart(weeklyUsage: state.weeklyUsage),
+                  const SizedBox(height: 14),
+                ],
+                if (state.isNearBudget || state.isOverBudget) ...[
+                  const SavingTipsCard(),
+                  const SizedBox(height: 14),
+                  StatCardsRow(state: state, compact: true),
+                  const SizedBox(height: 14),
+                ],
+                QuickActions(
+                  onAddReading: () => context.push(AppRoutes.addReading),
+                  onScanBill: () => context.push(AppRoutes.scanBill),
+                ),
+                const SizedBox(height: 24),
+              ],
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
 }

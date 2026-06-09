@@ -37,17 +37,23 @@ class LoginNotifier extends Notifier<LoginPageState> {
     try {
       await _authService.signInWithEmail(state.email, state.password);
     } on FirebaseAuthException catch (e) {
-      state = state.copyWith(
-        authError: _mapAuthError(e.code),
-      );
+      if (ref.mounted) {
+        state = state.copyWith(
+          authError: _mapAuthError(e.code),
+        );
+      }
     } on Exception catch (e, stack) {
       AppLogger.error('Sign-In error: ', e, stack);
 
-      state = state.copyWith(
-        authError: 'Something went wrong. Please try again.',
-      );
+      if (ref.mounted) {
+        state = state.copyWith(
+          authError: 'Something went wrong. Please try again.',
+        );
+      }
     } finally {
-      state = state.copyWith(isLoading: false);
+      if (ref.mounted) {
+        state = state.copyWith(isLoading: false);
+      }
     }
   }
 

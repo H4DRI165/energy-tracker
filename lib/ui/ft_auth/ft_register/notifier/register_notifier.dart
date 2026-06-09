@@ -135,8 +135,8 @@ class RegisterNotifier extends Notifier<RegisterPageState> {
       state = state.copyWith(emailError: 'Valid email is required');
       hasError = true;
     }
-    if (state.tnbAccount.trim().isEmpty &&
-        state.tnbAccount.trim().length < 12) {
+    final tnbAccount = state.tnbAccount.trim();
+    if (tnbAccount.length != 12) {
       state = state.copyWith(
         tnbAccountError: 'TNB Account Number must be exactly 12 digits',
       );
@@ -159,6 +159,8 @@ class RegisterNotifier extends Notifier<RegisterPageState> {
 
     state = state.copyWith(isLoading: true);
 
+    var shouldRollback = false;
+    var userDocWritten = false;
     User? createdUser;
     try {
       final fullName = state.fullName.trim();
@@ -176,23 +178,24 @@ class RegisterNotifier extends Notifier<RegisterPageState> {
         throw Exception('Registration failed. Please try again.');
       }
       createdUser = user;
+      shouldRollback = true;
 
-      await Future.wait([
-        user.updateDisplayName(fullName),
-        _firestore.collection('users').doc(user.uid).set({
-          'uid': user.uid,
-          'fullName': fullName,
-          'email': email,
-          'tnbAccountNo': tnbAccount,
-          'tariffType': 'domestic',
-          'monthlyBudget': 150.0,
-          'onboardingCompleted': false,
-          'createdAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-          'photoURL': null,
-          'isGuest': false,
-        }),
-      ]);
+      await user.updateDisplayName(fullName);
+      await _firestore.collection('users').doc(user.uid).set({
+        'uid': user.uid,
+        'fullName': fullName,
+        'email': email,
+        'tnbAccountNo': tnbAccount,
+        'tariffType': 'domestic',
+        'monthlyBudget': 150.0,
+        'onboardingCompleted': false,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+        'photoURL': null,
+        'isGuest': false,
+      });
+      userDocWritten = true;
+      shouldRollback = false;
 
       // TODO(dev): enable when want to test email verification flow
       // await user.sendEmailVerification();
@@ -211,14 +214,17 @@ class RegisterNotifier extends Notifier<RegisterPageState> {
         );
       }
     } finally {
-      if (ref.mounted) {
-        if (state.authError != null && createdUser != null) {
-          try {
-            await createdUser.delete();
-          } on Exception catch (_) {}
-          await _auth.signOut();
+      if (shouldRollback && createdUser != null) {
+        if (userDocWritten) {
+          await _firestore.collection('users').doc(createdUser.uid).delete();
         }
+        try {
+          await createdUser.delete();
+        } on Exception catch (_) {}
+        await _auth.signOut();
+      }
 
+      if (ref.mounted) {
         state = state.copyWith(isLoading: false);
       }
     }

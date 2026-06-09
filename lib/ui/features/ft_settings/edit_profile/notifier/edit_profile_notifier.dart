@@ -18,14 +18,24 @@ class EditProfileNotifier extends AsyncNotifier<EditProfilePageState> {
 
   @override
   Future<EditProfilePageState> build() async {
-    final uid = _auth.currentUser?.uid;
-    if (uid == null) return const EditProfilePageState(isLoading: false);
+    final user = _auth.currentUser;
+    if (user == null) return const EditProfilePageState(isLoading: false);
+
+    final uid = user.uid;
+    final authName = user.displayName ?? '';
 
     final doc = await _firestore.collection('users').doc(uid).get();
-    if (!doc.exists) return const EditProfilePageState(isLoading: false);
+    if (!doc.exists) {
+      _originalFullName = authName;
+      return EditProfilePageState(
+        isLoading: false,
+        fullName: authName,
+        email: user.email ?? '',
+      );
+    }
 
     final data = doc.data()!;
-    final fullName = data['fullName'] as String? ?? '';
+    final fullName = data['fullName'] as String? ?? authName;
     final tnbAccountNo = data['tnbAccountNo'] as String? ?? '';
 
     _originalFullName = fullName;
@@ -34,7 +44,7 @@ class EditProfileNotifier extends AsyncNotifier<EditProfilePageState> {
     return EditProfilePageState(
       isLoading: false,
       fullName: fullName,
-      email: _auth.currentUser?.email ?? '',
+      email: user.email ?? '',
       tnbAccountNo: tnbAccountNo,
     );
   }
@@ -115,14 +125,15 @@ class EditProfileNotifier extends AsyncNotifier<EditProfilePageState> {
       final user = _auth.currentUser;
       if (user == null) throw Exception('Session expired.');
 
-      await Future.wait([
-        _firestore.collection('users').doc(user.uid).update({
+      await _firestore.collection('users').doc(user.uid).set(
+        {
           'fullName': current.fullName.trim(),
           'tnbAccountNo': current.tnbAccountNo.trim(),
           'updatedAt': FieldValue.serverTimestamp(),
-        }),
-        user.updateDisplayName(current.fullName.trim()),
-      ]);
+        },
+        SetOptions(merge: true),
+      );
+      await user.updateDisplayName(current.fullName.trim());
 
       _originalFullName = current.fullName.trim();
       _originalTnbAccountNo = current.tnbAccountNo.trim();

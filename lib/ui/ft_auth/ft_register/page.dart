@@ -217,7 +217,7 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
           controller: _tnbAccountController,
           keyboardType: TextInputType.number,
           labelText: 'TNB Account No.',
-          hintText: 'e.g. 1234567890',
+          hintText: 'e.g. 123456789012',
           border: AppFormFieldBorder.roundedOutlined,
           prefixIcon: const Icon(
             Icons.receipt_long_outlined,

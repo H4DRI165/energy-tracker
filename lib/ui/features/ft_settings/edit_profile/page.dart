@@ -79,8 +79,21 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                 loading: () => const Center(
                   child: CircularProgressIndicator(color: AppColors.accent),
                 ),
-                error: (e, _) => Center(
-                  child: Text('$e', style: AppTextStyles.bodyMd),
+                error: (_, __) => Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Failed to load profile',
+                        style: AppTextStyles.bodyMd,
+                      ),
+                      SizedBox(height: 12.h),
+                      TextButton(
+                        onPressed: () => ref.invalidate(editProfileProvider),
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
                 ),
                 data: (state) => _BodyContent(
                   state: state,

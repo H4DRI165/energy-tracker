@@ -93,10 +93,13 @@ class SettingsNotifier extends AsyncNotifier<SettingsPageState> {
 
       if (uid == null) return false;
 
-      await _firestore.collection('users').doc(uid).update({
-        ...data,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+      await _firestore.collection('users').doc(uid).set(
+        {
+          ...data,
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true),
+      );
 
       return true;
     } on Exception catch (_) {

@@ -16,7 +16,7 @@ class ForgotPasswordNotifier extends Notifier<ForgotPasswordPageState> {
   ForgotPasswordPageState build() => const ForgotPasswordPageState();
 
   void setEmail(String value) {
-    state = state.copyWith(email: value, emailError: null);
+    state = state.copyWith(email: value, emailError: null, errorMessage: null);
   }
 
   Future<void> sendResetEmail() async {
@@ -43,17 +43,24 @@ class ForgotPasswordNotifier extends Notifier<ForgotPasswordPageState> {
 
     try {
       await _auth.sendPasswordResetEmail(email: email);
+
+      if (!ref.mounted) return;
+
       state = state.copyWith(
         isLoading: false,
         step: ForgotPasswordStep.emailSent,
       );
     } on FirebaseAuthException catch (e) {
+      if (!ref.mounted) return;
+
       state = state.copyWith(
         isLoading: false,
         errorMessage: _mapError(e.code),
       );
     } on Exception catch (e, stack) {
       AppLogger.error('Forgot Password error: ', e, stack);
+
+      if (!ref.mounted) return;
 
       state = state.copyWith(
         isLoading: false,
