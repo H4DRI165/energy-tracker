@@ -67,17 +67,10 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
         return date.year == now.year && date.month == now.month;
       }).toList();
 
-      double currentKwh = 0;
-      if (currentMonthReadings.length >= 2) {
-        final first =
-            (currentMonthReadings.first.data()['reading'] as num).toDouble();
-        final last =
-            (currentMonthReadings.last.data()['reading'] as num).toDouble();
-        currentKwh = last - first;
-      } else if (currentMonthReadings.isNotEmpty) {
-        currentKwh =
-            (currentMonthReadings.last.data()['kwh'] as num?)?.toDouble() ?? 0;
-      }
+      final currentKwh = currentMonthReadings.fold<double>(0, (total, doc) {
+        final kwh = (doc.data()['kwh'] as num?)?.toDouble() ?? 0;
+        return total + kwh;
+      });
 
       final currentBill = _calculateBill(currentKwh);
       final currentMonthLabel = DateFormat('MMMM yyyy').format(now);
@@ -99,8 +92,12 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
   }
 
   Future<void> refresh() async {
+    final selectedFilter = state.asData?.value.filter ?? UsageFilter.monthly;
     state = const AsyncLoading();
-    state = await AsyncValue.guard(_fetchUsageData);
+    state = await AsyncValue.guard(() async {
+      final fresh = await _fetchUsageData();
+      return fresh.copyWith(filter: selectedFilter);
+    });
   }
 
   List<MonthlyUsage> _buildMonthlyData(

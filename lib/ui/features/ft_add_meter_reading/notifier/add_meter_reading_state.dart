@@ -59,7 +59,8 @@ class AddReadingPageState {
   }
 
   bool get hasUsage => usageKwh > 0;
-  bool get canSave => currentReading > 0 && readingError == null;
+  bool get canSave =>
+      !isLoadingLastReading && currentReading > 0 && readingError == null;
 
   String get formattedLastReadingDate {
     if (lastReadingDate == null) return 'No previous reading';

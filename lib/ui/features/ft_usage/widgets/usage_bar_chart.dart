@@ -69,8 +69,11 @@ class UsageBarChart extends StatelessWidget {
                 children: data.asMap().entries.map((entry) {
                   final item = entry.value;
                   final isCurrentMonth = entry.key == data.length - 1;
-                  final heightFraction =
-                      maxKwh > 0 ? (item.kwh / maxKwh).clamp(0.05, 1.0) : 0.05;
+                  final heightFraction = maxKwh > 0
+                      ? (item.kwh <= 0
+                          ? 0.0
+                          : (item.kwh / maxKwh).clamp(0.05, 1.0))
+                      : 0.0;
                   final isHighest = item.kwh == maxKwh && item.kwh > 0;
 
                   return Expanded(
