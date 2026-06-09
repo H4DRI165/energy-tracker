@@ -67,7 +67,7 @@ final GoRouter appRouter = GoRouter(
       ),
     ),
 
-    // ----------------------------AUTH ROUTES------------------------------
+    // ----------------------------AUTH ROUTES----------------------------------
     GoRoute(
       path: AppRoutes.login,
       name: 'login',
@@ -90,13 +90,6 @@ final GoRouter appRouter = GoRouter(
       ),
     ),
     GoRoute(
-      path: AppRoutes.onboarding,
-      name: 'onboarding',
-      pageBuilder: (context, state) => const NoTransitionPage(
-        child: OnboardingPage(),
-      ),
-    ),
-    GoRoute(
       path: AppRoutes.forgotPassword,
       name: 'forgot_password',
       pageBuilder: (context, state) => const NoTransitionPage(
@@ -105,6 +98,13 @@ final GoRouter appRouter = GoRouter(
     ),
 
     // ----------------------------FEATURES ROUTES------------------------------
+    GoRoute(
+      path: AppRoutes.onboarding,
+      name: 'onboarding',
+      pageBuilder: (context, state) => const NoTransitionPage(
+        child: OnboardingPage(),
+      ),
+    ),
     GoRoute(
       path: AppRoutes.dashboard,
       name: 'dashboard',
@@ -154,6 +154,13 @@ final GoRouter appRouter = GoRouter(
         child: UsagePage(),
       ),
     ),
+    GoRoute(
+      path: AppRoutes.addReading,
+      name: 'add_reading',
+      pageBuilder: (context, state) => const NoTransitionPage(
+        child: AddReadingPage(),
+      ),
+    ),
 
     // -------------------------------WIP ROUTES--------------------------------
     GoRoute(
@@ -187,18 +194,6 @@ final GoRouter appRouter = GoRouter(
           subtitle: 'Track individual appliance usage, set limits, '
               'and get smart recommendations.',
           icon: Icons.electrical_services_rounded,
-        ),
-      ),
-    ),
-    GoRoute(
-      path: AppRoutes.addReading,
-      name: 'add_reading',
-      pageBuilder: (context, state) => const NoTransitionPage(
-        child: ComingSoonPage(
-          title: 'Add Meter Reading',
-          subtitle:
-              'Manual entry and bill scanner with ML Kit OCR coming soon.',
-          icon: Icons.add_circle_outline_rounded,
         ),
       ),
     ),
