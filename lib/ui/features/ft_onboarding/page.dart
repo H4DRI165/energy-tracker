@@ -4,56 +4,54 @@ import 'package:energy_tracker/app.dart';
 import 'package:energy_tracker/ui/features/ft_onboarding/notifier/onboarding_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_onboarding/notifier/onboarding_state.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class OnboardingPage extends StatefulWidget {
+class OnboardingPage extends ConsumerStatefulWidget {
   const OnboardingPage({super.key});
 
   @override
-  State<OnboardingPage> createState() => _OnboardingPageState();
+  ConsumerState<OnboardingPage> createState() => _OnboardingPageState();
 }
 
-class _OnboardingPageState extends State<OnboardingPage> {
-  late final OnboardingNotifier _notifier;
+class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   late final PageController _pageController;
 
   @override
   void initState() {
     super.initState();
-    _notifier = OnboardingNotifier();
     _pageController = PageController();
-    _notifier.addListener(_onStateChanged);
-  }
-
-  void _onStateChanged() {
-    if (_pageController.hasClients) {
-      unawaited(
-        _pageController.animateToPage(
-          _notifier.state.currentStep,
-          duration: const Duration(milliseconds: 400),
-          curve: Curves.easeInOut,
-        ),
-      );
-    }
-    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
-    _notifier
-      ..removeListener(_onStateChanged)
-      ..dispose();
     _pageController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final state = _notifier.state;
+    final state = ref.watch(onboardingProvider);
+    final notifier = ref.read(onboardingProvider.notifier);
+
+    ref.listen(onboardingProvider, (previous, next) {
+      if (previous?.currentStep != next.currentStep &&
+          _pageController.hasClients) {
+        unawaited(
+          _pageController.animateToPage(
+            next.currentStep,
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeInOut,
+          ),
+        );
+      }
+    });
 
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop && _notifier.canGoBack) _notifier.goBack();
+        if (!didPop && notifier.canGoBack) {
+          notifier.goBack();
+        }
       },
       child: Scaffold(
         backgroundColor: AppColors.bg,
@@ -62,7 +60,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
             children: [
               _OnboardingHeader(
                 state: state,
-                onBack: _notifier.canGoBack ? _notifier.goBack : null,
+                onBack: notifier.canGoBack ? notifier.goBack : null,
               ),
               Expanded(
                 child: PageView(
@@ -71,15 +69,15 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   children: [
                     _StepTariff(
                       state: state,
-                      notifier: _notifier,
+                      notifier: notifier,
                     ),
                     _StepBudget(
                       state: state,
-                      notifier: _notifier,
+                      notifier: notifier,
                     ),
                     _StepComplete(
                       state: state,
-                      notifier: _notifier,
+                      notifier: notifier,
                       onStartTracking: _handleComplete,
                     ),
                   ],
@@ -93,7 +91,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   Future<void> _handleComplete() async {
-    await _notifier.completeOnboarding();
+    await ref.read(onboardingProvider.notifier).completeOnboarding();
+
+    if (!mounted) return;
   }
 }
 

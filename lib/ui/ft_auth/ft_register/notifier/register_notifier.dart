@@ -4,59 +4,71 @@ import 'package:energy_tracker/ui/components/logger.dart';
 import 'package:energy_tracker/ui/ft_auth/ft_register/notifier/register_state.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class RegisterNotifier extends ChangeNotifier {
-  RegisterNotifier({
-    FirebaseAuth? auth,
-    FirebaseFirestore? firestore,
-  })  : _auth = auth ?? FirebaseAuth.instance,
-        _firestore = firestore ?? FirebaseFirestore.instance;
+final NotifierProvider<RegisterNotifier, RegisterPageState> registerProvider =
+    NotifierProvider.autoDispose<RegisterNotifier, RegisterPageState>(
+  RegisterNotifier.new,
+);
 
-  final FirebaseAuth _auth;
-  final FirebaseFirestore _firestore;
-  bool _disposed = false;
+class RegisterNotifier extends Notifier<RegisterPageState> {
+  FirebaseAuth get _auth => FirebaseAuth.instance;
+  FirebaseFirestore get _firestore => FirebaseFirestore.instance;
 
-  RegisterPageState _state = RegisterPageState();
-  RegisterPageState get state => _state;
-
-  void _notify() {
-    if (!_disposed) notifyListeners();
-  }
+  @override
+  RegisterPageState build() => RegisterPageState();
 
   void setFullName(String fullName) {
-    _state = _state.copyWith(fullName: fullName, fullNameError: null);
-    _notify();
+    state = state.copyWith(fullName: fullName, fullNameError: null);
   }
 
   void setEmail(String value) {
-    _state = _state.copyWith(email: value, emailError: null);
-    _notify();
+    state = state.copyWith(email: value, emailError: null);
   }
 
   void setTnbAccount(String tnbAccount) {
-    _state = _state.copyWith(tnbAccount: tnbAccount, tnbAccountError: null);
-    _notify();
+    state = state.copyWith(tnbAccount: tnbAccount, tnbAccountError: null);
   }
 
   void setPassword(String password) {
-    _state = _state.copyWith(password: password, passwordError: null);
+    state = state.copyWith(password: password, passwordError: null);
     _evaluatePasswordStrength(password);
     _validateConfirmPassword();
-    _notify();
   }
 
   void setConfirmedPassword(String confirmedPassword) {
-    _state = _state.copyWith(
+    state = state.copyWith(
       confirmedPassword: confirmedPassword,
       confirmedPasswordError: null,
     );
     _validateConfirmPassword();
-    _notify();
+  }
+
+  void _validateConfirmPassword() {
+    final password = state.password;
+    final confirm = state.confirmedPassword;
+
+    String? error;
+    if (confirm.isNotEmpty && password != confirm) {
+      error = 'Passwords do not match';
+    }
+
+    state = state.copyWith(confirmedPasswordError: error);
+  }
+
+  void toggleObscurePassword() {
+    state = state.copyWith(obscurePassword: !state.obscurePassword);
+  }
+
+  void toggleObscureConfirmedPassword() {
+    state = state.copyWith(
+      obscureConfirmedPassword: !state.obscureConfirmedPassword,
+    );
   }
 
   void _evaluatePasswordStrength(String password) {
     if (password.isEmpty) {
-      _state = _state.copyWith(
+      state = state.copyWith(
         passwordStrength: 0,
         strengthLabel: '',
         strengthColor: AppColors.text3,
@@ -88,35 +100,11 @@ class RegisterNotifier extends ChangeNotifier {
         color = AppColors.accent;
     }
 
-    _state = _state.copyWith(
+    state = state.copyWith(
       passwordStrength: score,
       strengthLabel: label,
       strengthColor: color,
     );
-  }
-
-  void _validateConfirmPassword() {
-    final password = _state.password;
-    final confirm = _state.confirmedPassword;
-
-    String? error;
-    if (confirm.isNotEmpty && password != confirm) {
-      error = 'Passwords do not match';
-    }
-
-    _state = _state.copyWith(confirmedPasswordError: error);
-  }
-
-  void toggleObscurePassword() {
-    _state = _state.copyWith(obscurePassword: !_state.obscurePassword);
-    _notify();
-  }
-
-  void toggleObscureConfirmedPassword() {
-    _state = _state.copyWith(
-      obscureConfirmedPassword: !_state.obscureConfirmedPassword,
-    );
-    _notify();
   }
 
   bool _isValidEmail(String email) {
@@ -124,7 +112,7 @@ class RegisterNotifier extends ChangeNotifier {
   }
 
   Future<void> register() async {
-    _state = _state.copyWith(
+    state = state.copyWith(
       fullNameError: null,
       emailError: null,
       tnbAccountError: null,
@@ -132,48 +120,57 @@ class RegisterNotifier extends ChangeNotifier {
       confirmedPasswordError: null,
       authError: null,
     );
-    _notify();
 
     var hasError = false;
 
-    if (_state.fullName.trim().isEmpty) {
-      _state = _state.copyWith(fullNameError: 'Full name is required');
+    if (state.fullName.trim().isEmpty) {
+      state = state.copyWith(fullNameError: 'Full name is required');
+      hasError = true;
+    } else if (state.fullName.trim().length < 2) {
+      state = state.copyWith(fullNameError: 'Name is too short');
       hasError = true;
     }
-    if (_state.email.trim().isEmpty || !_isValidEmail(_state.email)) {
-      _state = _state.copyWith(emailError: 'Valid email is required');
+
+    if (state.email.trim().isEmpty || !_isValidEmail(state.email)) {
+      state = state.copyWith(emailError: 'Valid email is required');
       hasError = true;
     }
-    if (_state.tnbAccount.trim().isEmpty) {
-      _state =
-          _state.copyWith(tnbAccountError: 'TNB Account Number is required');
+    final tnbAccount = state.tnbAccount.trim();
+    if (tnbAccount.length != 12) {
+      state = state.copyWith(
+        tnbAccountError: 'TNB Account Number must be exactly 12 digits',
+      );
       hasError = true;
     }
-    if (_state.password.isEmpty || _state.password.length < 8) {
-      _state = _state.copyWith(
+    if (state.password.isEmpty || state.password.length < 8) {
+      state = state.copyWith(
         passwordError: 'Password must be at least 8 characters',
       );
       hasError = true;
     }
-    if (_state.confirmedPassword != _state.password) {
-      _state =
-          _state.copyWith(confirmedPasswordError: 'Passwords do not match');
+    if (state.confirmedPassword != state.password) {
+      state = state.copyWith(confirmedPasswordError: 'Passwords do not match');
       hasError = true;
     }
 
     if (hasError) {
-      _notify();
       return;
     }
 
-    _state = _state.copyWith(isLoading: true);
-    _notify();
+    state = state.copyWith(isLoading: true);
 
+    var shouldRollback = false;
+    var userDocWritten = false;
     User? createdUser;
     try {
+      final fullName = state.fullName.trim();
+      final email = state.email.trim();
+      final tnbAccount = state.tnbAccount.trim();
+      final password = state.password;
+
       final userCredential = await _auth.createUserWithEmailAndPassword(
-        email: _state.email.trim(),
-        password: _state.password,
+        email: email,
+        password: password,
       );
 
       final user = userCredential.user;
@@ -181,13 +178,14 @@ class RegisterNotifier extends ChangeNotifier {
         throw Exception('Registration failed. Please try again.');
       }
       createdUser = user;
+      shouldRollback = true;
 
-      await user.updateDisplayName(_state.fullName.trim());
+      await user.updateDisplayName(fullName);
       await _firestore.collection('users').doc(user.uid).set({
         'uid': user.uid,
-        'fullName': _state.fullName.trim(),
-        'email': _state.email.trim(),
-        'tnbAccountNo': _state.tnbAccount.trim(),
+        'fullName': fullName,
+        'email': email,
+        'tnbAccountNo': tnbAccount,
         'tariffType': 'domestic',
         'monthlyBudget': 150.0,
         'onboardingCompleted': false,
@@ -196,29 +194,39 @@ class RegisterNotifier extends ChangeNotifier {
         'photoURL': null,
         'isGuest': false,
       });
+      userDocWritten = true;
+      shouldRollback = false;
 
       // TODO(dev): enable when want to test email verification flow
       // await user.sendEmailVerification();
     } on FirebaseAuthException catch (e) {
-      _state = _state.copyWith(
-        authError: _getFirebaseErrorMessage(e.code),
-      );
+      if (ref.mounted) {
+        state = state.copyWith(
+          authError: _getFirebaseErrorMessage(e.code),
+        );
+      }
     } on Exception catch (e, stack) {
       AppLogger.error('Registration error: ', e, stack);
 
-      _state = _state.copyWith(
-        authError: 'Registration failed. Please try again.',
-      );
+      if (ref.mounted) {
+        state = state.copyWith(
+          authError: 'Registration failed. Please try again.',
+        );
+      }
     } finally {
-      if (_state.authError != null && createdUser != null) {
+      if (shouldRollback && createdUser != null) {
+        if (userDocWritten) {
+          await _firestore.collection('users').doc(createdUser.uid).delete();
+        }
         try {
           await createdUser.delete();
         } on Exception catch (_) {}
         await _auth.signOut();
       }
 
-      _state = _state.copyWith(isLoading: false);
-      _notify();
+      if (ref.mounted) {
+        state = state.copyWith(isLoading: false);
+      }
     }
   }
 
@@ -239,11 +247,5 @@ class RegisterNotifier extends ChangeNotifier {
       default:
         return 'Registration failed. Please try again.';
     }
-  }
-
-  @override
-  void dispose() {
-    _disposed = true;
-    super.dispose();
   }
 }

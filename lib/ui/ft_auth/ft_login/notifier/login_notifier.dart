@@ -2,83 +2,96 @@ import 'package:energy_tracker/services/auth_service.dart';
 import 'package:energy_tracker/ui/components/logger.dart';
 import 'package:energy_tracker/ui/ft_auth/ft_login/notifier/login_state.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class LoginNotifier extends ChangeNotifier {
-  LoginPageState _state = const LoginPageState();
-  LoginPageState get state => _state;
+final NotifierProvider<LoginNotifier, LoginPageState> loginProvider =
+    NotifierProvider.autoDispose<LoginNotifier, LoginPageState>(
+  LoginNotifier.new,
+);
 
-  final _authService = AuthService();
-  bool _disposed = false;
+class LoginNotifier extends Notifier<LoginPageState> {
+  AuthService get _authService => AuthService();
 
-  void _notify() {
-    if (!_disposed) notifyListeners();
-  }
+  @override
+  LoginPageState build() => const LoginPageState();
 
   void setEmail(String value) {
-    _state = _state.copyWith(email: value, emailError: null);
-    _notify();
+    state = state.copyWith(email: value, emailError: null);
   }
 
   void setPassword(String value) {
-    _state = _state.copyWith(password: value, passwordError: null);
-    _notify();
+    state = state.copyWith(password: value, passwordError: null);
   }
 
   void toggleObscure() {
-    _state = _state.copyWith(obscurePassword: !_state.obscurePassword);
-    _notify();
+    state = state.copyWith(obscurePassword: !state.obscurePassword);
   }
 
   Future<void> login() async {
-    if (_state.isLoading) return;
+    if (state.isLoading) return;
 
     if (!_validate()) return;
 
-    _state = _state.copyWith(isLoading: true, authError: null);
-    _notify();
+    state = state.copyWith(isLoading: true, authError: null);
 
     try {
-      await _authService.signInWithEmail(_state.email, _state.password);
+      await _authService.signInWithEmail(state.email, state.password);
     } on FirebaseAuthException catch (e) {
-      _state = _state.copyWith(
-        authError: _mapAuthError(e.code),
-      );
+      if (ref.mounted) {
+        state = state.copyWith(
+          authError: _mapAuthError(e.code),
+        );
+      }
     } on Exception catch (e, stack) {
       AppLogger.error('Sign-In error: ', e, stack);
 
-      _state = _state.copyWith(
-        authError: 'Something went wrong. Please try again.',
-      );
+      if (ref.mounted) {
+        state = state.copyWith(
+          authError: 'Something went wrong. Please try again.',
+        );
+      }
     } finally {
-      _state = _state.copyWith(isLoading: false);
-      _notify();
+      if (ref.mounted) {
+        state = state.copyWith(isLoading: false);
+      }
     }
   }
 
   Future<void> loginWithGoogle() async {
-    if (_state.isLoading) return;
+    if (state.isLoading) return;
 
-    _state = _state.copyWith(isLoading: true, authError: null);
-    _notify();
+    state = state.copyWith(isLoading: true, authError: null);
 
     try {
       await _authService.signInWithGoogle();
     } on FirebaseAuthException catch (e) {
-      _state = _state.copyWith(
+      state = state.copyWith(
         authError: _mapAuthError(e.code),
       );
     } on Exception catch (e, stack) {
       AppLogger.error('Google Sign-In failed: ', e, stack);
 
-      _state = _state.copyWith(
+      state = state.copyWith(
         authError: 'Failed to sign in with Google. Please try again.',
       );
     } finally {
-      _state = _state.copyWith(isLoading: false);
-      _notify();
+      state = state.copyWith(isLoading: false);
     }
+  }
+
+  bool _validate() {
+    String? emailError;
+    String? passwordError;
+
+    if (state.email.isEmpty) emailError = 'Email is required';
+    if (state.password.isEmpty) passwordError = 'Password is required';
+
+    state = state.copyWith(
+      emailError: emailError,
+      passwordError: passwordError,
+    );
+
+    return emailError == null && passwordError == null;
   }
 
   String _mapAuthError(String code) {
@@ -98,26 +111,5 @@ class LoginNotifier extends ChangeNotifier {
       default:
         return 'Login failed. Please try again.';
     }
-  }
-
-  bool _validate() {
-    String? emailError;
-    String? passwordError;
-
-    if (_state.email.isEmpty) emailError = 'Email is required';
-    if (_state.password.isEmpty) passwordError = 'Password is required';
-
-    _state = _state.copyWith(
-      emailError: emailError,
-      passwordError: passwordError,
-    );
-    _notify();
-    return emailError == null && passwordError == null;
-  }
-
-  @override
-  void dispose() {
-    _disposed = true;
-    super.dispose();
   }
 }

@@ -43,6 +43,7 @@ class AppTextFloatingLabelField extends StatelessWidget {
     this.obscureText = false,
     this.onChanged,
     this.onSubmitted,
+    this.inputFormatters,
     this.enabled = true,
     this.clearable = false,
     this.readonly = false,
@@ -79,6 +80,7 @@ class AppTextFloatingLabelField extends StatelessWidget {
   final bool obscureText;
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
+  final List<TextInputFormatter>? inputFormatters;
   final bool enabled;
   final bool clearable;
   final bool readonly;
@@ -214,6 +216,7 @@ class AppTextFloatingLabelField extends StatelessWidget {
                 obscureText: obscureText,
                 onChanged: onChanged,
                 onSubmitted: onSubmitted,
+                inputFormatters: inputFormatters,
                 enabled: enabled,
                 readOnly: readonly,
               ),

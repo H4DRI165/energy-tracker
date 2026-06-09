@@ -3,16 +3,18 @@ import 'dart:async';
 import 'package:energy_tracker/app.dart';
 import 'package:energy_tracker/ui/ft_auth/ft_register/notifier/register_notifier.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-class RegisterPage extends StatefulWidget {
+class RegisterPage extends ConsumerStatefulWidget {
   const RegisterPage({super.key});
 
   @override
-  State<RegisterPage> createState() => _RegisterPageState();
+  ConsumerState<RegisterPage> createState() => _RegisterPageState();
 }
 
-class _RegisterPageState extends State<RegisterPage>
+class _RegisterPageState extends ConsumerState<RegisterPage>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _fadeIn;
@@ -123,41 +125,40 @@ class _Header extends StatelessWidget {
   }
 }
 
-class _BodyContent extends StatefulWidget {
+class _BodyContent extends ConsumerStatefulWidget {
   const _BodyContent();
 
   @override
-  State<_BodyContent> createState() => _BodyContentState();
+  ConsumerState<_BodyContent> createState() => _BodyContentState();
 }
 
-class _BodyContentState extends State<_BodyContent> {
+class _BodyContentState extends ConsumerState<_BodyContent> {
   final _fullNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _tnbAccountController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmedPasswordController = TextEditingController();
 
-  late final RegisterNotifier _notifier;
-
   @override
   void initState() {
     super.initState();
-    _notifier = RegisterNotifier();
+
+    final state = ref.read(registerProvider.notifier);
 
     _fullNameController.addListener(() {
-      _notifier.setFullName(_fullNameController.text);
+      state.setFullName(_fullNameController.text);
     });
     _emailController.addListener(() {
-      _notifier.setEmail(_emailController.text);
+      state.setEmail(_emailController.text);
     });
     _tnbAccountController.addListener(() {
-      _notifier.setTnbAccount(_tnbAccountController.text);
+      state.setTnbAccount(_tnbAccountController.text);
     });
     _passwordController.addListener(() {
-      _notifier.setPassword(_passwordController.text);
+      state.setPassword(_passwordController.text);
     });
     _confirmedPasswordController.addListener(() {
-      _notifier.setConfirmedPassword(_confirmedPasswordController.text);
+      state.setConfirmedPassword(_confirmedPasswordController.text);
     });
   }
 
@@ -168,203 +169,211 @@ class _BodyContentState extends State<_BodyContent> {
     _tnbAccountController.dispose();
     _passwordController.dispose();
     _confirmedPasswordController.dispose();
-    _notifier.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _notifier,
-      builder: (context, child) {
-        final state = _notifier.state;
+    final state = ref.watch(registerProvider);
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AppTextFloatingLabelField(
-              controller: _fullNameController,
-              labelText: 'Full Name',
-              hintText: 'Enter your full name',
-              border: AppFormFieldBorder.roundedOutlined,
-              prefixIcon: const Icon(
-                Icons.person_outline,
-                size: 20,
-                color: AppColors.text3,
-              ),
-              errorText: state.fullNameError,
-              clearable: true,
-            ),
-            const SizedBox(height: 16),
-            AppTextFloatingLabelField(
-              controller: _emailController,
-              keyboardType: TextInputType.emailAddress,
-              labelText: 'Email Address',
-              hintText: 'Enter your email',
-              border: AppFormFieldBorder.roundedOutlined,
-              prefixIcon: const Icon(
-                Icons.email_outlined,
-                size: 20,
-                color: AppColors.text3,
-              ),
-              errorText: state.emailError,
-              clearable: true,
-            ),
-            const SizedBox(height: 16),
-            AppTextFloatingLabelField(
-              controller: _tnbAccountController,
-              keyboardType: TextInputType.number,
-              labelText: 'TNB Account No.',
-              hintText: 'e.g. 1234567890',
-              border: AppFormFieldBorder.roundedOutlined,
-              prefixIcon: const Icon(
-                Icons.receipt_long_outlined,
-                size: 20,
-                color: AppColors.text3,
-              ),
-              errorText: state.tnbAccountError,
-              clearable: true,
-              maxLength: 12,
-            ),
-            const SizedBox(height: 16),
-            AppTextFloatingLabelField(
-              controller: _passwordController,
-              labelText: 'Password',
-              hintText: 'Create a strong password',
-              border: AppFormFieldBorder.roundedOutlined,
-              prefixIcon: const Icon(
-                Icons.lock_outlined,
-                size: 20,
-                color: AppColors.text3,
-              ),
-              errorText: state.passwordError,
-              obscureText: state.obscurePassword,
-              suffixIcon: IconButton(
-                onPressed: _notifier.toggleObscurePassword,
-                icon: Icon(
-                  state.obscurePassword
-                      ? Icons.visibility_off_outlined
-                      : Icons.visibility_outlined,
-                  color: AppColors.text3,
-                  size: 20,
-                ),
-              ),
-            ),
-            if (_passwordController.text.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              _PasswordStrengthBar(
-                strength: state.passwordStrength,
-                label: state.strengthLabel,
-                color: state.strengthColor ?? AppColors.text3,
-                password: _passwordController.text,
-              ),
-            ],
-            const SizedBox(height: 16),
-            AppTextFloatingLabelField(
-              controller: _confirmedPasswordController,
-              labelText: 'Confirm Password',
-              hintText: 'Confirm your password',
-              border: AppFormFieldBorder.roundedOutlined,
-              prefixIcon: const Icon(
-                Icons.lock_outline,
-                size: 20,
-                color: AppColors.text3,
-              ),
-              errorText: state.confirmedPasswordError,
-              obscureText: state.obscureConfirmedPassword,
-              suffixIcon: IconButton(
-                onPressed: _notifier.toggleObscureConfirmedPassword,
-                icon: Icon(
-                  state.obscureConfirmedPassword
-                      ? Icons.visibility_off_outlined
-                      : Icons.visibility_outlined,
-                  color: AppColors.text3,
-                  size: 20,
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            if (state.authError != null) ...[
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.danger.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: AppColors.danger.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      color: AppColors.danger,
-                      size: 16,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        state.authError!,
-                        style: AppTextStyles.bodySm
-                            .copyWith(color: AppColors.danger),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-            GradientButton(
-              label: 'Create Account',
-              isLoading: state.isLoading,
-              onTap: _handleRegister,
-            ),
-            const SizedBox(height: 12),
-            Center(
-              child: RichText(
-                textAlign: TextAlign.center,
-                text: const TextSpan(
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: AppColors.text3,
-                    height: 1.6,
-                  ),
-                  children: [
-                    TextSpan(text: 'By creating an account you agree to our '),
-                    TextSpan(
-                      text: 'Terms of Service',
-                      style: TextStyle(color: AppColors.accent2),
-                    ),
-                    TextSpan(text: ' and '),
-                    TextSpan(
-                      text: 'Privacy Policy',
-                      style: TextStyle(color: AppColors.accent2),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 32),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AppTextFloatingLabelField(
+          controller: _fullNameController,
+          labelText: 'Full Name',
+          hintText: 'Enter your full name',
+          border: AppFormFieldBorder.roundedOutlined,
+          prefixIcon: const Icon(
+            Icons.person_outline,
+            size: 20,
+            color: AppColors.text3,
+          ),
+          errorText: state.fullNameError,
+          clearable: true,
+          maxLength: 60,
+          inputFormatters: [
+            LengthLimitingTextInputFormatter(60),
+            FilteringTextInputFormatter.allow(RegExp(r"[a-zA-Z\s'\-\.]")),
           ],
-        );
-      },
+        ),
+        const SizedBox(height: 16),
+        AppTextFloatingLabelField(
+          controller: _emailController,
+          keyboardType: TextInputType.emailAddress,
+          labelText: 'Email Address',
+          hintText: 'Enter your email',
+          border: AppFormFieldBorder.roundedOutlined,
+          prefixIcon: const Icon(
+            Icons.email_outlined,
+            size: 20,
+            color: AppColors.text3,
+          ),
+          errorText: state.emailError,
+          clearable: true,
+        ),
+        const SizedBox(height: 16),
+        AppTextFloatingLabelField(
+          controller: _tnbAccountController,
+          keyboardType: TextInputType.number,
+          labelText: 'TNB Account No.',
+          hintText: 'e.g. 123456789012',
+          border: AppFormFieldBorder.roundedOutlined,
+          prefixIcon: const Icon(
+            Icons.receipt_long_outlined,
+            size: 20,
+            color: AppColors.text3,
+          ),
+          errorText: state.tnbAccountError,
+          clearable: true,
+          maxLength: 12,
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+            LengthLimitingTextInputFormatter(12),
+          ],
+        ),
+        const SizedBox(height: 16),
+        AppTextFloatingLabelField(
+          controller: _passwordController,
+          labelText: 'Password',
+          hintText: 'Create a strong password',
+          border: AppFormFieldBorder.roundedOutlined,
+          prefixIcon: const Icon(
+            Icons.lock_outlined,
+            size: 20,
+            color: AppColors.text3,
+          ),
+          errorText: state.passwordError,
+          obscureText: state.obscurePassword,
+          suffixIcon: IconButton(
+            onPressed:
+                ref.read(registerProvider.notifier).toggleObscurePassword,
+            icon: Icon(
+              state.obscurePassword
+                  ? Icons.visibility_off_outlined
+                  : Icons.visibility_outlined,
+              color: AppColors.text3,
+              size: 20,
+            ),
+          ),
+        ),
+        if (_passwordController.text.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          _PasswordStrengthBar(
+            strength: state.passwordStrength,
+            label: state.strengthLabel,
+            color: state.strengthColor ?? AppColors.text3,
+            password: _passwordController.text,
+          ),
+        ],
+        const SizedBox(height: 16),
+        AppTextFloatingLabelField(
+          controller: _confirmedPasswordController,
+          labelText: 'Confirm Password',
+          hintText: 'Confirm your password',
+          border: AppFormFieldBorder.roundedOutlined,
+          prefixIcon: const Icon(
+            Icons.lock_outline,
+            size: 20,
+            color: AppColors.text3,
+          ),
+          errorText: state.confirmedPasswordError,
+          obscureText: state.obscureConfirmedPassword,
+          suffixIcon: IconButton(
+            onPressed: ref
+                .read(registerProvider.notifier)
+                .toggleObscureConfirmedPassword,
+            icon: Icon(
+              state.obscureConfirmedPassword
+                  ? Icons.visibility_off_outlined
+                  : Icons.visibility_outlined,
+              color: AppColors.text3,
+              size: 20,
+            ),
+          ),
+        ),
+        const SizedBox(height: 24),
+        if (state.authError != null) ...[
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.danger.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: AppColors.danger.withValues(alpha: 0.3),
+              ),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.error_outline,
+                  color: AppColors.danger,
+                  size: 16,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    state.authError!,
+                    style:
+                        AppTextStyles.bodySm.copyWith(color: AppColors.danger),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+        GradientButton(
+          label: 'Create Account',
+          isLoading: state.isLoading,
+          onTap: _handleRegister,
+        ),
+        const SizedBox(height: 12),
+        Center(
+          child: RichText(
+            textAlign: TextAlign.center,
+            text: const TextSpan(
+              style: TextStyle(
+                fontSize: 11,
+                color: AppColors.text3,
+                height: 1.6,
+              ),
+              children: [
+                TextSpan(text: 'By creating an account you agree to our '),
+                TextSpan(
+                  text: 'Terms of Service',
+                  style: TextStyle(color: AppColors.accent2),
+                ),
+                TextSpan(text: ' and '),
+                TextSpan(
+                  text: 'Privacy Policy',
+                  style: TextStyle(color: AppColors.accent2),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 32),
+      ],
     );
   }
 
   Future<void> _handleRegister() async {
-    await _notifier.register();
-
-    final s = _notifier.state;
-    final hasValidationErrors = s.fullNameError != null ||
-        s.emailError != null ||
-        s.tnbAccountError != null ||
-        s.passwordError != null ||
-        s.confirmedPasswordError != null;
-
-    final shouldNavigate =
-        s.authError == null && !s.isLoading && !hasValidationErrors;
+    final notifier = ref.read(registerProvider.notifier);
+    await notifier.register();
 
     if (!mounted) return;
+
+    final state = ref.read(registerProvider);
+
+    final hasValidationErrors = state.fullNameError != null ||
+        state.emailError != null ||
+        state.tnbAccountError != null ||
+        state.passwordError != null ||
+        state.confirmedPasswordError != null;
+
+    final shouldNavigate =
+        state.authError == null && !state.isLoading && !hasValidationErrors;
 
     if (shouldNavigate) {
       context.go(AppRoutes.onboarding);

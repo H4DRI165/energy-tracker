@@ -7,41 +7,21 @@ import 'package:energy_tracker/ui/features/ft_settings/settings/notifier/setting
 import 'package:energy_tracker/ui/features/ft_settings/widgets/settings_layout.dart';
 import 'package:energy_tracker/ui/routes/routes.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
-class SettingsPage extends StatefulWidget {
+class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
 
   @override
-  State<SettingsPage> createState() => _SettingsPageState();
+  ConsumerState<SettingsPage> createState() => _SettingsPageState();
 }
 
-class _SettingsPageState extends State<SettingsPage> {
-  late final SettingsNotifier _notifier;
-
-  @override
-  void initState() {
-    super.initState();
-    _notifier = SettingsNotifier()..addListener(_onChanged);
-    unawaited(_notifier.init());
-  }
-
-  void _onChanged() {
-    if (mounted) setState(() {});
-  }
-
-  @override
-  void dispose() {
-    _notifier
-      ..removeListener(_onChanged)
-      ..dispose();
-    super.dispose();
-  }
-
+class _SettingsPageState extends ConsumerState<SettingsPage> {
   @override
   Widget build(BuildContext context) {
-    final state = _notifier.state;
+    final state = ref.watch(settingsProvider);
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -50,21 +30,93 @@ class _SettingsPageState extends State<SettingsPage> {
           children: [
             _Header(),
             Expanded(
-              child: state.isLoading
-                  ? const Center(
-                      child: CircularProgressIndicator(
-                        color: AppColors.accent,
+              child: state.when(
+                loading: () => const Center(
+                  child: CircularProgressIndicator(color: AppColors.accent),
+                ),
+                error: (error, _) => Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Failed to load settings',
+                        style: AppTextStyles.bodyMd,
                       ),
-                    )
-                  : _SettingsBody(
-                      state: state,
-                      notifier: _notifier,
-                    ),
+                      SizedBox(height: 12.h),
+                      TextButton(
+                        onPressed: () =>
+                            ref.read(settingsProvider.notifier).refresh(),
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                ),
+                data: (state) => _SettingsBody(
+                  state: state,
+                  onEditProfile: () async {
+                    await context.push(AppRoutes.editProfile);
+                  },
+                  onToggleBudgetAlerts: (v) => ref
+                      .read(settingsProvider.notifier)
+                      .toggleBudgetAlerts(value: v),
+                  onToggleBillReminders: (v) => ref
+                      .read(settingsProvider.notifier)
+                      .toggleBillReminders(value: v),
+                  onToggleMonthlySummary: (v) => ref
+                      .read(settingsProvider.notifier)
+                      .toggleMonthlySummary(value: v),
+                  onSignOut: _handleSignOut,
+                ),
+              ),
             ),
           ],
         ),
       ),
       bottomNavigationBar: const AppBottomNav(currentIndex: 4),
+    );
+  }
+
+  Future<void> _handleSignOut() async {
+    final confirmed = await _showSignOutDialog(context);
+    if (confirmed == true) {
+      await ref.read(settingsProvider.notifier).signOut();
+    }
+  }
+
+  Future<bool?> _showSignOutDialog(BuildContext context) {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
+          side: const BorderSide(color: AppColors.border),
+        ),
+        title: Text('Sign Out', style: AppTextStyles.titleMd),
+        content: Text(
+          'Are you sure you want to sign out?',
+          style: AppTextStyles.bodyMd.copyWith(color: AppColors.text2),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(
+              'Cancel',
+              style: AppTextStyles.bodyMd.copyWith(color: AppColors.text2),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(
+              'Sign Out',
+              style: AppTextStyles.bodyMd.copyWith(
+                color: AppColors.danger,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -91,11 +143,19 @@ class _Header extends StatelessWidget {
 class _SettingsBody extends StatelessWidget {
   const _SettingsBody({
     required this.state,
-    required this.notifier,
+    required this.onEditProfile,
+    required this.onToggleBudgetAlerts,
+    required this.onToggleBillReminders,
+    required this.onToggleMonthlySummary,
+    required this.onSignOut,
   });
 
   final SettingsPageState state;
-  final SettingsNotifier notifier;
+  final VoidCallback onEditProfile;
+  final ValueChanged<bool> onToggleBudgetAlerts;
+  final ValueChanged<bool> onToggleBillReminders;
+  final ValueChanged<bool> onToggleMonthlySummary;
+  final VoidCallback onSignOut;
 
   @override
   Widget build(BuildContext context) {
@@ -109,9 +169,7 @@ class _SettingsBody extends StatelessWidget {
         children: [
           UserProfileCard(
             state: state,
-            onTap: () async {
-              context.go(AppRoutes.editProfile);
-            },
+            onTap: onEditProfile,
           ),
           SizedBox(height: 20.h),
           const SettingsSection(label: 'ACCOUNT'),
@@ -121,9 +179,7 @@ class _SettingsBody extends StatelessWidget {
               SettingsListTile(
                 icon: '👤',
                 label: 'Edit Profile',
-                onTap: () async {
-                  context.go(AppRoutes.editProfile);
-                },
+                onTap: onEditProfile,
               ),
               SettingsListTile(
                 icon: '🏠',
@@ -162,19 +218,19 @@ class _SettingsBody extends StatelessWidget {
                 icon: '⚠️',
                 label: 'Budget Alerts',
                 value: state.budgetAlertsEnabled,
-                onChanged: (v) => notifier.toggleBudgetAlerts(value: v),
+                onChanged: onToggleBudgetAlerts,
               ),
               SettingsToggleTile(
                 icon: '📅',
                 label: 'Bill Reminders',
                 value: state.billRemindersEnabled,
-                onChanged: (v) => notifier.toggleBillReminders(value: v),
+                onChanged: onToggleBillReminders,
               ),
               SettingsToggleTile(
                 icon: '📊',
                 label: 'Monthly Summary',
                 value: state.monthlySummaryEnabled,
-                onChanged: (v) => notifier.toggleMonthlySummary(value: v),
+                onChanged: onToggleMonthlySummary,
                 isLast: true,
               ),
             ],
@@ -206,12 +262,7 @@ class _SettingsBody extends StatelessWidget {
           SizedBox(height: 24.h),
           SettingsSignOutButton(
             isLoading: state.isSigningOut,
-            onTap: () async {
-              final confirmed = await _showSignOutDialog(context);
-              if (confirmed == true) {
-                await notifier.signOut();
-              }
-            },
+            onTap: onSignOut,
           ),
           if (state.errorMessage != null) ...[
             SizedBox(height: 12.h),
@@ -245,43 +296,6 @@ class _SettingsBody extends StatelessWidget {
             ),
           ],
           SizedBox(height: 32.h),
-        ],
-      ),
-    );
-  }
-
-  Future<bool?> _showSignOutDialog(BuildContext context) {
-    return showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
-          side: const BorderSide(color: AppColors.border),
-        ),
-        title: Text('Sign Out', style: AppTextStyles.titleMd),
-        content: Text(
-          'Are you sure you want to sign out?',
-          style: AppTextStyles.bodyMd.copyWith(color: AppColors.text2),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(
-              'Cancel',
-              style: AppTextStyles.bodyMd.copyWith(color: AppColors.text2),
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(
-              'Sign Out',
-              style: AppTextStyles.bodyMd.copyWith(
-                color: AppColors.danger,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
         ],
       ),
     );

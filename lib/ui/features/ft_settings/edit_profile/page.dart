@@ -1,60 +1,47 @@
 import 'dart:async';
 import 'package:energy_tracker/theme/theme.dart';
 import 'package:energy_tracker/ui/components/text.dart';
-import 'package:energy_tracker/ui/features/ft_settings/profile/notifier/edit_profile_notifier.dart';
-import 'package:energy_tracker/ui/features/ft_settings/profile/notifier/edit_profile_state.dart';
-import 'package:energy_tracker/ui/routes/routes.dart';
+import 'package:energy_tracker/ui/features/ft_settings/edit_profile/notifier/edit_profile_notifier.dart';
+import 'package:energy_tracker/ui/features/ft_settings/edit_profile/notifier/edit_profile_state.dart';
+import 'package:energy_tracker/ui/features/ft_settings/settings/notifier/settings_notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
-class EditProfilePage extends StatefulWidget {
+class EditProfilePage extends ConsumerStatefulWidget {
   const EditProfilePage({super.key});
 
   @override
-  State<EditProfilePage> createState() => _EditProfilePageState();
+  ConsumerState<EditProfilePage> createState() => _EditProfilePageState();
 }
 
-class _EditProfilePageState extends State<EditProfilePage> {
-  late final EditProfileNotifier _notifier;
+class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   late final TextEditingController _fullNameController;
   late final TextEditingController _tnbController;
+  bool _controllersPopulated = false;
 
   @override
   void initState() {
     super.initState();
-    _notifier = EditProfileNotifier();
     _fullNameController = TextEditingController();
     _tnbController = TextEditingController();
 
-    _notifier.addListener(_onStateChanged);
-    unawaited(
-      _notifier.init().then((_) {
-        if (!mounted) return;
-
-        _fullNameController.text = _notifier.state.fullName;
-        _tnbController.text = _notifier.state.tnbAccountNo;
-      }),
-    );
-
     _fullNameController.addListener(
-      () => _notifier.setFullName(_fullNameController.text),
+      () => ref.read(editProfileProvider.notifier).setFullName(
+            _fullNameController.text,
+          ),
     );
     _tnbController.addListener(
-      () => _notifier.setTnbAccountNo(_tnbController.text),
+      () => ref
+          .read(editProfileProvider.notifier)
+          .setTnbAccountNo(_tnbController.text),
     );
-  }
-
-  void _onStateChanged() {
-    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
-    _notifier
-      ..removeListener(_onStateChanged)
-      ..dispose();
     _fullNameController.dispose();
     _tnbController.dispose();
     super.dispose();
@@ -62,7 +49,20 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    final state = _notifier.state;
+    final state = ref.watch(editProfileProvider);
+    ref.listen(editProfileProvider, (previous, next) {
+      if (!_controllersPopulated) {
+        next.whenData((s) {
+          if (!_controllersPopulated) {
+            _fullNameController.text = s.fullName;
+            _tnbController.text = s.tnbAccountNo;
+            _controllersPopulated = true;
+          }
+        });
+      }
+    });
+
+    final hasChanges = state.value?.hasChanges ?? false;
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -70,22 +70,37 @@ class _EditProfilePageState extends State<EditProfilePage> {
         child: Column(
           children: [
             _Header(
-              isSaving: state.isSaving,
-              hasChanges: _notifier.hasChanges,
+              isSaving: state.value?.isSaving ?? false,
+              hasChanges: hasChanges,
               onSave: _handleSave,
             ),
             Expanded(
-              child: state.isLoading
-                  ? const Center(
-                      child: CircularProgressIndicator(
-                        color: AppColors.accent,
+              child: state.when(
+                loading: () => const Center(
+                  child: CircularProgressIndicator(color: AppColors.accent),
+                ),
+                error: (_, __) => Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Failed to load profile',
+                        style: AppTextStyles.bodyMd,
                       ),
-                    )
-                  : _BodyContent(
-                      state: state,
-                      fullNameController: _fullNameController,
-                      tnbController: _tnbController,
-                    ),
+                      SizedBox(height: 12.h),
+                      TextButton(
+                        onPressed: () => ref.invalidate(editProfileProvider),
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                ),
+                data: (state) => _BodyContent(
+                  state: state,
+                  fullNameController: _fullNameController,
+                  tnbController: _tnbController,
+                ),
+              ),
             ),
           ],
         ),
@@ -94,9 +109,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 
   Future<void> _handleSave() async {
-    final success = await _notifier.save();
+    final success = await ref.read(editProfileProvider.notifier).save();
 
-    if (success && mounted && _notifier.state.errorMessage == null) {
+    if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -107,10 +122,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 size: 18,
               ),
               SizedBox(width: 10.w),
-              Text(
-                'Profile updated successfully',
-                style: AppTextStyles.bodyMd,
-              ),
+              Text('Profile updated successfully', style: AppTextStyles.bodyMd),
             ],
           ),
           backgroundColor: AppColors.surface2,
@@ -122,7 +134,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
       );
 
       if (context.mounted) {
-        context.go(AppRoutes.settings);
+        ref.invalidate(settingsProvider);
+        context.pop();
       }
     }
   }
@@ -151,11 +164,7 @@ class _Header extends StatelessWidget {
       child: Row(
         children: [
           GestureDetector(
-            onTap: () {
-              if (context.mounted) {
-                context.go(AppRoutes.settings);
-              }
-            },
+            onTap: () => context.pop(),
             child: Container(
               width: 36.r,
               height: 36.r,
@@ -245,6 +254,11 @@ class _BodyContent extends StatelessWidget {
             textCapitalization: TextCapitalization.words,
             prefixIcon: Icons.person_outline_rounded,
             errorText: state.fullNameError,
+            maxLength: 60,
+            inputFormatters: [
+              LengthLimitingTextInputFormatter(60),
+              FilteringTextInputFormatter.allow(RegExp(r"[a-zA-Z\s'\-\.]")),
+            ],
           ),
           SizedBox(height: 16.h),
           AppTextField(
