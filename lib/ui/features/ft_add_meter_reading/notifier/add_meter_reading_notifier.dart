@@ -86,7 +86,8 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
     final uid = _auth.currentUser?.uid;
     if (uid == null) {
       state = state.copyWith(
-          errorMessage: 'Session expired. Please sign in again.');
+        errorMessage: 'Session expired. Please sign in again.',
+      );
       return false;
     }
 
