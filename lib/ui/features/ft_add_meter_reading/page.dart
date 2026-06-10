@@ -179,15 +179,12 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
   Future<void> _pickDate(BuildContext context) async {
     final now = DateTime.now();
     final pageState = ref.read(addReadingProvider);
-    final minDate =
-        pageState.lastReadingDate ?? DateTime(now.year - 1, now.month, now.day);
     final selected = pageState.selectedDate ?? now;
-    final initialDate = selected.isBefore(minDate) ? minDate : selected;
 
     final picked = await showDatePicker(
       context: context,
-      initialDate: initialDate,
-      firstDate: minDate,
+      initialDate: selected,
+      firstDate: DateTime(now.year - 2),
       lastDate: now,
       builder: (context, child) {
         return Theme(
