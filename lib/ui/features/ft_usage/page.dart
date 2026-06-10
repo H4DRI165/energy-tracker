@@ -1,0 +1,223 @@
+import 'package:energy_tracker/theme/theme.dart';
+import 'package:energy_tracker/ui/components/nav.dart';
+import 'package:energy_tracker/ui/features/ft_usage/notifier/usage_notifier.dart';
+import 'package:energy_tracker/ui/features/ft_usage/notifier/usage_state.dart';
+import 'package:energy_tracker/ui/features/ft_usage/widgets/widgets.dart';
+import 'package:energy_tracker/ui/routes/routes.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
+
+class UsagePage extends ConsumerWidget {
+  const UsagePage({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final usageAsync = ref.watch(usageProvider);
+
+    return Scaffold(
+      backgroundColor: AppColors.bg,
+      body: SafeArea(
+        child: Column(
+          children: [
+            _Header(),
+            Expanded(
+              child: usageAsync.when(
+                loading: () => const Center(
+                  child: CircularProgressIndicator(color: AppColors.accent),
+                ),
+                error: (e, _) => _ErrorView(
+                  onRetry: () => ref.read(usageProvider.notifier).refresh(),
+                ),
+                data: (state) => state.monthlyData.every((m) => m.kwh == 0) &&
+                        state.billHistory.isEmpty
+                    ? _EmptyUsageView()
+                    : _BodyContent(state: state),
+              ),
+            ),
+          ],
+        ),
+      ),
+      bottomNavigationBar: const AppBottomNav(currentIndex: 1),
+    );
+  }
+}
+
+class _Header extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        AppDimensions.screenPaddingH,
+        12.h,
+        AppDimensions.screenPaddingH,
+        16.h,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text('Usage History', style: AppTextStyles.titleMd),
+          GestureDetector(
+            onTap: () => context.push(AppRoutes.addReading),
+            child: Container(
+              width: 36.r,
+              height: 36.r,
+              decoration: BoxDecoration(
+                color: AppColors.surface2,
+                borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Icon(
+                Icons.add_rounded,
+                size: 20.r,
+                color: AppColors.text2,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BodyContent extends ConsumerWidget {
+  const _BodyContent({required this.state});
+  final UsageState state;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return RefreshIndicator(
+      color: AppColors.accent,
+      backgroundColor: AppColors.surface2,
+      onRefresh: () => ref.read(usageProvider.notifier).refresh(),
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.symmetric(
+          horizontal: AppDimensions.screenPaddingH,
+          vertical: 4.h,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            UsageFilterTabs(
+              selected: state.filter,
+              onChanged: (filter) =>
+                  ref.read(usageProvider.notifier).setFilter(filter),
+            ),
+            SizedBox(height: 16.h),
+            UsageSummaryRow(
+              kwh: state.currentKwh,
+              bill: state.currentBill,
+              monthLabel: state.currentMonthLabel,
+            ),
+            SizedBox(height: 14.h),
+            UsageBarChart(
+              data: state.chartData,
+              maxKwh: state.chartMaxKwh,
+            ),
+            SizedBox(height: 14.h),
+            TariffTierBreakdown(
+              tiers: state.tierBreakdown,
+              monthLabel: state.currentMonthLabel,
+            ),
+            SizedBox(height: 14.h),
+            BillHistoryList(bills: state.billHistory),
+            SizedBox(height: 24.h),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyUsageView extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(AppDimensions.screenPaddingH),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 72.r,
+              height: 72.r,
+              decoration: BoxDecoration(
+                color: AppColors.accent.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(24.r),
+                border: Border.all(color: AppColors.borderAccent),
+              ),
+              child: Center(
+                child: Text('📊', style: TextStyle(fontSize: 32.sp)),
+              ),
+            ),
+            SizedBox(height: 20.h),
+            Text(
+              'No usage data yet',
+              style: AppTextStyles.titleMd,
+            ),
+            SizedBox(height: 8.h),
+            Text(
+              'Add your first meter reading to start'
+              '\ntracking your energy usage.',
+              textAlign: TextAlign.center,
+              style: AppTextStyles.bodyMd.copyWith(color: AppColors.text2),
+            ),
+            SizedBox(height: 28.h),
+            GestureDetector(
+              onTap: () => context.push(AppRoutes.addReading),
+              child: Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: 24.w,
+                  vertical: 14.h,
+                ),
+                decoration: BoxDecoration(
+                  gradient: AppColors.primaryGradient,
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+                  boxShadow: AppColors.btnPrimaryShadow,
+                ),
+                child: Text(
+                  'Add First Reading',
+                  style: AppTextStyles.button,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ErrorView extends StatelessWidget {
+  const _ErrorView({required this.onRetry});
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('⚠️', style: TextStyle(fontSize: 40.sp)),
+          SizedBox(height: 12.h),
+          Text(
+            'Failed to load usage data',
+            style: AppTextStyles.bodyMd,
+          ),
+          SizedBox(height: 8.h),
+          Text(
+            'Check your connection and try again',
+            style: AppTextStyles.bodySm,
+          ),
+          SizedBox(height: 20.h),
+          TextButton(
+            onPressed: onRetry,
+            child: const Text('Retry'),
+          ),
+        ],
+      ),
+    );
+  }
+}
