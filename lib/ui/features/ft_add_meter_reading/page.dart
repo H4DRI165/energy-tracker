@@ -1,6 +1,7 @@
 import 'package:energy_tracker/theme/theme.dart';
 import 'package:energy_tracker/ui/features/ft_add_meter_reading/notifier/add_meter_reading_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_add_meter_reading/notifier/add_meter_reading_state.dart';
+import 'package:energy_tracker/ui/features/ft_usage/notifier/usage_notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -216,6 +217,7 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
 
   Future<void> _handleSave() async {
     final success = await ref.read(addReadingProvider.notifier).saveReading();
+
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -237,7 +239,11 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
           ),
         ),
       );
-      if (context.mounted) context.pop();
+
+      if (context.mounted) {
+        ref.invalidate(usageProvider);
+        context.pop();
+      }
     }
   }
 }
