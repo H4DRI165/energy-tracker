@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:energy_tracker/theme/theme.dart';
+import 'package:energy_tracker/ui/components/errors.dart';
 import 'package:energy_tracker/ui/components/nav.dart';
 import 'package:energy_tracker/ui/features/ft_settings/settings/notifier/settings_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_settings/settings/notifier/settings_state.dart';
@@ -34,22 +35,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 loading: () => const Center(
                   child: CircularProgressIndicator(color: AppColors.accent),
                 ),
-                error: (error, _) => Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Failed to load settings',
-                        style: AppTextStyles.bodyMd,
-                      ),
-                      SizedBox(height: 12.h),
-                      TextButton(
-                        onPressed: () =>
-                            ref.read(settingsProvider.notifier).refresh(),
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  ),
+                error: (error, _) => ErrorView(
+                  onRetry: () => ref.read(settingsProvider.notifier).refresh(),
                 ),
                 data: (state) => _SettingsBody(
                   state: state,

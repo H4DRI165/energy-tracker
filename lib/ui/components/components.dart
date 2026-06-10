@@ -1,6 +1,7 @@
 export 'buttons.dart';
 export 'coming_soon.dart';
 export 'divider.dart';
+export 'errors.dart';
 export 'icons.dart';
 export 'logger.dart';
 export 'nav.dart';
