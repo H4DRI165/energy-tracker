@@ -12,6 +12,8 @@ class UsageBarChart extends StatelessWidget {
 
   final List<MonthlyUsage> data;
   final double maxKwh;
+  static const double _chartHeight = 80;
+  static const double _labelHeight = 14;
 
   @override
   Widget build(BuildContext context) {
@@ -63,44 +65,51 @@ class UsageBarChart extends StatelessWidget {
             )
           else ...[
             SizedBox(
-              height: 80.h,
+              height: _chartHeight.h,
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: data.asMap().entries.map((entry) {
                   final item = entry.value;
                   final isCurrentMonth = entry.key == data.length - 1;
+                  final isHighest = item.kwh == maxKwh && item.kwh > 0;
                   final heightFraction = maxKwh > 0
                       ? (item.kwh <= 0
                           ? 0.0
                           : (item.kwh / maxKwh).clamp(0.05, 1.0))
                       : 0.0;
-                  final isHighest = item.kwh == maxKwh && item.kwh > 0;
+                  final maxBarHeight = _chartHeight.h - _labelHeight.h;
 
                   return Expanded(
                     child: Padding(
                       padding: EdgeInsets.symmetric(horizontal: 3.w),
                       child: Column(
+                        mainAxisSize: MainAxisSize.min,
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
-                          if (item.kwh > 0)
-                            Text(
-                              item.kwh.toStringAsFixed(0),
-                              style: AppTextStyles.caption.copyWith(
-                                fontSize: 9.sp,
-                                color: isCurrentMonth
-                                    ? AppColors.accent
-                                    : AppColors.text3,
-                              ),
-                            ),
-                          SizedBox(height: 2.h),
+                          SizedBox(
+                            height: _labelHeight.h,
+                            child: item.kwh > 0
+                                ? Align(
+                                    alignment: Alignment.bottomCenter,
+                                    child: Text(
+                                      item.kwh.toStringAsFixed(0),
+                                      style: AppTextStyles.caption.copyWith(
+                                        fontSize: 9.sp,
+                                        color: isCurrentMonth
+                                            ? AppColors.accent
+                                            : AppColors.text3,
+                                      ),
+                                    ),
+                                  )
+                                : const SizedBox.shrink(),
+                          ),
                           TweenAnimationBuilder<double>(
                             tween: Tween(begin: 0, end: heightFraction),
                             duration: const Duration(milliseconds: 600),
                             curve: Curves.easeOut,
                             builder: (context, value, _) {
-                              return FractionallySizedBox(
-                                heightFactor: value,
-                                alignment: Alignment.bottomCenter,
+                              return SizedBox(
+                                height: maxBarHeight * value,
                                 child: Container(
                                   decoration: BoxDecoration(
                                     gradient: isCurrentMonth
