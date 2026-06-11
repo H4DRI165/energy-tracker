@@ -1,3 +1,4 @@
+import 'package:energy_tracker/models/bill_record.dart';
 import 'package:flutter/material.dart';
 
 enum UsageFilter { monthly, yearly }
@@ -36,24 +37,6 @@ class TierBreakdown {
   final double amount;
   final Color color;
   final double fillPercent;
-}
-
-class BillRecord {
-  const BillRecord({
-    required this.id,
-    required this.monthYear,
-    required this.kwh,
-    required this.amount,
-    required this.isPaid,
-    required this.date,
-  });
-
-  final String id;
-  final String monthYear;
-  final double kwh;
-  final double amount;
-  final bool isPaid;
-  final DateTime date;
 }
 
 class UsageState {

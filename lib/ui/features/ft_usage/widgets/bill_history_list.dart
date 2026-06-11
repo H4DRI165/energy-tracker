@@ -1,7 +1,9 @@
+import 'package:energy_tracker/models/bill_record.dart';
 import 'package:energy_tracker/theme/theme.dart';
-import 'package:energy_tracker/ui/features/ft_usage/notifier/usage_state.dart';
+import 'package:energy_tracker/ui/routes/routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 
 class BillHistoryList extends StatelessWidget {
   const BillHistoryList({
@@ -79,66 +81,69 @@ class BillHistoryList extends StatelessWidget {
                     ? AppColors.accent.withValues(alpha: 0.10)
                     : AppColors.accent2.withValues(alpha: 0.10);
 
-                return Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 14.w,
-                    vertical: 12.h,
-                  ),
-                  decoration: BoxDecoration(
-                    border: isLast
-                        ? null
-                        : const Border(
-                            bottom: BorderSide(color: AppColors.border),
+                return GestureDetector(
+                  onTap: () => context.push(AppRoutes.billDetail, extra: bill),
+                  child: Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 14.w,
+                      vertical: 12.h,
+                    ),
+                    decoration: BoxDecoration(
+                      border: isLast
+                          ? null
+                          : const Border(
+                              bottom: BorderSide(color: AppColors.border),
+                            ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 36.r,
+                          height: 36.r,
+                          decoration: BoxDecoration(
+                            color: iconBg,
+                            borderRadius: BorderRadius.circular(10.r),
                           ),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 36.r,
-                        height: 36.r,
-                        decoration: BoxDecoration(
-                          color: iconBg,
-                          borderRadius: BorderRadius.circular(10.r),
-                        ),
-                        child: Center(
-                          child: Text(
-                            '📅',
-                            style: TextStyle(fontSize: 14.sp),
+                          child: Center(
+                            child: Text(
+                              '📅',
+                              style: TextStyle(fontSize: 14.sp),
+                            ),
                           ),
                         ),
-                      ),
-                      SizedBox(width: 12.w),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        SizedBox(width: 12.w),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                bill.monthYear,
+                                style: AppTextStyles.bodyMd.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              Text(
+                                '${bill.kwh.toStringAsFixed(0)} kWh',
+                                style: AppTextStyles.caption,
+                              ),
+                            ],
+                          ),
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
-                              bill.monthYear,
+                              'RM ${bill.amount.toStringAsFixed(2)}',
                               style: AppTextStyles.bodyMd.copyWith(
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
-                            Text(
-                              '${bill.kwh.toStringAsFixed(0)} kWh',
-                              style: AppTextStyles.caption,
-                            ),
+                            SizedBox(height: 2.h),
+                            _PaidBadge(isPaid: bill.isPaid),
                           ],
                         ),
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            'RM ${bill.amount.toStringAsFixed(2)}',
-                            style: AppTextStyles.bodyMd.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          SizedBox(height: 2.h),
-                          _PaidBadge(isPaid: bill.isPaid),
-                        ],
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 );
               }).toList(),
