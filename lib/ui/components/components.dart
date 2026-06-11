@@ -1,3 +1,4 @@
+export 'badge.dart';
 export 'buttons.dart';
 export 'coming_soon.dart';
 export 'divider.dart';
