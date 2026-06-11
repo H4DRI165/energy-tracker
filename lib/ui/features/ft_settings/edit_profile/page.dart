@@ -82,6 +82,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                 ),
                 error: (_, __) => ErrorView(
                   onRetry: () => ref.invalidate(editProfileProvider),
+                  message: 'Failed to load profile',
                 ),
                 data: (state) => _BodyContent(
                   state: state,

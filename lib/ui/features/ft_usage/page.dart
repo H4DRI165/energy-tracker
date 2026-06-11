@@ -30,6 +30,7 @@ class UsagePage extends ConsumerWidget {
                 ),
                 error: (e, _) => ErrorView(
                   onRetry: () => ref.read(usageProvider.notifier).refresh(),
+                  message: 'Failed to load usage data',
                 ),
                 data: (state) => state.monthlyData.every((m) => m.kwh == 0) &&
                         state.billHistory.isEmpty

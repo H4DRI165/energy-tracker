@@ -37,6 +37,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 ),
                 error: (error, _) => ErrorView(
                   onRetry: () => ref.read(settingsProvider.notifier).refresh(),
+                  message: 'Failed to load settings',
                 ),
                 data: (state) => _SettingsBody(
                   state: state,
