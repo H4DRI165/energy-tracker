@@ -64,13 +64,13 @@ class UsageState {
     // Tier 1: 1–200 kWh @ 21.8 sen
     if (kwh > 0) {
       final t1Kwh = kwh.clamp(0, 200).toDouble();
-      final t1Amount = t1Kwh * 0.218;
+      final t1Amount = t1Kwh * TariffRates.tier1Rate;
       breakdowns.add(
         TierBreakdown(
           label: 'Tier 1 · 1–200 kWh · '
               '${(TariffRates.tier1Rate * 100).toStringAsFixed(1)} sen/kWh',
           kwh: t1Kwh,
-          rate: 0.218,
+          rate: TariffRates.tier1Rate,
           amount: t1Amount,
           color: const Color(0xFF00D4AA),
           fillPercent: (t1Kwh / 200).clamp(0.0, 1.0),
@@ -81,13 +81,13 @@ class UsageState {
     // Tier 2: 201–300 kWh @ 33.4 sen
     if (kwh > 200) {
       final t2Kwh = (kwh - 200).clamp(0, 100).toDouble();
-      final t2Amount = t2Kwh * 0.334;
+      final t2Amount = t2Kwh * TariffRates.tier2Rate;
       breakdowns.add(
         TierBreakdown(
           label: 'Tier 2 · 201–300 kWh · '
               '${(TariffRates.tier2Rate * 100).toStringAsFixed(1)} sen/kWh',
           kwh: t2Kwh,
-          rate: 0.334,
+          rate: TariffRates.tier2Rate,
           amount: t2Amount,
           color: const Color(0xFFFFB020),
           fillPercent: (t2Kwh / 100).clamp(0.0, 1.0),
@@ -98,13 +98,13 @@ class UsageState {
     // Tier 3: 301–600 kWh @ 51.6 sen
     if (kwh > 300) {
       final t3Kwh = (kwh - 300).clamp(0, 300).toDouble();
-      final t3Amount = t3Kwh * 0.516;
+      final t3Amount = t3Kwh * TariffRates.tier3Rate;
       breakdowns.add(
         TierBreakdown(
           label: 'Tier 3 · 301–600 kWh · '
               '${(TariffRates.tier3Rate * 100).toStringAsFixed(1)} sen/kWh',
           kwh: t3Kwh,
-          rate: 0.516,
+          rate: TariffRates.tier3Rate,
           amount: t3Amount,
           color: const Color(0xFFFF4D6A),
           fillPercent: (t3Kwh / 300).clamp(0.0, 1.0),
@@ -115,13 +115,13 @@ class UsageState {
     // Tier 4: 601+ kWh @ 54.6 sen
     if (kwh > 600) {
       final t4Kwh = kwh - 600;
-      final t4Amount = t4Kwh * 0.546;
+      final t4Amount = t4Kwh * TariffRates.tier4Rate;
       breakdowns.add(
         TierBreakdown(
           label: 'Tier 4 · 601+ kWh · '
               '${(TariffRates.tier4Rate * 100).toStringAsFixed(1)} sen/kWh',
           kwh: t4Kwh,
-          rate: 0.546,
+          rate: TariffRates.tier4Rate,
           amount: t4Amount,
           color: const Color(0xFFFF4D6A),
           fillPercent: (t4Kwh / 400).clamp(0.0, 1.0),

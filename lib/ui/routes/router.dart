@@ -164,8 +164,9 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: AppRoutes.billDetail,
       builder: (context, state) {
-        final bill = state.extra as BillRecord?;
-        if (bill == null) {
+        final extra = state.extra;
+
+        if (extra is! BillRecord) {
           return const Scaffold(
             body: Center(
               child: Text(
@@ -174,7 +175,7 @@ final GoRouter appRouter = GoRouter(
             ),
           );
         }
-        return BillDetailPage(bill: bill);
+        return BillDetailPage(bill: extra);
       },
     ),
 
