@@ -1,6 +1,7 @@
 import 'package:energy_tracker/theme/theme.dart';
 import 'package:energy_tracker/ui/features/ft_add_meter_reading/notifier/add_meter_reading_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_add_meter_reading/notifier/add_meter_reading_state.dart';
+import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_usage/notifier/usage_notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -238,7 +239,8 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
       );
 
       if (context.mounted) {
-        ref.invalidate(usageProvider);
+        ref..invalidate(usageProvider)
+        ..invalidate(dashboardProvider);
         context.pop();
       }
     }
