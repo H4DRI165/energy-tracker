@@ -161,6 +161,13 @@ final GoRouter appRouter = GoRouter(
         child: AddReadingPage(),
       ),
     ),
+    GoRoute(
+      path: AppRoutes.billDetail,
+      builder: (context, state) {
+        final bill = state.extra! as BillRecord;
+        return BillDetailPage(bill: bill);
+      },
+    ),
 
     // -------------------------------WIP ROUTES--------------------------------
     GoRoute(

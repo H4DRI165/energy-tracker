@@ -16,6 +16,7 @@ abstract class AppRoutes {
   static const String editProfile = '/edit-profile';
   static const String usage = '/usage';
   static const String addReading = '/add_reading';
+  static const String billDetail = '/usage/bill-detail';
 
   // WIP
   static const String tariffSettings = '/tariff-settings';
