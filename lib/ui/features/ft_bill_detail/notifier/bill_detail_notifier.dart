@@ -103,8 +103,11 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
       await batch.commit();
 
       state = state.copyWith(isUpdatingPaid: false, isPaid: newIsPaid);
-    } on FirebaseException catch (_) {
-      state = state.copyWith(isUpdatingPaid: false);
+    } on FirebaseException catch (e) {
+      state = state.copyWith(
+        isUpdatingPaid: false,
+        errorMessage: 'Failed to update payment status: ${e.message}',
+      );
     }
   }
 }

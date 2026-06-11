@@ -164,7 +164,16 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: AppRoutes.billDetail,
       builder: (context, state) {
-        final bill = state.extra! as BillRecord;
+        final bill = state.extra as BillRecord?;
+        if (bill == null) {
+          return const Scaffold(
+            body: Center(
+              child: Text(
+                'Invalid navigation. Please select a bill from the usage page.',
+              ),
+            ),
+          );
+        }
         return BillDetailPage(bill: bill);
       },
     ),

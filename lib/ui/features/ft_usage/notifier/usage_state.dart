@@ -1,3 +1,4 @@
+import 'package:energy_tracker/constants/tariff_rates.dart';
 import 'package:energy_tracker/models/bill_record.dart';
 import 'package:flutter/material.dart';
 
@@ -66,7 +67,8 @@ class UsageState {
       final t1Amount = t1Kwh * 0.218;
       breakdowns.add(
         TierBreakdown(
-          label: 'Tier 1 · 1–200 kWh · 21.8 sen',
+          label: 'Tier 1 · 1–200 kWh · '
+              '${(TariffRates.tier1Rate * 100).toStringAsFixed(1)} sen/kWh',
           kwh: t1Kwh,
           rate: 0.218,
           amount: t1Amount,
@@ -82,7 +84,8 @@ class UsageState {
       final t2Amount = t2Kwh * 0.334;
       breakdowns.add(
         TierBreakdown(
-          label: 'Tier 2 · 201–300 kWh · 33.4 sen',
+          label: 'Tier 2 · 201–300 kWh · '
+              '${(TariffRates.tier2Rate * 100).toStringAsFixed(1)} sen/kWh',
           kwh: t2Kwh,
           rate: 0.334,
           amount: t2Amount,
@@ -98,7 +101,8 @@ class UsageState {
       final t3Amount = t3Kwh * 0.516;
       breakdowns.add(
         TierBreakdown(
-          label: 'Tier 3 · 301–600 kWh · 51.6 sen',
+          label: 'Tier 3 · 301–600 kWh · '
+              '${(TariffRates.tier3Rate * 100).toStringAsFixed(1)} sen/kWh',
           kwh: t3Kwh,
           rate: 0.516,
           amount: t3Amount,
@@ -114,7 +118,8 @@ class UsageState {
       final t4Amount = t4Kwh * 0.546;
       breakdowns.add(
         TierBreakdown(
-          label: 'Tier 4 · 601+ kWh · 54.6 sen',
+          label: 'Tier 4 · 601+ kWh · '
+              '${(TariffRates.tier4Rate * 100).toStringAsFixed(1)} sen/kWh',
           kwh: t4Kwh,
           rate: 0.546,
           amount: t4Amount,

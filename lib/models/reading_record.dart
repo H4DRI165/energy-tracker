@@ -1,3 +1,5 @@
+import 'package:energy_tracker/constants/tariff_rates.dart';
+
 class ReadingRecord {
   const ReadingRecord({
     required this.id,
@@ -38,13 +40,17 @@ class ReadingRecord {
   String get tierLabel {
     switch (tier) {
       case 1:
-        return 'Tier 1 — 21.8 sen/kWh';
+        return 'Tier 1 — '
+            '${(TariffRates.tier1Rate * 100).toStringAsFixed(1)} sen/kWh';
       case 2:
-        return 'Tier 2 — 33.4 sen/kWh';
+        return 'Tier 2 — '
+            '${(TariffRates.tier2Rate * 100).toStringAsFixed(1)} sen/kWh';
       case 3:
-        return 'Tier 3 — 51.6 sen/kWh';
+        return 'Tier 3 — '
+            '${(TariffRates.tier3Rate * 100).toStringAsFixed(1)} sen/kWh';
       default:
-        return 'Tier 4 — 54.6 sen/kWh';
+        return 'Tier 4 — '
+            '${(TariffRates.tier4Rate * 100).toStringAsFixed(1)} sen/kWh';
     }
   }
 }

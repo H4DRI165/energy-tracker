@@ -47,13 +47,25 @@ class _BillDetailPageState extends ConsumerState<BillDetailPage> {
                   ? const Center(
                       child: CircularProgressIndicator(color: AppColors.accent),
                     )
-                  : SingleChildScrollView(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: AppDimensions.screenPaddingH,
-                        vertical: 8.h,
-                      ),
-                      child: _BodyContent(state: state, bill: widget.bill),
-                    ),
+                  : state.errorMessage != null
+                      ? Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(16.r),
+                            child: Text(
+                              state.errorMessage!,
+                              style: AppTextStyles.bodyMd
+                                  .copyWith(color: AppColors.danger),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        )
+                      : SingleChildScrollView(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: AppDimensions.screenPaddingH,
+                            vertical: 8.h,
+                          ),
+                          child: _BodyContent(state: state, bill: widget.bill),
+                        ),
             ),
           ],
         ),
