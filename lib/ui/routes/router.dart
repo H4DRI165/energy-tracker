@@ -161,6 +161,23 @@ final GoRouter appRouter = GoRouter(
         child: AddReadingPage(),
       ),
     ),
+    GoRoute(
+      path: AppRoutes.billDetail,
+      builder: (context, state) {
+        final extra = state.extra;
+
+        if (extra is! BillRecord) {
+          return const Scaffold(
+            body: Center(
+              child: Text(
+                'Invalid navigation. Please select a bill from the usage page.',
+              ),
+            ),
+          );
+        }
+        return BillDetailPage(bill: extra);
+      },
+    ),
 
     // -------------------------------WIP ROUTES--------------------------------
     GoRoute(
