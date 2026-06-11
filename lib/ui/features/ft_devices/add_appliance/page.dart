@@ -1,8 +1,7 @@
 import 'package:energy_tracker/models/appliance.dart';
 import 'package:energy_tracker/theme/theme.dart';
 import 'package:energy_tracker/ui/components/text.dart';
-import 'package:energy_tracker/ui/features/ft_devices/add_appliance/notifier/add_appliance_notifier.dart';
-import 'package:energy_tracker/ui/features/ft_devices/add_appliance/notifier/add_appliance_state.dart';
+import 'package:energy_tracker/ui/features/ft_devices/add_appliance/notifier/notifier.dart';
 import 'package:energy_tracker/ui/features/ft_devices/devices/notifier/devices_notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
