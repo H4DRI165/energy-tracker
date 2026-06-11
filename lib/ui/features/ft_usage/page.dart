@@ -1,4 +1,5 @@
 import 'package:energy_tracker/theme/theme.dart';
+import 'package:energy_tracker/ui/components/errors.dart';
 import 'package:energy_tracker/ui/components/nav.dart';
 import 'package:energy_tracker/ui/features/ft_usage/notifier/usage_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_usage/notifier/usage_state.dart';
@@ -14,7 +15,7 @@ class UsagePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final usageAsync = ref.watch(usageProvider);
+    final state = ref.watch(usageProvider);
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -23,12 +24,13 @@ class UsagePage extends ConsumerWidget {
           children: [
             _Header(),
             Expanded(
-              child: usageAsync.when(
+              child: state.when(
                 loading: () => const Center(
                   child: CircularProgressIndicator(color: AppColors.accent),
                 ),
-                error: (e, _) => _ErrorView(
+                error: (e, _) => ErrorView(
                   onRetry: () => ref.read(usageProvider.notifier).refresh(),
+                  message: 'Failed to load usage data',
                 ),
                 data: (state) => state.monthlyData.every((m) => m.kwh == 0) &&
                         state.billHistory.isEmpty
@@ -185,38 +187,6 @@ class _EmptyUsageView extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _ErrorView extends StatelessWidget {
-  const _ErrorView({required this.onRetry});
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text('⚠️', style: TextStyle(fontSize: 40.sp)),
-          SizedBox(height: 12.h),
-          Text(
-            'Failed to load usage data',
-            style: AppTextStyles.bodyMd,
-          ),
-          SizedBox(height: 8.h),
-          Text(
-            'Check your connection and try again',
-            style: AppTextStyles.bodySm,
-          ),
-          SizedBox(height: 20.h),
-          TextButton(
-            onPressed: onRetry,
-            child: const Text('Retry'),
-          ),
-        ],
       ),
     );
   }

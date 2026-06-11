@@ -95,8 +95,12 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
 
     try {
       final date = state.selectedDate ?? DateTime.now();
+      final batch = _firestore.batch();
 
-      await _firestore.collection('users').doc(uid).collection('readings').add({
+      final readingRef =
+          _firestore.collection('users').doc(uid).collection('readings').doc();
+
+      batch.set(readingRef, {
         'reading': state.currentReading,
         'kwh': state.usageKwh,
         'date': Timestamp.fromDate(date),
@@ -106,13 +110,26 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
+      if (state.hasUsage) {
+        final billRef =
+            _firestore.collection('users').doc(uid).collection('bills').doc();
+
+        batch.set(billRef, {
+          'kwh': state.usageKwh,
+          'amount': state.estimatedBill,
+          'date': Timestamp.fromDate(date),
+          'tier': state.currentTier,
+          'isPaid': false,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      await batch.commit();
+
       state = state.copyWith(isSaving: false);
       return true;
     } on FirebaseException catch (e) {
-      state = state.copyWith(
-        isSaving: false,
-        errorMessage: _mapError(e.code),
-      );
+      state = state.copyWith(isSaving: false, errorMessage: _mapError(e.code));
       return false;
     } on Exception catch (_) {
       state = state.copyWith(

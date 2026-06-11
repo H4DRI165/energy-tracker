@@ -11,8 +11,35 @@ class BillHistoryList extends StatelessWidget {
 
   final List<BillRecord> bills;
 
+  List<BillRecord> get _groupedByMonth {
+    final grouped = <String, BillRecord>{};
+
+    for (final bill in bills) {
+      final key =
+          '${bill.date.year}-${bill.date.month.toString().padLeft(2, '0')}';
+
+      if (grouped.containsKey(key)) {
+        final existing = grouped[key]!;
+        grouped[key] = BillRecord(
+          id: existing.id,
+          monthYear: existing.monthYear,
+          kwh: existing.kwh + bill.kwh,
+          amount: existing.amount + bill.amount,
+          isPaid: existing.isPaid && bill.isPaid,
+          date: existing.date,
+        );
+      } else {
+        grouped[key] = bill;
+      }
+    }
+
+    return grouped.values.toList()..sort((a, b) => b.date.compareTo(a.date));
+  }
+
   @override
   Widget build(BuildContext context) {
+    final groupedBills = _groupedByMonth;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -21,7 +48,7 @@ class BillHistoryList extends StatelessWidget {
           style: AppTextStyles.bodyMd.copyWith(fontWeight: FontWeight.w700),
         ),
         SizedBox(height: 10.h),
-        if (bills.isEmpty)
+        if (groupedBills.isEmpty)
           Container(
             padding: EdgeInsets.all(16.r),
             decoration: BoxDecoration(
@@ -45,9 +72,9 @@ class BillHistoryList extends StatelessWidget {
               border: Border.all(color: AppColors.border),
             ),
             child: Column(
-              children: bills.asMap().entries.map((entry) {
+              children: groupedBills.asMap().entries.map((entry) {
                 final bill = entry.value;
-                final isLast = entry.key == bills.length - 1;
+                final isLast = entry.key == groupedBills.length - 1;
                 final iconBg = entry.key.isEven
                     ? AppColors.accent.withValues(alpha: 0.10)
                     : AppColors.accent2.withValues(alpha: 0.10);

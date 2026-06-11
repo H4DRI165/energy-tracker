@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:energy_tracker/theme/theme.dart';
+import 'package:energy_tracker/ui/components/errors.dart';
 import 'package:energy_tracker/ui/components/text.dart';
 import 'package:energy_tracker/ui/features/ft_settings/edit_profile/notifier/edit_profile_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_settings/edit_profile/notifier/edit_profile_state.dart';
@@ -79,21 +80,9 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                 loading: () => const Center(
                   child: CircularProgressIndicator(color: AppColors.accent),
                 ),
-                error: (_, __) => Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Failed to load profile',
-                        style: AppTextStyles.bodyMd,
-                      ),
-                      SizedBox(height: 12.h),
-                      TextButton(
-                        onPressed: () => ref.invalidate(editProfileProvider),
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  ),
+                error: (_, __) => ErrorView(
+                  onRetry: () => ref.invalidate(editProfileProvider),
+                  message: 'Failed to load profile',
                 ),
                 data: (state) => _BodyContent(
                   state: state,
