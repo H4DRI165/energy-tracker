@@ -61,21 +61,23 @@ class _Header extends StatelessWidget {
       ),
       child: Row(
         children: [
-          GestureDetector(
-            onTap: () => context.pop(),
-            child: Container(
-              width: 36.r,
-              height: 36.r,
-              decoration: BoxDecoration(
-                color: AppColors.surface2,
-                borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Icon(
+          Container(
+            width: 36.r,
+            height: 36.r,
+            decoration: BoxDecoration(
+              color: AppColors.surface2,
+              borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: IconButton(
+              onPressed: () => context.pop(),
+              icon: Icon(
                 Icons.arrow_back_ios_new_rounded,
                 size: 16.r,
                 color: AppColors.text2,
               ),
+              tooltip: 'Back',
+              padding: EdgeInsets.zero,
             ),
           ),
           SizedBox(width: 12.w),
@@ -111,26 +113,29 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
   @override
   void initState() {
     super.initState();
+
     _nameController = TextEditingController();
     _wattageController = TextEditingController();
+
+    if (widget.appliance != null) {
+      final appliance = widget.appliance!;
+
+      _nameController.text = appliance.name;
+      _wattageController.text = appliance.wattage.toStringAsFixed(0);
+
+      ref.read(addApplianceProvider.notifier).initForEdit(appliance);
+    }
 
     _nameController.addListener(
       () =>
           ref.read(addApplianceProvider.notifier).setName(_nameController.text),
     );
+
     _wattageController.addListener(
       () => ref
           .read(addApplianceProvider.notifier)
           .setWattage(_wattageController.text),
     );
-
-    if (widget.appliance != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ref.read(addApplianceProvider.notifier).initForEdit(widget.appliance!);
-        _nameController.text = widget.appliance!.name;
-        _wattageController.text = widget.appliance!.wattage.toStringAsFixed(0);
-      });
-    }
   }
 
   @override
@@ -208,10 +213,11 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
               ),
               SizedBox(height: 16.h),
             ],
-            GestureDetector(
+            InkWell(
               onTap: widget.state.canSave && !widget.state.isSaving
                   ? _handleSave
                   : null,
+              borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
               child: Container(
                 width: double.infinity,
                 padding: EdgeInsets.symmetric(vertical: 16.h),
@@ -340,36 +346,42 @@ class _CategoryGrid extends StatelessWidget {
           mainAxisSpacing: 8.h,
           children: _items.map((item) {
             final isSelected = selected == item.$1;
-            return GestureDetector(
-              onTap: () => onSelect(item.$1),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? AppColors.accent2.withValues(alpha: 0.1)
-                      : AppColors.surface2,
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-                  border: Border.all(
+
+            return Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => onSelect(item.$1),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+                child: Container(
+                  decoration: BoxDecoration(
                     color: isSelected
-                        ? AppColors.accent2.withValues(alpha: 0.3)
-                        : AppColors.border,
-                  ),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(item.$2, style: TextStyle(fontSize: 20.sp)),
-                    SizedBox(height: 4.h),
-                    Text(
-                      item.$1,
-                      style: AppTextStyles.caption.copyWith(
-                        fontSize: 9.sp,
-                        color: isSelected ? AppColors.accent2 : AppColors.text3,
-                        fontWeight:
-                            isSelected ? FontWeight.w600 : FontWeight.w400,
-                      ),
-                      textAlign: TextAlign.center,
+                        ? AppColors.accent2.withValues(alpha: 0.1)
+                        : AppColors.surface2,
+                    borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+                    border: Border.all(
+                      color: isSelected
+                          ? AppColors.accent2.withValues(alpha: 0.3)
+                          : AppColors.border,
                     ),
-                  ],
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(item.$2, style: TextStyle(fontSize: 20.sp)),
+                      SizedBox(height: 4.h),
+                      Text(
+                        item.$1,
+                        style: AppTextStyles.caption.copyWith(
+                          fontSize: 9.sp,
+                          color:
+                              isSelected ? AppColors.accent2 : AppColors.text3,
+                          fontWeight:
+                              isSelected ? FontWeight.w600 : FontWeight.w400,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -414,18 +426,24 @@ class _HoursStepper extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        GestureDetector(
-          onTap: onDecrement,
-          child: Container(
-            width: 44.r,
-            height: 44.r,
-            decoration: BoxDecoration(
-              color: AppColors.surface2,
-              borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-              border: Border.all(color: AppColors.border),
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onDecrement,
+            child: Container(
+              width: 44.r,
+              height: 44.r,
+              decoration: BoxDecoration(
+                color: AppColors.surface2,
+                borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Icon(
+                Icons.remove_rounded,
+                size: 20.r,
+                color: AppColors.text2,
+              ),
             ),
-            child:
-                Icon(Icons.remove_rounded, size: 20.r, color: AppColors.text2),
           ),
         ),
         Expanded(
@@ -445,16 +463,20 @@ class _HoursStepper extends StatelessWidget {
             ),
           ),
         ),
-        GestureDetector(
-          onTap: onIncrement,
-          child: Container(
-            width: 44.r,
-            height: 44.r,
-            decoration: BoxDecoration(
-              color: AppColors.accent,
-              borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onIncrement,
+            borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+            child: Container(
+              width: 44.r,
+              height: 44.r,
+              decoration: BoxDecoration(
+                color: AppColors.accent,
+                borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+              ),
+              child: Icon(Icons.add_rounded, size: 20.r, color: Colors.black),
             ),
-            child: Icon(Icons.add_rounded, size: 20.r, color: Colors.black),
           ),
         ),
       ],

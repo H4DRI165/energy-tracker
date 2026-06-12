@@ -13,12 +13,28 @@ class Appliance {
   factory Appliance.fromDoc(String id, Map<String, dynamic> data) {
     return Appliance(
       id: id,
-      name: data['name'] as String? ?? '',
-      category: data['category'] as String? ?? 'Other',
-      wattage: (data['wattage'] as num?)?.toDouble() ?? 0,
-      dailyHours: (data['dailyHours'] as num?)?.toDouble() ?? 0,
-      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      name: _readString(data['name'], fallback: ''),
+      category: _readString(data['category'], fallback: 'Other'),
+      wattage: _readDouble(data['wattage']),
+      dailyHours: _readDouble(data['dailyHours']),
+      createdAt: _readCreatedAt(data['createdAt']),
     );
+  }
+
+  static String _readString(dynamic value, {required String fallback}) {
+    return value is String ? value : fallback;
+  }
+
+  static double _readDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? 0;
+    return 0;
+  }
+
+  static DateTime _readCreatedAt(dynamic value) {
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+    return DateTime.now();
   }
 
   final String id;

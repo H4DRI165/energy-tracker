@@ -349,9 +349,12 @@ class _ApplianceCard extends ConsumerWidget {
           size: 24.r,
         ),
       ),
-      confirmDismiss: (_) => _confirmDelete(context),
-      onDismissed: (_) =>
-          ref.read(devicesProvider.notifier).deleteAppliance(appliance.id),
+      confirmDismiss: (_) async {
+        final confirmed = await _confirmDelete(context) ?? false;
+        if (!confirmed) return false;
+        return ref.read(devicesProvider.notifier).deleteAppliance(appliance.id);
+      },
+      onDismissed: (_) {},
       child: GestureDetector(
         onTap: () => context.push(AppRoutes.editAppliance, extra: appliance),
         child: Container(

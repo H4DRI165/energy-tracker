@@ -10,6 +10,7 @@ class DevicesPageState {
   final bool isLoading;
   final List<Appliance> appliances;
   final String? errorMessage;
+  static const Object _unset = Object();
 
   double get totalMonthlyKwh =>
       appliances.fold(0, (sum, a) => sum + a.monthlyKwh);
@@ -20,12 +21,14 @@ class DevicesPageState {
   DevicesPageState copyWith({
     bool? isLoading,
     List<Appliance>? appliances,
-    String? errorMessage,
+    Object? errorMessage = _unset,
   }) {
     return DevicesPageState(
       isLoading: isLoading ?? this.isLoading,
       appliances: appliances ?? this.appliances,
-      errorMessage: errorMessage ?? this.errorMessage,
+      errorMessage: identical(errorMessage, _unset)
+          ? this.errorMessage
+          : errorMessage as String?,
     );
   }
 }
