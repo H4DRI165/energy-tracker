@@ -234,39 +234,48 @@ class _TierRow extends StatelessWidget {
     return AnimatedOpacity(
       duration: const Duration(milliseconds: 300),
       opacity: isActive ? 1.0 : 0.35,
-      child: Container(
-        padding: EdgeInsets.all(12.r),
-        decoration: BoxDecoration(
-          color: AppColors.surface2,
-          borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-          border: Border(
-            left: BorderSide(color: color, width: 3),
-            top: const BorderSide(color: AppColors.border),
-            right: const BorderSide(color: AppColors.border),
-            bottom: const BorderSide(color: AppColors.border),
-          ),
-        ),
+      child: IntrinsicHeight(
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    tierLabel,
-                    style: AppTextStyles.bodySm.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: color,
-                    ),
-                  ),
-                  SizedBox(height: 2.h),
-                  Text(rateLabel, style: AppTextStyles.caption),
-                ],
+            Container(
+              width: 3,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(AppDimensions.radiusMd),
+                  bottomLeft: Radius.circular(AppDimensions.radiusMd),
+                ),
               ),
             ),
-            Text(
-              'RM ${amount.toStringAsFixed(2)}',
-              style: AppTextStyles.statMd.copyWith(fontSize: 16.sp),
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.all(12.r),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            tierLabel,
+                            style: AppTextStyles.bodySm.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: color,
+                            ),
+                          ),
+                          SizedBox(height: 2.h),
+                          Text(rateLabel, style: AppTextStyles.caption),
+                        ],
+                      ),
+                    ),
+                    Text(
+                      'RM ${amount.toStringAsFixed(2)}',
+                      style: AppTextStyles.statMd.copyWith(fontSize: 16.sp),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),
