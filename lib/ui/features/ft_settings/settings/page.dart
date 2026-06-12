@@ -3,8 +3,7 @@ import 'dart:async';
 import 'package:energy_tracker/theme/theme.dart';
 import 'package:energy_tracker/ui/components/errors.dart';
 import 'package:energy_tracker/ui/components/nav.dart';
-import 'package:energy_tracker/ui/features/ft_settings/settings/notifier/settings_notifier.dart';
-import 'package:energy_tracker/ui/features/ft_settings/settings/notifier/settings_state.dart';
+import 'package:energy_tracker/ui/features/ft_settings/settings/notifier/notifier.dart';
 import 'package:energy_tracker/ui/features/ft_settings/widgets/settings_layout.dart';
 import 'package:energy_tracker/ui/routes/routes.dart';
 import 'package:flutter/material.dart';
@@ -60,7 +59,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           ],
         ),
       ),
-      bottomNavigationBar: const AppBottomNav(currentIndex: 4),
+      bottomNavigationBar: const AppBottomNav(currentIndex: 3),
     );
   }
 

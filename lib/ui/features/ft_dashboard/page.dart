@@ -1,7 +1,6 @@
 import 'package:energy_tracker/theme/theme.dart';
 import 'package:energy_tracker/ui/components/nav.dart';
-import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_notifier.dart';
-import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_state.dart';
+import 'package:energy_tracker/ui/features/ft_dashboard/notifier/notifier.dart';
 import 'package:energy_tracker/ui/features/ft_dashboard/widgets/widgets.dart';
 import 'package:energy_tracker/ui/routes/routes.dart';
 import 'package:flutter/material.dart';

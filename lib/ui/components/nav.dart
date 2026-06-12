@@ -43,14 +43,14 @@ class AppBottomNav extends StatelessWidget {
               _NavItem(
                 icon: Icons.electrical_services_rounded,
                 label: 'Devices',
-                index: 3,
+                index: 2,
                 currentIndex: currentIndex,
                 route: AppRoutes.devices,
               ),
               _NavItem(
                 icon: Icons.settings_rounded,
                 label: 'Settings',
-                index: 4,
+                index: 3,
                 currentIndex: currentIndex,
                 route: AppRoutes.settings,
               ),

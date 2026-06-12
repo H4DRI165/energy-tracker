@@ -1,8 +1,7 @@
 import 'dart:async';
 
 import 'package:energy_tracker/app.dart';
-import 'package:energy_tracker/ui/features/ft_onboarding/notifier/onboarding_notifier.dart';
-import 'package:energy_tracker/ui/features/ft_onboarding/notifier/onboarding_state.dart';
+import 'package:energy_tracker/ui/features/ft_onboarding/notifier/notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

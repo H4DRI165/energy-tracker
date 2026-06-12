@@ -178,6 +178,34 @@ final GoRouter appRouter = GoRouter(
         return BillDetailPage(bill: extra);
       },
     ),
+    GoRoute(
+      path: AppRoutes.devices,
+      name: 'devices',
+      pageBuilder: (context, state) => const NoTransitionPage(
+        child: DevicesPage(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.addAppliance,
+      builder: (context, state) => const AddAppliancePage(),
+    ),
+    GoRoute(
+      path: AppRoutes.editAppliance,
+      builder: (context, state) {
+        final extra = state.extra;
+
+        if (extra is! Appliance) {
+          return const Scaffold(
+            body: Center(
+              child: Text(
+                'Invalid navigation. Please select a device from devices page.',
+              ),
+            ),
+          );
+        }
+        return AddAppliancePage(appliance: extra);
+      },
+    ),
 
     // -------------------------------WIP ROUTES--------------------------------
     GoRoute(
@@ -203,18 +231,6 @@ final GoRouter appRouter = GoRouter(
       ),
     ),
     GoRoute(
-      path: AppRoutes.devices,
-      name: 'devices',
-      pageBuilder: (context, state) => const NoTransitionPage(
-        child: ComingSoonPage(
-          title: 'My Appliances',
-          subtitle: 'Track individual appliance usage, set limits, '
-              'and get smart recommendations.',
-          icon: Icons.electrical_services_rounded,
-        ),
-      ),
-    ),
-    GoRoute(
       path: AppRoutes.scanBill,
       name: 'scan_bill',
       pageBuilder: (context, state) => const NoTransitionPage(
@@ -234,34 +250,12 @@ final GoRouter appRouter = GoRouter(
       pageBuilder: (context, state) => NoTransitionPage(
         child: Scaffold(
           backgroundColor: AppColors.bgDeep,
-          body: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('⚠️', style: TextStyle(fontSize: 48)),
-                const SizedBox(height: 16),
-                Text(
-                  'Failed to load your profile',
-                  style: AppTextStyles.titleMd,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Check your connection and try again',
-                  style: AppTextStyles.bodyMd.copyWith(
-                    color: AppColors.text2,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: () async {
-                    // Re-trigger the auth listener by resetting notifier
-                    _authService.userNotifier.reset();
-                    await _authService.retryLoadUser();
-                  },
-                  child: const Text('Retry'),
-                ),
-              ],
-            ),
+          body: ErrorView(
+            onRetry: () async {
+              // Re-trigger the auth listener by resetting notifier
+              _authService.userNotifier.reset();
+              await _authService.retryLoadUser();
+            },
           ),
         ),
       ),
