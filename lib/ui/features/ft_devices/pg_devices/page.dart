@@ -100,6 +100,20 @@ class _BodyContent extends StatelessWidget {
               'Appliances',
               style: AppTextStyles.bodyMd.copyWith(fontWeight: FontWeight.w700),
             ),
+            Row(
+              children: [
+                Icon(
+                  Icons.swipe_left_rounded,
+                  size: 14.r,
+                  color: AppColors.text3,
+                ),
+                SizedBox(width: 4.w),
+                Text(
+                  'Swipe to remove appliance',
+                  style: AppTextStyles.caption.copyWith(color: AppColors.text3),
+                ),
+              ],
+            ),
             SizedBox(height: 10.h),
             ...state.appliances.map(
               (appliance) => Padding(
@@ -343,10 +357,20 @@ class _ApplianceCard extends ConsumerWidget {
           color: AppColors.danger.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
         ),
-        child: Icon(
-          Icons.delete_outline_rounded,
-          color: AppColors.danger,
-          size: 24.r,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.delete_outline_rounded,
+              color: AppColors.danger,
+              size: 24.r,
+            ),
+            SizedBox(height: 4.h),
+            Text(
+              'Remove',
+              style: AppTextStyles.caption.copyWith(color: AppColors.danger),
+            ),
+          ],
         ),
       ),
       confirmDismiss: (_) async {
@@ -417,6 +441,12 @@ class _ApplianceCard extends ConsumerWidget {
                       ),
                     ],
                   ),
+                  SizedBox(width: 8.w),
+                  Icon(
+                    Icons.chevron_left_rounded,
+                    size: 16.r,
+                    color: AppColors.text3,
+                  ),
                 ],
               ),
               SizedBox(height: 10.h),
@@ -433,10 +463,18 @@ class _ApplianceCard extends ConsumerWidget {
                     ),
                   ),
                   SizedBox(height: 3.h),
-                  Text(
-                    '${(fraction * 100).toStringAsFixed(0)}% of total usage',
-                    style: AppTextStyles.caption
-                        .copyWith(fontSize: 10.sp, color: AppColors.text3),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '${(fraction * 100).toStringAsFixed(0)}'
+                        '% of total usage',
+                        style: AppTextStyles.caption.copyWith(
+                          fontSize: 10.sp,
+                          color: AppColors.text3,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
