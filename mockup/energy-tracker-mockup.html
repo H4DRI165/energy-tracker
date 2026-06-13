@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WattWise — Energy Tracker Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0A0E1A;
+    --surface: #111827;
+    --surface2: #1a2235;
+    --surface3: #1f2d42;
+    --border: rgba(255,255,255,0.07);
+    --accent: #00D4AA;
+    --accent2: #0099FF;
+    --accent3: #FF6B35;
+    --warn: #FFB020;
+    --danger: #FF4D6A;
+    --text: #F0F4FF;
+    --text2: #8899BB;
+    --text3: #4A5C7A;
+    --card-glow: 0 0 40px rgba(0,212,170,0.08);
+    --radius: 20px;
+    --radius-sm: 12px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'DM Sans', sans-serif; background: #060912; color: var(--text); min-height: 100vh; padding: 40px 20px 80px; }
+  h1, h2, h3, .title { font-family: 'Syne', sans-serif; }
+  .page-header { text-align: center; margin-bottom: 60px; }
+  .page-header .logo { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase; color: var(--accent); margin-bottom: 12px; }
+  .page-header h1 { font-size: clamp(28px, 5vw, 48px); font-weight: 800; background: linear-gradient(135deg, #F0F4FF 0%, #8899BB 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
+  .page-header p { color: var(--text2); font-size: 15px; }
+  .section { max-width: 1400px; margin: 0 auto 80px; }
+  .section-label { font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+  .section-title { font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+  .section-desc { font-size: 14px; color: var(--text2); margin-bottom: 32px; }
+  .phone-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 32px; align-items: start; }
+  .phone-grid.cols-2 { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+  .phone-wrap { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .phone-label { font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--text3); }
+  .phone { width: 100%; max-width: 300px; background: var(--surface); border-radius: 36px; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 24px 80px rgba(0,0,0,0.6), var(--card-glow); position: relative; }
+  .phone::before { content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 90px; height: 28px; background: #0A0E1A; border-radius: 0 0 18px 18px; z-index: 10; }
+  .phone-screen { padding: 44px 0 0; min-height: 580px; overflow: hidden; position: relative; }
+  .status-bar { display: flex; justify-content: space-between; align-items: center; padding: 0 20px 8px; font-size: 11px; font-weight: 600; color: var(--text2); }
+  .status-bar .time { color: var(--text); font-weight: 700; }
+  .status-icons { display: flex; gap: 4px; align-items: center; }
+  .top-nav { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px 16px; }
+  .top-nav .nav-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; }
+  .icon-btn { width: 36px; height: 36px; background: var(--surface2); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+  .avatar { width: 32px; height: 32px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
+  .card { background: var(--surface2); border-radius: var(--radius); border: 1px solid var(--border); padding: 18px; position: relative; overflow: hidden; }
+  .card-sm { padding: 14px; border-radius: var(--radius-sm); }
+  .card-accent { background: linear-gradient(135deg, rgba(0,212,170,0.15) 0%, rgba(0,153,255,0.08) 100%); border-color: rgba(0,212,170,0.2); }
+  .bottom-nav { display: flex; justify-content: space-around; align-items: center; padding: 12px 16px 16px; border-top: 1px solid var(--border); background: rgba(10,14,26,0.95); }
+  .nav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 9px; font-weight: 600; letter-spacing: 0.5px; color: var(--text3); text-transform: uppercase; }
+  .nav-item.active { color: var(--accent); }
+  .nav-item .ni { font-size: 20px; }
+  .nav-fab { width: 48px; height: 48px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 22px; margin-top: -20px; box-shadow: 0 8px 24px rgba(0,212,170,0.4); }
+  .tag { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .tag-green { background: rgba(0,212,170,0.12); color: var(--accent); }
+  .tag-blue { background: rgba(0,153,255,0.12); color: var(--accent2); }
+  .tag-warn { background: rgba(255,176,32,0.12); color: var(--warn); }
+  .tag-danger { background: rgba(255,77,106,0.12); color: var(--danger); }
+  .tag-orange { background: rgba(255,107,53,0.12); color: var(--accent3); }
+  .progress-bar { height: 6px; background: var(--surface3); border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+  .progress-fill.warn { background: linear-gradient(90deg, var(--warn), var(--accent3)); }
+  .progress-fill.danger { background: linear-gradient(90deg, var(--danger), #FF9A00); }
+  .divider { height: 1px; background: var(--border); margin: 12px 0; }
+  .t-accent { color: var(--accent); } .t-accent2 { color: var(--accent2); } .t-warn { color: var(--warn); } .t-danger { color: var(--danger); } .t-muted { color: var(--text2); }
+  .t-xs { font-size: 11px; } .t-sm { font-size: 13px; } .t-md { font-size: 15px; } .t-lg { font-size: 20px; } .t-xl { font-size: 26px; }
+  .fw-7 { font-weight: 700; } .fw-8 { font-weight: 800; font-family: 'Syne', sans-serif; }
+  .mt-4{margin-top:4px;}.mt-8{margin-top:8px;}.mt-12{margin-top:12px;}.mt-16{margin-top:16px;}
+  .mb-4{margin-bottom:4px;}.mb-8{margin-bottom:8px;}.mb-12{margin-bottom:12px;}.mb-16{margin-bottom:16px;}
+  .flex { display: flex; align-items: center; } .flex-between { display: flex; align-items: center; justify-content: space-between; }
+  .gap-8{gap:8px;}.gap-12{gap:12px;}.col{flex-direction:column;align-items:flex-start;}.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .mini-chart { display: flex; align-items: flex-end; gap: 5px; height: 60px; }
+  .bar { flex: 1; border-radius: 4px 4px 0 0; background: var(--surface3); position: relative; min-height: 4px; }
+  .bar.active { background: linear-gradient(180deg, var(--accent), rgba(0,212,170,0.4)); box-shadow: 0 0 12px rgba(0,212,170,0.3); }
+  .input-field { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px; color: var(--text); font-size: 15px; font-family: 'DM Sans', sans-serif; width: 100%; }
+  .input-field.focused { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,212,170,0.1); }
+  .input-label { font-size: 12px; font-weight: 600; color: var(--text2); letter-spacing: 0.5px; margin-bottom: 6px; }
+  .btn { width: 100%; padding: 16px; border-radius: var(--radius-sm); font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; letter-spacing: 0.5px; text-align: center; cursor: pointer; }
+  .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #000; box-shadow: 0 8px 24px rgba(0,212,170,0.3); }
+  .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  .appliance-icon { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  .ring-wrap { position: relative; width: 100px; height: 100px; margin: 0 auto; }
+  .ring-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .ring-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
+  .notif-dot { width: 8px; height: 8px; background: var(--danger); border-radius: 50%; position: absolute; top: -2px; right: -2px; }
+  .onboard-icon { width: 72px; height: 72px; border-radius: 24px; display: flex; align-items: center; justify-content: center; font-size: 32px; margin: 0 auto 16px; }
+  .scan-frame { border: 2px solid var(--accent); border-radius: 12px; position: relative; }
+  .scan-frame::before, .scan-frame::after { content: ''; position: absolute; width: 20px; height: 20px; border-color: var(--accent); border-style: solid; }
+  .scan-frame::before { top: -2px; left: -2px; border-width: 3px 0 0 3px; border-radius: 4px 0 0 0; }
+  .scan-frame::after { bottom: -2px; right: -2px; border-width: 0 3px 3px 0; border-radius: 0 0 4px 0; }
+  .toggle { width: 44px; height: 24px; border-radius: 12px; position: relative; flex-shrink: 0; }
+  .toggle.on { background: var(--accent); } .toggle.off { background: var(--surface3); }
+  .toggle::after { content: ''; position: absolute; width: 18px; height: 18px; background: white; border-radius: 50%; top: 3px; }
+  .toggle.on::after { left: 23px; } .toggle.off::after { left: 3px; }
+  .list-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .list-item:last-child { border-bottom: none; }
+  @media (max-width: 600px) { .phone-grid { grid-template-columns: 1fr; } body { padding: 20px 12px 60px; } }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="logo">⚡ WattWise</div>
+  <h1>Energy Tracker — UI Mockup</h1>
+  <p>Complete screen designs · MVP · TNB Malaysia · Flutter Portfolio</p>
+</div>
+
+<!-- 01 AUTH -->
+<div class="section">
+  <div class="section-label">01 — Auth Flow</div>
+  <div class="section-title">Splash & Authentication</div>
+  <div class="section-desc">Splash, login and register screens</div>
+  <div class="phone-grid">
+
+    <!-- SPLASH -->
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone-screen" style="background:linear-gradient(160deg,#060912,#0d1a2e);display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:620px;">
+          <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:radial-gradient(ellipse at 50% 40%,rgba(0,212,170,0.12) 0%,transparent 60%);"></div>
+          <div style="position:relative;text-align:center;">
+            <div style="width:80px;height:80px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:28px;display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto 20px;box-shadow:0 16px 40px rgba(0,212,170,0.3);">⚡</div>
+            <div style="font-family:'Syne',sans-serif;font-size:30px;font-weight:800;">WattWise</div>
+            <div style="font-size:13px;color:var(--text2);margin-top:6px;letter-spacing:1px;">Smart Energy for Malaysia</div>
+            <div style="margin-top:48px;width:40px;height:3px;background:var(--accent);border-radius:2px;margin-left:auto;margin-right:auto;opacity:0.6;"></div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-label">Splash Screen</div>
+    </div>
+
+    <!-- LOGIN -->
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone-screen" style="background:var(--bg);">
+          <div class="status-bar"><span class="time">9:41</span><div class="status-icons"><span>●●●</span><span>🔋</span></div></div>
+          <div style="padding:24px 20px;">
+            <div style="font-size:11px;letter-spacing:3px;color:var(--accent);font-weight:700;text-transform:uppercase;margin-bottom:8px;">Welcome back</div>
+            <div class="fw-8 t-xl mb-4">Sign In</div>
+            <div class="t-sm t-muted" style="margin-bottom:28px;">Track your TNB energy usage</div>
+            <div class="mb-12"><div class="input-label">Email Address</div><div class="input-field focused" style="border-radius:12px;">ahmad@email.com</div></div>
+            <div class="mb-16"><div class="input-label">Password</div><div class="input-field" style="border-radius:12px;color:var(--text3);">••••••••••</div></div>
+            <div style="text-align:right;margin-bottom:20px;"><span style="font-size:13px;color:var(--accent);">Forgot password?</span></div>
+            <div class="btn btn-primary mb-12">Sign In</div>
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;"><div style="flex:1;height:1px;background:var(--border);"></div><span style="font-size:12px;color:var(--text3);">or</span><div style="flex:1;height:1px;background:var(--border);"></div></div>
+            <div class="btn btn-outline" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;margin-bottom:16px;"><span>G</span> Continue with Google</div>
+            <div style="text-align:center;font-size:13px;color:var(--text2);">No account? <span style="color:var(--accent);font-weight:600;">Register</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-label">Login Screen</div>
+    </div>
+
+    <!-- REGISTER -->
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone-screen" style="background:var(--bg);">
+          <div class="status-bar"><span class="time">9:41</span><div class="status-icons"><span>●●●</span><span>🔋</span></div></div>
+          <div style="padding:16px 20px;">
+            <div style="margin-bottom:20px;font-size:20px;">←</div>
+            <div style="font-size:11px;letter-spacing:3px;color:var(--accent);font-weight:700;text-transform:uppercase;margin-bottom:8px;">Get started</div>
+            <div class="fw-8 t-xl mb-16">Create Account</div>
+            <div class="mb-12"><div class="input-label">Full Name</div><div class="input-field focused" style="border-radius:12px;">Ahmad Faiz</div></div>
+            <div class="mb-12"><div class="input-label">Email Address</div><div class="input-field" style="border-radius:12px;">ahmad@email.com</div></div>
+            <div class="mb-12"><div class="input-label">TNB Account No.</div><div class="input-field" style="border-radius:12px;color:var(--text2);">e.g. 1234567890</div></div>
+            <div class="mb-16"><div class="input-label">Password</div><div class="input-field" style="border-radius:12px;color:var(--text3);">••••••••</div></div>
+            <div class="btn btn-primary">Create Account</div>
+            <div style="text-align:center;font-size:12px;color:var(--text3);margin-top:12px;">By continuing you agree to our <span style="color:var(--accent2);">Terms</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-label">Register Screen</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- 02 ONBOARDING -->
+<div class="section">
+  <div class="section-label">02 — Onboarding</div>
+  <div class="section-title">Setup Wizard</div>
+  <div class="section-desc">3-step onboarding — tariff type, monthly target, completion</div>
+  <div class="phone-grid">
+
+    <!-- ONBOARD 1 -->
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone-screen" style="background:var(--bg);">
+          <div class="status-bar"><span class="time">9:41</span><div class="status-icons"></div></div>
+          <div style="padding:20px;">
+            <div style="text-align:right;font-size:13px;color:var(--text2);">1 of 3</div>
+            <div style="height:3px;background:var(--surface3);border-radius:2px;margin:8px 0 28px;overflow:hidden;"><div style="width:33%;height:100%;background:var(--accent);border-radius:2px;"></div></div>
+            <div class="onboard-icon" style="background:linear-gradient(135deg,rgba(0,212,170,0.15),rgba(0,153,255,0.1));border:1px solid rgba(0,212,170,0.2);">🏠</div>
+            <div style="text-align:center;font-family:'Syne',sans-serif;font-size:22px;font-weight:800;margin-bottom:8px;">Select Tariff Type</div>
+            <div style="text-align:center;font-size:13px;color:var(--text2);margin-bottom:24px;">Choose your TNB account category</div>
+            <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:28px;">
+              <div class="card" style="border-color:var(--accent);background:rgba(0,212,170,0.06);">
+                <div class="flex-between">
+                  <div><div style="font-weight:700;margin-bottom:2px;">🏠 Domestic (Residential)</div><div style="font-size:12px;color:var(--text2);">Tariff A — For homes & apartments</div></div>
+                  <div style="width:20px;height:20px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;color:#000;font-weight:700;">✓</div>
+                </div>
+              </div>
+              <div class="card">
+                <div class="flex-between">
+                  <div><div style="font-weight:700;margin-bottom:2px;">🏢 Commercial (LV)</div><div style="font-size:12px;color:var(--text2);">Tariff B — Shops, offices</div></div>
+                  <div style="width:20px;height:20px;border-radius:50%;border:1px solid var(--border);"></div>
+                </div>
+              </div>
+            </div>
+            <div class="btn btn-primary">Continue</div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-label">Onboard · Tariff</div>
+    </div>
+
+    <!-- ONBOARD 2 -->
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone-screen" style="background:var(--bg);">
+          <div class="status-bar"><span class="time">9:41</span><div class="status-icons"></div></div>
+          <div style="padding:20px;">
+            <div style="text-align:right;font-size:13px;color:var(--text2);">2 of 3</div>
+            <div style="height:3px;background:var(--surface3);border-radius:2px;margin:8px 0 28px;overflow:hidden;"><div style="width:66%;height:100%;background:var(--accent);border-radius:2px;"></div></div>
+            <div class="onboard-icon" style="background:linear-gradient(135deg,rgba(255,176,32,0.15),rgba(255,107,53,0.1));border:1px solid rgba(255,176,32,0.2);">🎯</div>
+            <div style="text-align:center;font-family:'Syne',sans-serif;font-size:22px;font-weight:800;margin-bottom:8px;">Set Monthly Target</div>
+            <div style="text-align:center;font-size:13px;color:var(--text2);margin-bottom:24px;">We'll alert you before you overspend</div>
+            <div class="card card-accent" style="text-align:center;margin-bottom:16px;">
+              <div style="font-size:11px;color:var(--text2);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Monthly Budget (RM)</div>
+              <div style="font-family:'Syne',sans-serif;font-size:40px;font-weight:800;color:var(--accent);">RM 150</div>
+              <div style="font-size:12px;color:var(--text2);margin-top:4px;">≈ 300–350 kWh estimated</div>
+            </div>
+            <div style="padding:0 4px;margin-bottom:20px;">
+              <div style="height:4px;background:var(--surface3);border-radius:2px;position:relative;"><div style="width:55%;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:2px;"></div><div style="position:absolute;top:-6px;left:55%;width:16px;height:16px;background:white;border-radius:50%;border:2px solid var(--accent);transform:translateX(-50%);"></div></div>
+              <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:11px;color:var(--text3);"><span>RM 50</span><span>RM 300</span></div>
+            </div>
+            <div style="background:var(--surface2);border-radius:12px;padding:12px 14px;margin-bottom:24px;border:1px solid var(--border);">
+              <div style="font-size:12px;color:var(--text2);">💡 Average Malaysian household spends <span style="color:var(--warn);font-weight:600;">RM 120–180</span>/month on electricity</div>
+            </div>
+            <div class="btn btn-primary">Continue</div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-label">Onboard · Budget</div>
+    </div>
+
+    <!-- ONBOARD 3 -->
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone-screen" style="background:var(--bg);">
+          <div class="status-bar"><span class="time">9:41</span><div class="status-icons"></div></div>
+          <div style="padding:20px;">
+            <div style="text-align:right;font-size:13px;color:var(--text2);">3 of 3</div>
+            <div style="height:3px;background:var(--surface3);border-radius:2px;margin:8px 0 28px;overflow:hidden;"><div style="width:100%;height:100%;background:var(--accent);border-radius:2px;"></div></div>
+            <div class="onboard-icon" style="background:linear-gradient(135deg,rgba(0,153,255,0.15),rgba(0,212,170,0.1));border:1px solid rgba(0,153,255,0.2);">🎉</div>
+            <div style="text-align:center;font-family:'Syne',sans-serif;font-size:22px;font-weight:800;margin-bottom:8px;">You're All Set!</div>
+            <div style="text-align:center;font-size:13px;color:var(--text2);margin-bottom:24px;">WattWise is ready to track your usage</div>
+            <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:28px;">
+              <div style="display:flex;gap:12px;align-items:center;padding:10px;background:var(--surface2);border-radius:12px;border:1px solid var(--border);">
+                <div style="width:36px;height:36px;background:rgba(0,212,170,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;">✅</div>
+                <div><div style="font-size:14px;font-weight:600;">Tariff configured</div><div style="font-size:12px;color:var(--text2);">Domestic (Residential)</div></div>
+              </div>
+              <div style="display:flex;gap:12px;align-items:center;padding:10px;background:var(--surface2);border-radius:12px;border:1px solid var(--border);">
+                <div style="width:36px;height:36px;background:rgba(0,212,170,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;">✅</div>
+                <div><div style="font-size:14px;font-weight:600;">Budget set</div><div style="font-size:12px;color:var(--text2);">RM 150 / month</div></div>
+              </div>
+              <div style="display:flex;gap:12px;align-items:center;padding:10px;background:var(--surface2);border-radius:12px;border:1px solid var(--border);">
+                <div style="width:36px;height:36px;background:rgba(0,212,170,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;">🔔</div>
+                <div><div style="font-size:14px;font-weight:600;">Alerts enabled</div><div style="font-size:12px;color:var(--text2);">80% & 100% notifications</div></div>
+              </div>
+            </div>
+            <div class="btn btn-primary">Start Tracking ⚡</div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-label">Onboard · Complete</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- 03 DASHBOARD -->
+<div class="section">
+  <div class="section-label">03 — Main Dashboard</div>
+  <div class="section-title">Home Dashboard</div>
+  <div class="section-desc">Normal state and budget alert state</div>
+  <div class="phone-grid cols-2">
+
+    <!-- DASHBOARD NORMAL -->
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone-screen" style="background:var(--bg);">
+          <div class="status-bar"><span class="time">9:41</span><div class="status-icons"><span>🔋</span></div></div>
+          <div class="top-nav">
+            <div><div style="font-size:12px;color:var(--text2);">Good morning,</div><div class="fw-8" style="font-size:18px;">Ahmad Faiz 👋</div></div>
+            <div style="display:flex;gap:8px;"><div class="icon-btn" style="position:relative;">🔔<div class="notif-dot"></div></div><div class="avatar">AF</div></div>
+          </div>
+          <div style="padding:0 20px 16px;">
+            <div style="background:linear-gradient(135deg,#0d2d24,#0a1e2e);border-radius:20px;padding:20px;border:1px solid rgba(0,212,170,0.2);position:relative;overflow:hidden;margin-bottom:16px;">
+              <div style="position:absolute;top:-20px;right:-20px;width:120px;height:120px;background:radial-gradient(circle,rgba(0,212,170,0.15),transparent);border-radius:50%;"></div>
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                <div>
+                  <div style="font-size:11px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:4px;">June 2025</div>
+                  <div style="font-family:'Syne',sans-serif;font-size:36px;font-weight:800;line-height:1;">RM 87.40</div>
+                  <div style="font-size:13px;color:var(--text2);margin-top:4px;">Estimated bill · 211 kWh used</div>
+                </div>
+                <div style="text-align:right;"><div class="tag tag-green" style="margin-bottom:6px;">↓ 12%</div><div style="font-size:11px;color:var(--text2);">vs last month</div></div>
+              </div>
+              <div style="margin-top:16px;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="font-size:12px;color:var(--text2);">Budget used</span><span style="font-size:12px;font-weight:600;">RM 87 / RM 150</span></div>
+                <div class="progress-bar" style="height:8px;"><div class="progress-fill" style="width:58%;"></div></div>
+                <div style="font-size:11px;color:var(--accent);margin-top:4px;">58% of target · 13 days left</div>
+              </div>
+            </div>
+            <div class="grid-2" style="margin-bottom:14px;">
+              <div class="card card-sm"><div style="font-size:11px;color:var(--text2);margin-bottom:4px;">Daily Avg</div><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:var(--accent2);">7.2 <span style="font-size:12px;color:var(--text2);">kWh</span></div><div class="tag tag-green t-xs mt-4" style="padding:2px 6px;">↓ Normal</div></div>
+              <div class="card card-sm"><div style="font-size:11px;color:var(--text2);margin-bottom:4px;">Tariff Tier</div><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:var(--warn);">Tier 2</div><div class="tag tag-warn t-xs mt-4" style="padding:2px 6px;">201–300 kWh</div></div>
+            </div>
+            <div class="card card-sm" style="margin-bottom:14px;">
+              <div class="flex-between mb-8"><div style="font-size:13px;font-weight:600;">7-Day Usage</div><span style="font-size:11px;color:var(--text2);">kWh/day</span></div>
+              <div class="mini-chart" style="height:50px;">
+                <div class="bar" style="height:60%;"></div><div class="bar" style="height:75%;"></div><div class="bar" style="height:55%;"></div><div class="bar" style="height:80%;"></div><div class="bar" style="height:65%;"></div><div class="bar" style="height:70%;"></div><div class="bar active" style="height:72%;"></div>
+              </div>
+              <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:10px;color:var(--text3);"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span style="color:var(--accent);">Today</span></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:12px;text-align:center;"><div style="font-size:22px;margin-bottom:4px;">📊</div><div style="font-size:12px;font-weight:600;">Add Reading</div></div>
+              <div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:12px;text-align:center;"><div style="font-size:22px;margin-bottom:4px;">📄</div><div style="font-size:12px;font-weight:600;">Scan Bill</div></div>
+            </div>
+          </div>
+          <div class="bottom-nav">
+            <div class="nav-item active"><div class="ni">🏠</div>Home</div>
+            <div class="nav-item"><div class="ni">📈</div>Usage</div>
+            <div class="nav-fab">⚡</div>
+            <div class="nav-item"><div class="ni">🔌</div>Devices</div>
+            <div class="nav-item"><div class="ni">⚙️</div>Settings</div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-label">Dashboard — Normal</div>
+    </div>
+
+    <!-- DASHBOARD ALERT -->
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone-screen" style="background:var(--bg);">
+          <div class="status-bar"><span class="time">9:41</span><div class="status-icons"><span>🔋</span></div></div>
+          <div class="top-nav">
+            <div><div style="font-size:12px;color:var(--text2);">Good evening,</div><div class="fw-8" style="font-size:18px;">Ahmad Faiz ⚠️</div></div>
+            <div style="display:flex;gap:8px;"><div class="icon-btn" style="position:relative;background:rgba(255,77,106,0.1);border:1px solid rgba(255,77,106,0.2);">🔔<div class="notif-dot"></div></div><div class="avatar">AF</div></div>
+          </div>
+          <div style="padding:0 20px 16px;">
+            <div style="background:rgba(255,176,32,0.1);border:1px solid rgba(255,176,32,0.3);border-radius:14px;padding:12px 14px;margin-bottom:14px;display:flex;gap:10px;align-items:center;">
+              <div style="font-size:22px;">⚠️</div>
+              <div><div style="font-size:13px;font-weight:700;color:var(--warn);">80% Budget Reached</div><div style="font-size:11px;color:var(--text2);">RM 124 used of RM 150 target. 5 days left.</div></div>
+            </div>
+            <div style="background:linear-gradient(135deg,#2d1a0a,#1e1a0a);border-radius:20px;padding:20px;border:1px solid rgba(255,176,32,0.3);margin-bottom:14px;">
+              <div style="font-size:11px;color:var(--warn);letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:4px;">June 2025</div>
+              <div style="font-family:'Syne',sans-serif;font-size:36px;font-weight:800;">RM 124.60</div>
+              <div style="font-size:13px;color:var(--text2);margin-top:4px;">291 kWh · Projected: RM 148</div>
+              <div style="margin-top:14px;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="font-size:12px;color:var(--text2);">Budget used</span><span style="font-size:12px;font-weight:600;color:var(--warn);">RM 124 / RM 150</span></div>
+                <div class="progress-bar" style="height:8px;"><div class="progress-fill warn" style="width:83%;"></div></div>
+                <div style="font-size:11px;color:var(--warn);margin-top:4px;">83% used · Reduce usage to stay on track</div>
+              </div>
+            </div>
+            <div class="card card-sm mb-12" style="margin-bottom:12px;">
+              <div style="font-size:13px;font-weight:700;margin-bottom:10px;">💡 Quick Saving Tips</div>
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                <div style="display:flex;gap:8px;align-items:center;"><div style="width:28px;height:28px;background:rgba(0,212,170,0.1);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;">❄️</div><div style="font-size:12px;">Set AC to 25°C saves ~15% energy</div></div>
+                <div style="display:flex;gap:8px;align-items:center;"><div style="width:28px;height:28px;background:rgba(0,212,170,0.1);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;">💡</div><div style="font-size:12px;">Switch off standby devices at night</div></div>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <div class="card card-sm" style="text-align:center;"><div style="font-size:11px;color:var(--text2);margin-bottom:2px;">Daily Avg</div><div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--accent3);">9.7 kWh</div></div>
+              <div class="card card-sm" style="text-align:center;"><div style="font-size:11px;color:var(--text2);margin-bottom:2px;">Current Tier</div><div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--danger);">Tier 3</div></div>
+            </div>
+          </div>
+          <div class="bottom-nav">
+            <div class="nav-item active"><div class="ni">🏠</div>Home</div>
+            <div class="nav-item"><div class="ni">📈</div>Usage</div>
+            <div class="nav-fab">⚡</div>
+            <div class="nav-item"><div class="ni">🔌</div>Devices</div>
+            <div class="nav-item"><div class="ni">⚙️</div>Settings</div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-label">Dashboard — Alert State</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- 04 USAGE ANALYTICS -->
+<div class="section">
+  <div class="section-label">04 — Analytics</div>
+  <div class="section-title">Usage History & Analytics</div>
+  <div class="section-desc">Monthly chart, tariff breakdown, bill history, add reading</div>
+  <div class="phone-grid cols-2">
+
+    <!-- ANALYTICS -->
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone-screen" style="background:var(--bg);">
+          <div class="status-bar"><span class="time">9:41</span><div class="status-icons"><span>🔋</span></div></div>
+          <div class="top-nav"><div class="fw-8 t-lg">Usage History</div><div class="icon-btn">⋯</div></div>
+          <div style="padding:0 20px 16px;">
+            <div style="display:flex;background:var(--surface2);border-radius:12px;padding:4px;gap:4px;margin-bottom:16px;">
+              <div style="flex:1;text-align:center;padding:8px;background:var(--accent);border-radius:9px;font-size:12px;font-weight:700;color:#000;">Monthly</div>
+              <div style="flex:1;text-align:center;padding:8px;font-size:12px;color:var(--text2);">Yearly</div>
+            </div>
+            <div class="card card-sm" style="margin-bottom:14px;">
+              <div class="flex-between mb-12"><div style="font-size:14px;font-weight:700;">kWh Usage</div><div style="display:flex;gap:8px;font-size:11px;"><span style="color:var(--accent);">■ kWh</span></div></div>
+              <div style="display:flex;align-items:flex-end;gap:6px;height:80px;margin-bottom:6px;">
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;"><div style="font-size:9px;color:var(--text3);">245</div><div style="width:100%;height:70%;background:var(--surface3);border-radius:4px 4px 0 0;"></div></div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;"><div style="font-size:9px;color:var(--text3);">278</div><div style="width:100%;height:80%;background:var(--surface3);border-radius:4px 4px 0 0;"></div></div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;"><div style="font-size:9px;color:var(--text3);">312</div><div style="width:100%;height:90%;background:rgba(255,107,53,0.4);border-radius:4px 4px 0 0;"></div></div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;"><div style="font-size:9px;color:var(--text3);">267</div><div style="width:100%;height:77%;background:var(--surface3);border-radius:4px 4px 0 0;"></div></div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;"><div style="font-size:9px;color:var(--text3);">241</div><div style="width:100%;height:69%;background:var(--surface3);border-radius:4px 4px 0 0;"></div></div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;"><div style="font-size:9px;color:var(--accent);">211</div><div style="width:100%;height:61%;background:linear-gradient(180deg,var(--accent),rgba(0,212,170,0.3));border-radius:4px 4px 0 0;box-shadow:0 0 8px rgba(0,212,170,0.3);"></div></div>
+              </div>
+              <div style="display:flex;gap:6px;font-size:10px;color:var(--text3);">
+                <div style="flex:1;text-align:center;">Jan</div><div style="flex:1;text-align:center;">Feb</div><div style="flex:1;text-align:center;">Mar</div><div style="flex:1;text-align:center;">Apr</div><div style="flex:1;text-align:center;">May</div><div style="flex:1;text-align:center;color:var(--accent);">Jun</div>
+              </div>
+            </div>
+            <div class="card card-sm" style="margin-bottom:12px;">
+              <div style="font-size:13px;font-weight:700;margin-bottom:10px;">Tariff Tier Breakdown</div>
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                <div><div class="flex-between" style="margin-bottom:4px;"><span style="font-size:11px;">Tier 1 · 1–200 kWh · 21.8 sen</span><span style="font-size:12px;color:var(--accent);">RM 43.60</span></div><div class="progress-bar"><div class="progress-fill" style="width:95%;background:var(--accent);"></div></div></div>
+                <div><div class="flex-between" style="margin-bottom:4px;"><span style="font-size:11px;">Tier 2 · 201–300 kWh · 33.4 sen</span><span style="font-size:12px;color:var(--warn);">RM 36.74</span></div><div class="progress-bar"><div class="progress-fill" style="width:33%;background:var(--warn);"></div></div></div>
+              </div>
+            </div>
+            <div style="font-size:13px;font-weight:700;margin-bottom:10px;">Bill History</div>
+            <div class="list-item">
+              <div style="width:36px;height:36px;background:rgba(0,212,170,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;">📅</div>
+              <div style="flex:1;"><div style="font-size:13px;font-weight:600;">May 2025</div><div style="font-size:11px;color:var(--text2);">241 kWh</div></div>
+              <div style="text-align:right;"><div style="font-size:14px;font-weight:700;">RM 95.20</div><div class="tag tag-green" style="font-size:10px;padding:2px 6px;">Paid</div></div>
+            </div>
+            <div class="list-item" style="border:none;">
+              <div style="width:36px;height:36px;background:rgba(0,153,255,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;">📅</div>
+              <div style="flex:1;"><div style="font-size:13px;font-weight:600;">Apr 2025</div><div style="font-size:11px;color:var(--text2);">267 kWh</div></div>
+              <div style="text-align:right;"><div style="font-size:14px;font-weight:700;">RM 108.70</div><div class="tag tag-green" style="font-size:10px;padding:2px 6px;">Paid</div></div>
+            </div>
+          </div>
+          <div class="bottom-nav">
+            <div class="nav-item"><div class="ni">🏠</div>Home</div>
+            <div class="nav-item active"><div class="ni">📈</div>Usage</div>
+            <div class="nav-fab">⚡</div>
+            <div class="nav-item"><div class="ni">🔌</div>Devices</div>
+            <div class="nav-item"><div class="ni">⚙️</div>Settings</div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-label">Usage Analytics</div>
+    </div>
+
+    <!-- ADD READING -->
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone-screen" style="background:var(--bg);">
+          <div class="status-bar"><span class="time">9:41</span><div class="status-icons"><span>🔋</span></div></div>
+          <div class="top-nav"><div style="font-size:20px;">←</div><div class="fw-8 t-md">Add Meter Reading</div><div style="width:36px;"></div></div>
+          <div style="padding:0 20px 24px;">
+            <div style="background:linear-gradient(135deg,#0d2d24,#0a1e2e);border-radius:20px;padding:20px;border:1px solid rgba(0,212,170,0.2);text-align:center;margin-bottom:20px;">
+              <div style="font-size:11px;letter-spacing:2px;color:var(--accent);text-transform:uppercase;font-weight:700;margin-bottom:8px;">Current Reading</div>
+              <div style="font-family:'Syne',sans-serif;font-size:44px;font-weight:800;letter-spacing:4px;color:var(--accent);">04721</div>
+              <div style="font-size:13px;color:var(--text2);margin-top:4px;">kWh · Last read: May 31</div>
+            </div>
+            <div class="mb-12"><div class="input-label">Reading Date</div><div class="input-field" style="border-radius:12px;">June 17, 2025</div></div>
+            <div class="mb-12"><div class="input-label">Meter Reading (kWh)</div><div class="input-field focused" style="border-radius:12px;font-size:22px;font-weight:700;font-family:'Syne',sans-serif;color:var(--accent);">04721</div></div>
+            <div style="background:var(--surface2);border:1px solid rgba(0,212,170,0.15);border-radius:14px;padding:14px;margin-bottom:20px;">
+              <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:10px;">⚡ Auto Calculated</div>
+              <div class="flex-between mb-8"><span style="font-size:13px;color:var(--text2);">Usage this month</span><span style="font-size:13px;font-weight:700;">211 kWh</span></div>
+              <div class="flex-between mb-8"><span style="font-size:13px;color:var(--text2);">Estimated bill</span><span style="font-size:13px;font-weight:700;color:var(--accent);">RM 87.40</span></div>
+              <div class="divider"></div>
+              <div class="flex-between"><span style="font-size:12px;color:var(--text2);">Current tier</span><div class="tag tag-warn">Tier 2 — 33.4 sen/kWh</div></div>
+            </div>
+            <div class="mb-12"><div class="input-label">Notes (optional)</div><div class="input-field" style="border-radius:12px;color:var(--text3);height:60px;">e.g. Raya holiday, high AC usage...</div></div>
+            <div class="btn btn-primary">Save Reading</div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-label">Add Meter Reading</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- 05 APPLIANCES -->
+<div class="section">
+  <div class="section-label">05 — Appliance Tracker</div>
+  <div class="section-title">Devices & Appliances</div>
+  <div class="section-desc">Per-appliance kWh and RM cost breakdown, add appliance form</div>
+  <div class="phone-grid cols-2">
+
+    <!-- APPLIANCE LIST -->
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone-screen" style="background:var(--bg);">
+          <div class="status-bar"><span class="time">9:41</span><div class="status-icons"><span>🔋</span></div></div>
+          <div class="top-nav"><div class="fw-8 t-lg">My Appliances</div><div class="icon-btn" style="background:var(--accent);color:#000;font-size:20px;font-weight:700;">+</div></div>
+          <div style="padding:0 20px 16px;">
+            <div class="card card-accent" style="margin-bottom:14px;display:flex;gap:16px;align-items:center;">
+              <div style="position:relative;width:80px;height:80px;flex-shrink:0;">
+                <svg style="width:100%;height:100%;transform:rotate(-90deg);" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="38" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="10"/>
+                  <circle cx="50" cy="50" r="38" fill="none" stroke="url(#g1)" stroke-width="10" stroke-dasharray="175 239" stroke-linecap="round"/>
+                  <defs><linearGradient id="g1" x1="0%" y1="0%" x2="100%"><stop offset="0%" stop-color="#00D4AA"/><stop offset="100%" stop-color="#0099FF"/></linearGradient></defs>
+                </svg>
+                <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;">
+                  <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:800;color:var(--accent);">211</div>
+                  <div style="font-size:9px;color:var(--text2);">kWh</div>
+                </div>
+              </div>
+              <div><div style="font-size:11px;color:var(--text2);margin-bottom:4px;">Total Monthly Cost</div><div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:800;">RM 87.40</div><div style="font-size:12px;color:var(--text2);margin-top:2px;">5 appliances tracked</div></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div class="card card-sm">
+                <div class="flex-between">
+                  <div style="display:flex;gap:10px;align-items:center;"><div class="appliance-icon" style="background:rgba(0,153,255,0.12);">❄️</div><div><div style="font-size:14px;font-weight:600;">Air Conditioner</div><div style="font-size:11px;color:var(--text2);">1500W · 8h/day</div></div></div>
+                  <div style="text-align:right;"><div style="font-size:15px;font-weight:700;color:var(--accent2);">RM 36.00</div><div style="font-size:11px;color:var(--text2);">108 kWh</div></div>
+                </div>
+                <div style="margin-top:8px;"><div class="progress-bar"><div class="progress-fill" style="width:51%;background:var(--accent2);"></div></div><div style="font-size:10px;color:var(--text3);margin-top:3px;">51% of total usage</div></div>
+              </div>
+              <div class="card card-sm">
+                <div class="flex-between">
+                  <div style="display:flex;gap:10px;align-items:center;"><div class="appliance-icon" style="background:rgba(255,176,32,0.12);">🌡️</div><div><div style="font-size:14px;font-weight:600;">Water Heater</div><div style="font-size:11px;color:var(--text2);">3000W · 1h/day</div></div></div>
+                  <div style="text-align:right;"><div style="font-size:15px;font-weight:700;color:var(--warn);">RM 19.80</div><div style="font-size:11px;color:var(--text2);">60 kWh</div></div>
+                </div>
+                <div style="margin-top:8px;"><div class="progress-bar"><div class="progress-fill" style="width:28%;background:var(--warn);"></div></div></div>
+              </div>
+              <div class="card card-sm">
+                <div class="flex-between">
+                  <div style="display:flex;gap:10px;align-items:center;"><div class="appliance-icon" style="background:rgba(0,212,170,0.12);">🖥️</div><div><div style="font-size:14px;font-weight:600;">TV + Set-top</div><div style="font-size:11px;color:var(--text2);">200W · 5h/day</div></div></div>
+                  <div style="text-align:right;"><div style="font-size:15px;font-weight:700;color:var(--accent);">RM 9.90</div><div style="font-size:11px;color:var(--text2);">30 kWh</div></div>
+                </div>
+                <div style="margin-top:8px;"><div class="progress-bar"><div class="progress-fill" style="width:14%;"></div></div></div>
+              </div>
+              <div class="card card-sm">
+                <div class="flex-between">
+                  <div style="display:flex;gap:10px;align-items:center;"><div class="appliance-icon" style="background:rgba(255,107,53,0.12);">🍚</div><div><div style="font-size:14px;font-weight:600;">Rice Cooker</div><div style="font-size:11px;color:var(--text2);">700W · 1h/day</div></div></div>
+                  <div style="text-align:right;"><div style="font-size:15px;font-weight:700;color:var(--accent3);">RM 4.62</div><div style="font-size:11px;color:var(--text2);">14 kWh</div></div>
+                </div>
+                <div style="margin-top:8px;"><div class="progress-bar"><div class="progress-fill" style="width:7%;background:var(--accent3);"></div></div></div>
+              </div>
+            </div>
+          </div>
+          <div class="bottom-nav">
+            <div class="nav-item"><div class="ni">🏠</div>Home</div>
+            <div class="nav-item"><div class="ni">📈</div>Usage</div>
+            <div class="nav-fab">⚡</div>
+            <div class="nav-item active"><div class="ni">🔌</div>Devices</div>
+            <div class="nav-item"><div class="ni">⚙️</div>Settings</div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-label">Appliance List</div>
+    </div>
+
+    <!-- ADD APPLIANCE -->
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone-screen" style="background:var(--bg);">
+          <div class="status-bar"><span class="time">9:41</span><div class="status-icons"><span>🔋</span></div></div>
+          <div class="top-nav"><div style="font-size:20px;">←</div><div class="fw-8 t-md">Add Appliance</div><div style="width:36px;"></div></div>
+          <div style="padding:0 20px 24px;">
+            <div style="margin-bottom:16px;">
+              <div class="input-label">Category</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+                <div style="background:rgba(0,153,255,0.1);border:1px solid rgba(0,153,255,0.3);border-radius:12px;padding:10px;text-align:center;"><div style="font-size:20px;">❄️</div><div style="font-size:10px;color:var(--accent2);margin-top:4px;font-weight:600;">Cooling</div></div>
+                <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:10px;text-align:center;"><div style="font-size:20px;">💡</div><div style="font-size:10px;color:var(--text3);margin-top:4px;">Lighting</div></div>
+                <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:10px;text-align:center;"><div style="font-size:20px;">🍳</div><div style="font-size:10px;color:var(--text3);margin-top:4px;">Kitchen</div></div>
+              </div>
+            </div>
+            <div class="mb-12"><div class="input-label">Appliance Name</div><div class="input-field focused" style="border-radius:12px;">Air Conditioner (Bedroom)</div></div>
+            <div class="mb-12">
+              <div class="input-label">Wattage (W)</div>
+              <div class="input-field" style="border-radius:12px;font-family:'Syne',sans-serif;font-size:20px;font-weight:700;">1500</div>
+              <div style="font-size:11px;color:var(--text2);margin-top:4px;">💡 Typical AC: 900–2000W</div>
+            </div>
+            <div class="mb-12">
+              <div class="input-label">Daily Usage (hours)</div>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <div style="width:40px;height:40px;background:var(--surface2);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;border:1px solid var(--border);">−</div>
+                <div class="input-field" style="border-radius:12px;font-family:'Syne',sans-serif;font-size:22px;font-weight:700;text-align:center;">8</div>
+                <div style="width:40px;height:40px;background:var(--accent);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;color:#000;font-weight:700;">+</div>
+              </div>
+            </div>
+            <div style="background:linear-gradient(135deg,rgba(0,153,255,0.08),rgba(0,212,170,0.05));border:1px solid rgba(0,153,255,0.2);border-radius:14px;padding:14px;margin-bottom:20px;">
+              <div style="font-size:11px;font-weight:700;color:var(--accent2);letter-spacing:1px;margin-bottom:10px;">MONTHLY ESTIMATE</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                <div><div style="font-size:11px;color:var(--text2);">Energy/month</div><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:700;">360 kWh</div></div>
+                <div><div style="font-size:11px;color:var(--text2);">Cost/month</div><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:var(--accent);">RM 120</div></div>
+              </div>
+            </div>
+            <div class="btn btn-primary">Add Appliance</div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-label">Add Appliance</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- 06 BILL SCANNER -->
+<div class="section">
+  <div class="section-label">06 — Bill Scanner</div>
+  <div class="section-title">TNB Bill OCR Scanner</div>
+  <div class="section-desc">Camera scan → ML Kit OCR → auto-populate bill data → Firebase Storage upload</div>
+  <div class="phone-grid">
+
+    <!-- CAMERA -->
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone-screen" style="background:#000;position:relative;min-height:620px;">
+          <div class="status-bar" style="position:absolute;top:44px;left:0;right:0;z-index:5;"><span class="time" style="color:white;">9:41</span><div class="status-icons" style="color:white;"><span>🔋</span></div></div>
+          <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(160deg,#1a2510,#0d1a08);"></div>
+          <div style="position:relative;z-index:3;padding:72px 20px 20px;min-height:620px;display:flex;flex-direction:column;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:20px;"><div style="font-size:22px;color:white;">←</div><div style="font-size:14px;font-weight:600;color:white;">Scan TNB Bill</div><div style="font-size:22px;color:white;">⚡</div></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;">
+              <div class="scan-frame" style="width:220px;height:140px;display:flex;align-items:center;justify-content:center;">
+                <div style="text-align:center;color:rgba(255,255,255,0.4);"><div style="font-size:28px;margin-bottom:4px;">📄</div><div style="font-size:11px;">Position bill here</div></div>
+                <div style="position:absolute;top:30%;left:5%;right:5%;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:0.8;"></div>
+              </div>
+              <div style="text-align:center;"><div style="font-size:13px;color:rgba(255,255,255,0.7);margin-bottom:4px;">Align TNB bill within the frame</div><div class="tag tag-green">Auto-detect enabled</div></div>
+            </div>
+            <div style="display:flex;justify-content:space-around;align-items:center;padding:16px 0 8px;">
+              <div style="width:44px;height:44px;background:rgba(255,255,255,0.1);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;">🖼️</div>
+              <div style="width:64px;height:64px;border:3px solid white;border-radius:50%;display:flex;align-items:center;justify-content:center;"><div style="width:52px;height:52px;background:white;border-radius:50%;"></div></div>
+              <div style="width:44px;height:44px;background:rgba(255,255,255,0.1);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;">💡</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-label">Scanner · Camera</div>
+    </div>
+
+    <!-- PROCESSING -->
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone-screen" style="background:var(--bg);">
+          <div class="status-bar"><span class="time">9:41</span><div class="status-icons"><span>🔋</span></div></div>
+          <div class="top-nav"><div style="font-size:20px;">←</div><div class="fw-8 t-md">Processing Bill</div><div style="width:36px;"></div></div>
+          <div style="padding:0 20px;text-align:center;">
+            <div style="background:var(--surface2);border-radius:16px;padding:16px;margin-bottom:20px;border:1px solid var(--border);">
+              <div style="background:#f5f5f0;border-radius:8px;padding:12px;color:#333;font-size:10px;font-family:monospace;text-align:left;line-height:1.6;border:1px solid #ddd;">
+                <div style="font-weight:bold;font-size:11px;color:#003087;margin-bottom:4px;">TENAGA NASIONAL BERHAD</div>
+                <div>Akaun: 1234-5678-90</div>
+                <div>Tempoh: 01/06/25 - 30/06/25</div>
+                <div style="margin-top:6px;padding-top:6px;border-top:1px dashed #ccc;">
+                  <div>Penggunaan: <strong>211 kWh</strong></div>
+                  <div>Amaun Kena Bayar: <strong>RM 90.40</strong></div>
+                  <div>Tarikh Akhir: <strong>15/07/25</strong></div>
+                </div>
+              </div>
+            </div>
+            <div style="margin-bottom:20px;">
+              <div style="width:48px;height:48px;border:3px solid rgba(0,212,170,0.3);border-top-color:var(--accent);border-radius:50%;margin:0 auto 12px;"></div>
+              <div style="font-size:14px;font-weight:600;color:var(--accent);">Reading bill data...</div>
+              <div style="font-size:12px;color:var(--text2);margin-top:4px;">ML Kit OCR processing</div>
+            </div>
+            <div class="card" style="text-align:left;">
+              <div style="font-size:13px;font-weight:700;margin-bottom:12px;">Extracted Data</div>
+              <div class="list-item" style="padding:8px 0;"><div style="font-size:13px;color:var(--text2);flex:1;">Account No.</div><div style="font-size:13px;font-weight:600;">1234-5678-90</div><div style="font-size:14px;color:var(--accent);">✓</div></div>
+              <div class="list-item" style="padding:8px 0;"><div style="font-size:13px;color:var(--text2);flex:1;">kWh Used</div><div style="font-size:13px;font-weight:600;">211 kWh</div><div style="font-size:14px;color:var(--accent);">✓</div></div>
+              <div class="list-item" style="padding:8px 0;border:none;"><div style="font-size:13px;color:var(--text2);flex:1;">Amount Due</div><div style="font-size:13px;color:var(--text3);">Reading...</div><div style="width:14px;height:14px;border:2px solid var(--accent);border-top-color:transparent;border-radius:50%;"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-label">Scanner · Processing</div>
+    </div>
+
+    <!-- REVIEW -->
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone-screen" style="background:var(--bg);">
+          <div class="status-bar"><span class="time">9:41</span><div class="status-icons"><span>🔋</span></div></div>
+          <div class="top-nav"><div style="font-size:20px;">←</div><div class="fw-8 t-md">Bill Details</div><div style="font-size:18px;">✏️</div></div>
+          <div style="padding:0 20px 24px;">
+            <div style="background:rgba(0,212,170,0.06);border:1px solid rgba(0,212,170,0.2);border-radius:14px;padding:12px 14px;margin-bottom:16px;display:flex;gap:10px;align-items:center;">
+              <span style="font-size:18px;">✅</span>
+              <div><div style="font-size:13px;font-weight:700;color:var(--accent);">Bill scanned successfully</div><div style="font-size:11px;color:var(--text2);">Review and confirm details below</div></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
+              <div><div class="input-label">Account Number</div><div class="input-field" style="border-radius:12px;">1234-5678-90</div></div>
+              <div><div class="input-label">Billing Period</div><div class="input-field" style="border-radius:12px;">01/06/2025 — 30/06/2025</div></div>
+              <div><div class="input-label">Units Used (kWh)</div><div class="input-field" style="border-radius:12px;font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:var(--accent);">211</div></div>
+              <div><div class="input-label">Amount Due (RM)</div><div class="input-field" style="border-radius:12px;font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:var(--accent);">90.40</div></div>
+              <div><div class="input-label">Due Date</div><div class="input-field" style="border-radius:12px;">15 July 2025</div></div>
+            </div>
+            <div class="flex-between" style="background:var(--surface2);border-radius:12px;padding:12px;border:1px solid var(--border);margin-bottom:20px;">
+              <div style="display:flex;gap:10px;align-items:center;"><div style="font-size:22px;">📎</div><div><div style="font-size:13px;font-weight:600;">bill_june2025.jpg</div><div style="font-size:11px;color:var(--text2);">Uploading to Firebase Storage...</div></div></div>
+              <div class="tag tag-blue">84%</div>
+            </div>
+            <div class="btn btn-primary">Save Bill Record</div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-label">Scanner · Review</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- 07 NOTIFICATIONS -->
+<div class="section">
+  <div class="section-label">07 — Notifications</div>
+  <div class="section-title">Alerts & Push Notifications</div>
+  <div class="section-desc">In-app notification centre and lock screen push alerts</div>
+  <div class="phone-grid cols-2">
+
+    <!-- NOTIFICATIONS LIST -->
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone-screen" style="background:var(--bg);">
+          <div class="status-bar"><span class="time">9:41</span><div class="status-icons"><span>🔋</span></div></div>
+          <div class="top-nav"><div class="fw-8 t-lg">Notifications</div><div style="font-size:12px;color:var(--accent);font-weight:600;">Mark all read</div></div>
+          <div style="padding:0 20px 16px;">
+            <div style="font-size:11px;color:var(--text3);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;">NEW</div>
+            <div style="background:rgba(255,77,106,0.05);border:1px solid rgba(255,77,106,0.15);border-radius:16px;padding:14px;margin-bottom:10px;display:flex;gap:12px;">
+              <div style="width:40px;height:40px;background:rgba(255,77,106,0.1);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🚨</div>
+              <div><div style="font-size:13px;font-weight:700;color:var(--danger);margin-bottom:2px;">Budget Exceeded!</div><div style="font-size:12px;color:var(--text2);">You've used RM 153.20 — over your RM 150 target.</div><div style="font-size:11px;color:var(--text3);margin-top:4px;">2 hours ago</div></div>
+            </div>
+            <div style="background:rgba(255,176,32,0.05);border:1px solid rgba(255,176,32,0.15);border-radius:16px;padding:14px;margin-bottom:14px;display:flex;gap:12px;">
+              <div style="width:40px;height:40px;background:rgba(255,176,32,0.1);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">⚠️</div>
+              <div><div style="font-size:13px;font-weight:700;color:var(--warn);margin-bottom:2px;">80% Budget Reached</div><div style="font-size:12px;color:var(--text2);">RM 120 of RM 150 used. 5 days remaining.</div><div style="font-size:11px;color:var(--text3);margin-top:4px;">Yesterday, 3:24 PM</div></div>
+            </div>
+            <div style="font-size:11px;color:var(--text3);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;">EARLIER</div>
+            <div style="border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:10px;display:flex;gap:12px;opacity:0.7;">
+              <div style="width:40px;height:40px;background:rgba(0,212,170,0.08);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">📊</div>
+              <div><div style="font-size:13px;font-weight:700;margin-bottom:2px;">May Summary Ready</div><div style="font-size:12px;color:var(--text2);">You used 241 kWh in May. Down 12% from April.</div><div style="font-size:11px;color:var(--text3);margin-top:4px;">June 1, 8:00 AM</div></div>
+            </div>
+            <div style="border:1px solid var(--border);border-radius:16px;padding:14px;display:flex;gap:12px;opacity:0.7;">
+              <div style="width:40px;height:40px;background:rgba(0,153,255,0.08);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">📅</div>
+              <div><div style="font-size:13px;font-weight:700;margin-bottom:2px;">Bill Due Reminder</div><div style="font-size:12px;color:var(--text2);">TNB bill of RM 95.20 due in 3 days (June 15).</div><div style="font-size:11px;color:var(--text3);margin-top:4px;">June 12, 9:00 AM</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-label">Notification Centre</div>
+    </div>
+
+    <!-- PUSH LOCK SCREEN -->
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone-screen" style="background:linear-gradient(160deg,#060912,#0d1a2e);min-height:620px;">
+          <div class="status-bar" style="padding-top:8px;"><span class="time">9:41</span><div class="status-icons"><span>🔋</span></div></div>
+          <div style="text-align:center;margin-top:16px;margin-bottom:24px;">
+            <div style="font-size:52px;font-family:'Syne',sans-serif;font-weight:800;">9:41</div>
+            <div style="font-size:14px;color:var(--text2);">Wednesday, June 17</div>
+          </div>
+          <div style="padding:0 16px;display:flex;flex-direction:column;gap:10px;">
+            <div style="background:rgba(20,30,50,0.95);backdrop-filter:blur(20px);border-radius:16px;padding:14px;border:1px solid rgba(255,176,32,0.3);box-shadow:0 8px 32px rgba(0,0,0,0.4);">
+              <div style="display:flex;gap:10px;align-items:flex-start;">
+                <div style="width:36px;height:36px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">⚡</div>
+                <div style="flex:1;"><div style="display:flex;justify-content:space-between;"><div style="font-size:12px;font-weight:700;">WattWise</div><div style="font-size:10px;color:var(--text3);">now</div></div><div style="font-size:13px;font-weight:700;color:var(--warn);margin-top:2px;">⚠️ 80% Budget Alert</div><div style="font-size:12px;color:var(--text2);">You've used RM 120 of your RM 150 monthly target.</div></div>
+              </div>
+            </div>
+            <div style="background:rgba(20,30,50,0.9);backdrop-filter:blur(20px);border-radius:16px;padding:14px;border:1px solid var(--border);">
+              <div style="display:flex;gap:10px;align-items:flex-start;">
+                <div style="width:36px;height:36px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">⚡</div>
+                <div style="flex:1;"><div style="display:flex;justify-content:space-between;"><div style="font-size:12px;font-weight:700;">WattWise</div><div style="font-size:10px;color:var(--text3);">3h ago</div></div><div style="font-size:13px;font-weight:700;margin-top:2px;">📅 Bill Due in 3 Days</div><div style="font-size:12px;color:var(--text2);">TNB bill RM 95.20 due June 15, 2025.</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-label">Push Notifications</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- 08 SETTINGS -->
+<div class="section">
+  <div class="section-label">08 — Settings</div>
+  <div class="section-title">Settings, Profile & Tariff Calculator</div>
+  <div class="section-desc">User preferences, notification toggles, built-in TNB tariff calculator</div>
+  <div class="phone-grid cols-2">
+
+    <!-- SETTINGS -->
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone-screen" style="background:var(--bg);">
+          <div class="status-bar"><span class="time">9:41</span><div class="status-icons"><span>🔋</span></div></div>
+          <div class="top-nav"><div class="fw-8 t-lg">Settings</div></div>
+          <div style="padding:0 20px 16px;">
+            <div class="card card-accent" style="margin-bottom:16px;display:flex;gap:14px;align-items:center;">
+              <div style="width:52px;height:52px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#000;flex-shrink:0;">AF</div>
+              <div style="flex:1;"><div style="font-size:16px;font-weight:700;">Ahmad Faiz</div><div style="font-size:12px;color:var(--text2);">ahmad@email.com</div><div style="font-size:12px;color:var(--accent);margin-top:2px;">TNB: 1234-5678-90</div></div>
+              <div style="font-size:18px;color:var(--text3);">›</div>
+            </div>
+            <div style="font-size:11px;color:var(--text3);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">ACCOUNT</div>
+            <div class="card card-sm" style="margin-bottom:12px;padding:0;">
+              <div class="list-item" style="padding:12px 14px;"><div style="font-size:18px;width:28px;text-align:center;">👤</div><div style="flex:1;font-size:14px;">Edit Profile</div><div style="color:var(--text3);">›</div></div>
+              <div class="list-item" style="padding:12px 14px;"><div style="font-size:18px;width:28px;text-align:center;">🏠</div><div style="flex:1;font-size:14px;">Tariff Type</div><div style="font-size:12px;color:var(--accent);margin-right:8px;">Domestic</div><div style="color:var(--text3);">›</div></div>
+              <div class="list-item" style="padding:12px 14px;border:none;"><div style="font-size:18px;width:28px;text-align:center;">🎯</div><div style="flex:1;font-size:14px;">Monthly Budget</div><div style="font-size:12px;color:var(--accent);margin-right:8px;">RM 150</div><div style="color:var(--text3);">›</div></div>
+            </div>
+            <div style="font-size:11px;color:var(--text3);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">NOTIFICATIONS</div>
+            <div class="card card-sm" style="margin-bottom:12px;padding:0;">
+              <div class="list-item" style="padding:12px 14px;"><div style="font-size:18px;width:28px;text-align:center;">⚠️</div><div style="flex:1;font-size:14px;">Budget Alerts</div><div class="toggle on"></div></div>
+              <div class="list-item" style="padding:12px 14px;"><div style="font-size:18px;width:28px;text-align:center;">📅</div><div style="flex:1;font-size:14px;">Bill Reminders</div><div class="toggle on"></div></div>
+              <div class="list-item" style="padding:12px 14px;border:none;"><div style="font-size:18px;width:28px;text-align:center;">📊</div><div style="flex:1;font-size:14px;">Monthly Summary</div><div class="toggle off"></div></div>
+            </div>
+            <div style="font-size:11px;color:var(--text3);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">APPEARANCE</div>
+            <div class="card card-sm" style="margin-bottom:16px;padding:0;">
+              <div class="list-item" style="padding:12px 14px;border:none;"><div style="font-size:18px;width:28px;text-align:center;">🌙</div><div style="flex:1;font-size:14px;">Dark Mode</div><div class="toggle on"></div></div>
+            </div>
+            <div style="background:rgba(255,77,106,0.06);border:1px solid rgba(255,77,106,0.15);border-radius:12px;padding:14px;text-align:center;color:var(--danger);font-size:14px;font-weight:600;">Sign Out</div>
+          </div>
+          <div class="bottom-nav">
+            <div class="nav-item"><div class="ni">🏠</div>Home</div>
+            <div class="nav-item"><div class="ni">📈</div>Usage</div>
+            <div class="nav-fab">⚡</div>
+            <div class="nav-item"><div class="ni">🔌</div>Devices</div>
+            <div class="nav-item active"><div class="ni">⚙️</div>Settings</div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-label">Settings</div>
+    </div>
+
+    <!-- TARIFF CALC -->
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone-screen" style="background:var(--bg);">
+          <div class="status-bar"><span class="time">9:41</span><div class="status-icons"><span>🔋</span></div></div>
+          <div class="top-nav"><div style="font-size:20px;">←</div><div class="fw-8 t-md">Tariff Calculator</div><div style="width:36px;"></div></div>
+          <div style="padding:0 20px 24px;">
+            <div class="card card-accent" style="margin-bottom:16px;text-align:center;">
+              <div style="font-size:11px;color:var(--text2);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Enter kWh</div>
+              <div class="input-field focused" style="text-align:center;font-family:'Syne',sans-serif;font-size:36px;font-weight:800;color:var(--accent);border:none;background:transparent;padding:8px;">350</div>
+              <div style="font-size:13px;color:var(--text2);">kWh this month</div>
+            </div>
+            <div style="font-size:13px;font-weight:700;margin-bottom:10px;">Tariff Breakdown (Domestic)</div>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
+              <div style="background:var(--surface2);border-radius:12px;padding:12px;border-left:3px solid var(--accent);">
+                <div class="flex-between"><div><div style="font-size:12px;font-weight:700;color:var(--accent);">Tier 1 · 1–200 kWh</div><div style="font-size:11px;color:var(--text2);">200 kWh × 21.8 sen</div></div><div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;">RM 43.60</div></div>
+              </div>
+              <div style="background:var(--surface2);border-radius:12px;padding:12px;border-left:3px solid var(--warn);">
+                <div class="flex-between"><div><div style="font-size:12px;font-weight:700;color:var(--warn);">Tier 2 · 201–300 kWh</div><div style="font-size:11px;color:var(--text2);">100 kWh × 33.4 sen</div></div><div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;">RM 33.40</div></div>
+              </div>
+              <div style="background:var(--surface2);border-radius:12px;padding:12px;border-left:3px solid var(--danger);">
+                <div class="flex-between"><div><div style="font-size:12px;font-weight:700;color:var(--danger);">Tier 3 · 301–600 kWh</div><div style="font-size:11px;color:var(--text2);">50 kWh × 51.6 sen</div></div><div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;">RM 25.80</div></div>
+              </div>
+            </div>
+            <div style="background:linear-gradient(135deg,rgba(0,212,170,0.1),rgba(0,153,255,0.06));border:1px solid rgba(0,212,170,0.2);border-radius:16px;padding:16px;text-align:center;">
+              <div style="font-size:11px;color:var(--text2);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Estimated Bill</div>
+              <div style="font-family:'Syne',sans-serif;font-size:40px;font-weight:800;color:var(--accent);">RM 105.80</div>
+              <div style="font-size:12px;color:var(--text2);margin-top:2px;">+ RM 3.00 min charge · Total: RM 108.80</div>
+              <div style="margin-top:10px;"><div class="tag tag-danger">Tier 3 reached — High usage month</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-label">Tariff Calculator</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div style="text-align:center;padding:40px 20px;border-top:1px solid var(--border);margin-top:20px;">
+  <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;margin-bottom:6px;">⚡ WattWise</div>
+  <div style="font-size:13px;color:var(--text2);margin-bottom:16px;">Flutter Portfolio · TNB Malaysia Energy Tracker · Complete MVP UI Mockup</div>
+  <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;">
+    <div class="tag tag-green">8 Sections</div>
+    <div class="tag tag-blue">22+ Screens</div>
+    <div class="tag tag-orange">Flutter Ready</div>
+    <div class="tag tag-warn">TNB Domain</div>
+  </div>
+</div>
+
+</body>
+</html>
