@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:energy_tracker/app.dart';
-import 'package:energy_tracker/ui/features/ft_settings/tariff_calculator/page.dart';
+import 'package:energy_tracker/ui/features/ft_settings/pg_tariff_calculator/page.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 

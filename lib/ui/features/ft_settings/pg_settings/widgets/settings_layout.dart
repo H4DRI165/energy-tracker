@@ -1,5 +1,5 @@
 import 'package:energy_tracker/theme/theme.dart';
-import 'package:energy_tracker/ui/features/ft_settings/settings/notifier/settings_state.dart';
+import 'package:energy_tracker/ui/features/ft_settings/pg_settings/notifier/settings_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
