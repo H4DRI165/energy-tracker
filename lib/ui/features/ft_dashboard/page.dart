@@ -264,8 +264,6 @@ class _BodyContent extends StatelessWidget {
                 if (state.isNearBudget || state.isOverBudget) ...[
                   const SavingTipsCard(),
                   const SizedBox(height: 14),
-                  StatCardsRow(state: state, compact: true),
-                  const SizedBox(height: 14),
                 ],
                 QuickActions(
                   onAddReading: () => context.push(AppRoutes.addReading),
