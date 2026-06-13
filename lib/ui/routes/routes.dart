@@ -22,8 +22,6 @@ abstract class AppRoutes {
   static const String editAppliance = '/devices/edit';
 
   // WIP
-  static const String tariffSettings = '/tariff-settings';
-  static const String budgetSettings = '/budget-settings';
   static const String scanBill = '/scan_bill';
 
   // error
