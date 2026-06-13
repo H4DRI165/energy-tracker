@@ -123,7 +123,9 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
       _nameController.text = appliance.name;
       _wattageController.text = appliance.wattage.toStringAsFixed(0);
 
-      ref.read(addApplianceProvider.notifier).initForEdit(appliance);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(addApplianceProvider.notifier).initForEdit(appliance);
+      });
     }
 
     _nameController.addListener(
