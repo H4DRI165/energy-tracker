@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:energy_tracker/constants/tariff_rates.dart';
 import 'package:energy_tracker/models/bill_record.dart';
 import 'package:energy_tracker/ui/features/ft_usage/notifier/usage_state.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -73,7 +74,7 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
         return total + kwh;
       });
 
-      final currentBill = _calculateBill(currentKwh);
+      final currentBill = TariffRates.calculateDomestic(currentKwh);
       final currentMonthLabel = DateFormat('MMMM yyyy').format(now);
 
       return UsageState(
@@ -125,21 +126,11 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
           month: DateFormat('MMM').format(month),
           year: month.year,
           kwh: kwh,
-          bill: _calculateBill(kwh),
+          bill: TariffRates.calculateDomestic(kwh),
           isPaid: i > 0,
         ),
       );
     }
     return result;
-  }
-
-  double _calculateBill(double kwh) {
-    if (kwh <= 0) return 0;
-    double bill = 0;
-    bill += kwh.clamp(0, 200) * 0.218;
-    if (kwh > 200) bill += (kwh - 200).clamp(0, 100) * 0.334;
-    if (kwh > 300) bill += (kwh - 300).clamp(0, 300) * 0.516;
-    if (kwh > 600) bill += (kwh - 600) * 0.546;
-    return bill < 3.0 ? 3.0 : bill;
   }
 }

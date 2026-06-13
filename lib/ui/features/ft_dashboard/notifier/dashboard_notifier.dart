@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:energy_tracker/constants/tariff_rates.dart';
 import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_state.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -121,8 +122,8 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState> {
           : 0.0;
 
       // Estimated bill (TNB domestic tariff)
-      final bill = _calculateBill(kwhUsed);
-      final tier = _getTier(kwhUsed);
+      final bill = TariffRates.calculateDomestic(kwhUsed);
+      final tier = TariffRates.getTier(kwhUsed);
 
       // Daily average
       final daysElapsed = now.day;
@@ -131,7 +132,7 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState> {
       // Projected bill
       final projectedKwh =
           dailyAvg * DateUtils.getDaysInMonth(now.year, now.month);
-      final projectedBill = _calculateBill(projectedKwh);
+      final projectedBill = TariffRates.calculateDomestic(projectedKwh);
 
       // 7-day usage — fetch last 7 readings
       final startOf7DayWindow = DateTime(now.year, now.month, now.day - 6);
@@ -180,43 +181,6 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState> {
     if (hour < 12) return 'Good morning,';
     if (hour < 17) return 'Good afternoon,';
     return 'Good evening,';
-  }
-
-  // ── TNB Domestic Tariff Calculator ─────────────────────────────────────────
-  double _calculateBill(double kwh) {
-    double bill = 0;
-    if (kwh <= 0) return 0;
-
-    // Tier 1: 1–200 kWh @ 21.8 sen
-    final t1 = kwh.clamp(0, 200);
-    bill += t1 * 0.218;
-
-    // Tier 2: 201–300 kWh @ 33.4 sen
-    if (kwh > 200) {
-      final t2 = (kwh - 200).clamp(0, 100);
-      bill += t2 * 0.334;
-    }
-
-    // Tier 3: 301–600 kWh @ 51.6 sen
-    if (kwh > 300) {
-      final t3 = (kwh - 300).clamp(0, 300);
-      bill += t3 * 0.516;
-    }
-
-    // Tier 4: 601+ kWh @ 54.6 sen
-    if (kwh > 600) {
-      bill += (kwh - 600) * 0.546;
-    }
-
-    // Minimum charge RM 3.00
-    return bill < 3.0 ? 3.0 : bill;
-  }
-
-  int _getTier(double kwh) {
-    if (kwh <= 200) return 1;
-    if (kwh <= 300) return 2;
-    if (kwh <= 600) return 3;
-    return 4;
   }
 
   List<DailyUsage> _buildWeeklyUsage(

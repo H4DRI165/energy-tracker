@@ -1,3 +1,4 @@
+import 'package:energy_tracker/constants/tariff_rates.dart';
 import 'package:energy_tracker/theme/theme.dart';
 import 'package:energy_tracker/ui/features/ft_add_meter_reading/notifier/notifier.dart';
 import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_notifier.dart';
@@ -526,28 +527,18 @@ class _TierBadge extends StatelessWidget {
   final String tierLabel;
   final int tier;
 
-  Color get _color {
-    switch (tier) {
-      case 1:
-        return AppColors.accent;
-      case 2:
-        return AppColors.warn;
-      default:
-        return AppColors.danger;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
       decoration: BoxDecoration(
-        color: _color.withValues(alpha: 0.12),
+        color: TariffRates.getTierColor(tier).withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20.r),
       ),
       child: Text(
         tierLabel,
-        style: AppTextStyles.tag.copyWith(color: _color),
+        style:
+            AppTextStyles.tag.copyWith(color: TariffRates.getTierColor(tier)),
       ),
     );
   }

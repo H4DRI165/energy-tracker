@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:energy_tracker/constants/tariff_rates.dart';
 import 'package:energy_tracker/models/bill_record.dart';
 import 'package:energy_tracker/models/reading_record.dart';
 import 'package:energy_tracker/theme/theme.dart';
@@ -163,10 +164,10 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
     final t1 = kwh.clamp(0.0, 200.0);
     rows.add(
       _TierRow(
-        label: 'Tier 1 · 1–200 kWh · 21.8 sen',
+        label: TariffRates.getTierRangePriceLabel(1),
         kwh: t1,
-        amount: t1 * 0.218,
-        color: AppColors.accent,
+        amount: t1 * TariffRates.domesticTier1,
+        color: TariffRates.getTierColor(1),
         fraction: t1 / kwh,
       ),
     );
@@ -175,38 +176,54 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
       final t2 = (kwh - 200).clamp(0.0, 100.0);
       rows.add(
         _TierRow(
-          label: 'Tier 2 · 201–300 kWh · 33.4 sen',
+          label: TariffRates.getTierRangePriceLabel(2),
           kwh: t2,
-          amount: t2 * 0.334,
-          color: AppColors.warn,
+          amount: t2 * TariffRates.domesticTier2,
+          color: TariffRates.getTierColor(2),
           fraction: t2 / kwh,
         ),
       );
     }
+
     if (kwh > 300) {
       final t3 = (kwh - 300).clamp(0.0, 300.0);
       rows.add(
         _TierRow(
-          label: 'Tier 3 · 301–600 kWh · 51.6 sen',
+          label: TariffRates.getTierRangePriceLabel(3),
           kwh: t3,
-          amount: t3 * 0.516,
-          color: AppColors.danger,
+          amount: t3 * TariffRates.domesticTier3,
+          color: TariffRates.getTierColor(3),
           fraction: t3 / kwh,
         ),
       );
     }
+
     if (kwh > 600) {
-      final t4 = kwh - 600;
+      final t4 = (kwh - 600).clamp(0.0, 300.0);
       rows.add(
         _TierRow(
-          label: 'Tier 4 · 601+ kWh · 54.6 sen',
+          label: TariffRates.getTierRangePriceLabel(4),
           kwh: t4,
-          amount: t4 * 0.546,
-          color: AppColors.accent3,
+          amount: t4 * TariffRates.domesticTier4,
+          color: TariffRates.getTierColor(4),
           fraction: t4 / kwh,
         ),
       );
     }
+
+    if (kwh > 900) {
+      final t5 = kwh - 900;
+      rows.add(
+        _TierRow(
+          label: TariffRates.getTierRangePriceLabel(5),
+          kwh: t5,
+          amount: t5 * TariffRates.domesticTier5,
+          color: TariffRates.getTierColor(5),
+          fraction: t5 / kwh,
+        ),
+      );
+    }
+
     return rows;
   }
 }
