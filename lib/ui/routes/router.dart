@@ -209,28 +209,6 @@ final GoRouter appRouter = GoRouter(
 
     // -------------------------------WIP ROUTES--------------------------------
     GoRoute(
-      path: AppRoutes.tariffSettings,
-      name: 'tariff_settings',
-      pageBuilder: (context, state) => const NoTransitionPage(
-        child: ComingSoonPage(
-          title: 'Tariff Type',
-          subtitle: 'Switch between Domestic and Commercial tariff.',
-          icon: Icons.home_outlined,
-        ),
-      ),
-    ),
-    GoRoute(
-      path: AppRoutes.budgetSettings,
-      name: 'budget_settings',
-      pageBuilder: (context, state) => const NoTransitionPage(
-        child: ComingSoonPage(
-          title: 'Monthly Budget',
-          subtitle: 'Update your monthly spending target.',
-          icon: Icons.flag_outlined,
-        ),
-      ),
-    ),
-    GoRoute(
       path: AppRoutes.scanBill,
       name: 'scan_bill',
       pageBuilder: (context, state) => const NoTransitionPage(
