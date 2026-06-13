@@ -24,7 +24,7 @@ class _BudgetSheetState extends State<BudgetSheet> {
   @override
   void initState() {
     super.initState();
-    _budget = widget.current;
+    _budget = widget.current.clamp(50.0, 500.0);
   }
 
   @override
@@ -137,35 +137,30 @@ class _BudgetSheetState extends State<BudgetSheet> {
             SizedBox(height: 8.h),
             Wrap(
               spacing: 8.w,
-              runSpacing: 8.h,
               children: _presets.map((preset) {
                 final isSelected = _budget == preset;
-                return GestureDetector(
-                  onTap: () => setState(() => _budget = preset),
-                  child: Container(
-                    padding:
-                        EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? AppColors.accent.withValues(alpha: 0.12)
-                          : AppColors.surface2,
-                      borderRadius:
-                          BorderRadius.circular(AppDimensions.radiusSm),
-                      border: Border.all(
-                        color: isSelected
-                            ? AppColors.accent.withValues(alpha: 0.3)
-                            : AppColors.border,
-                      ),
-                    ),
-                    child: Text(
-                      'RM ${preset.toInt()}',
-                      style: AppTextStyles.caption.copyWith(
-                        color: isSelected ? AppColors.accent : AppColors.text2,
-                        fontWeight:
-                            isSelected ? FontWeight.w700 : FontWeight.w400,
-                      ),
-                    ),
+                return FilterChip(
+                  label: Text('RM ${preset.toInt()}'),
+                  selected: isSelected,
+                  onSelected: (_) => setState(() => _budget = preset),
+                  selectedColor: AppColors.accent.withValues(alpha: 0.12),
+                  checkmarkColor: AppColors.accent,
+                  side: BorderSide(
+                    color: isSelected
+                        ? AppColors.accent.withValues(alpha: 0.3)
+                        : AppColors.border,
                   ),
+                  labelStyle: AppTextStyles.caption.copyWith(
+                    color: isSelected ? AppColors.accent : AppColors.text2,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+                  ),
+                  backgroundColor: AppColors.surface2,
+                  showCheckmark: false,
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
                 );
               }).toList(),
             ),
@@ -188,7 +183,8 @@ class _BudgetSheetState extends State<BudgetSheet> {
                   SizedBox(width: 8.w),
                   Expanded(
                     child: Text(
-                      'Average Malaysian household spends RM 120–180/month on electricity',
+                      'Average Malaysian household spends '
+                      'RM 120–180/month on electricity',
                       style:
                           AppTextStyles.caption.copyWith(color: AppColors.warn),
                     ),
@@ -197,27 +193,18 @@ class _BudgetSheetState extends State<BudgetSheet> {
               ),
             ),
             SizedBox(height: 20.h),
-            GestureDetector(
-              onTap: () => widget.onSave(_budget),
-              child: Container(
-                width: double.infinity,
-                padding: EdgeInsets.symmetric(vertical: 16.h),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [AppColors.accent, AppColors.accent2],
-                  ),
+            FilledButton(
+              onPressed: () => widget.onSave(_budget),
+              style: FilledButton.styleFrom(
+                minimumSize: Size(double.infinity, 52.h),
+                backgroundColor: AppColors.accent,
+                foregroundColor: Colors.black,
+                shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
                 ),
-                child: Center(
-                  child: Text(
-                    'Save Budget',
-                    style: AppTextStyles.bodyMd.copyWith(
-                      color: Colors.black,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
+                textStyle: AppTextStyles.button,
               ),
+              child: const Text('Save Budget'),
             ),
           ],
         ),

@@ -299,11 +299,20 @@ class _SettingsBody extends ConsumerWidget {
         builder: (_) => TariffTypeSheet(
           selected: state.tariffType,
           onSelect: (value) async {
-            await ref.read(settingsProvider.notifier).updateTariffType(value);
+            final saved = await ref
+                .read(settingsProvider.notifier)
+                .updateTariffType(value);
 
-            if (context.mounted) {
-              Navigator.pop(context);
+            if (!context.mounted) return;
+
+            if (!saved) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Failed to update tariff type.')),
+              );
+              return;
             }
+
+            Navigator.pop(context);
           },
         ),
       ),
@@ -323,16 +332,23 @@ class _SettingsBody extends ConsumerWidget {
         builder: (_) => BudgetSheet(
           current: state.monthlyBudget,
           onSave: (value) async {
-            await ref
+            final saved = await ref
                 .read(settingsProvider.notifier)
                 .updateMonthlyBudget(value);
 
-            ref.invalidate(dashboardProvider);
-            await ref.read(dashboardProvider.future);
+            if (!context.mounted) return;
 
-            if (context.mounted) {
-              Navigator.pop(context);
+            if (!saved) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Failed to save budget.')),
+              );
+              return;
             }
+
+            Navigator.pop(context);
+
+            ref.invalidate(dashboardProvider);
+            unawaited(ref.read(dashboardProvider.future));
           },
         ),
       ),
