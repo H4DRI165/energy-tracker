@@ -52,6 +52,16 @@ class SettingsNotifier extends AsyncNotifier<SettingsPageState> {
     state = await AsyncValue.guard(_fetchSettings);
   }
 
+  Future<void> updateTariffType(String value) async {
+    _updateState((s) => s.copyWith(tariffType: value));
+    await _updateFirestore({'tariffType': value});
+  }
+
+  Future<void> updateMonthlyBudget(double value) async {
+    _updateState((s) => s.copyWith(monthlyBudget: value));
+    await _updateFirestore({'monthlyBudget': value});
+  }
+
   Future<void> toggleBudgetAlerts({required bool value}) async {
     _updateState((s) => s.copyWith(budgetAlertsEnabled: value));
     await _updateFirestore({'budgetAlertsEnabled': value});

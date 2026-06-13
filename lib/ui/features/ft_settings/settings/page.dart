@@ -3,8 +3,9 @@ import 'dart:async';
 import 'package:energy_tracker/theme/theme.dart';
 import 'package:energy_tracker/ui/components/errors.dart';
 import 'package:energy_tracker/ui/components/nav.dart';
+import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_settings/settings/notifier/notifier.dart';
-import 'package:energy_tracker/ui/features/ft_settings/widgets/settings_layout.dart';
+import 'package:energy_tracker/ui/features/ft_settings/settings/widgets/widgets.dart';
 import 'package:energy_tracker/ui/routes/routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,6 +23,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(settingsProvider);
+    final notifier = ref.read(settingsProvider.notifier);
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -43,15 +45,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   onEditProfile: () async {
                     await context.push(AppRoutes.editProfile);
                   },
-                  onToggleBudgetAlerts: (v) => ref
-                      .read(settingsProvider.notifier)
-                      .toggleBudgetAlerts(value: v),
-                  onToggleBillReminders: (v) => ref
-                      .read(settingsProvider.notifier)
-                      .toggleBillReminders(value: v),
-                  onToggleMonthlySummary: (v) => ref
-                      .read(settingsProvider.notifier)
-                      .toggleMonthlySummary(value: v),
+                  onToggleBudgetAlerts: (v) =>
+                      notifier.toggleBudgetAlerts(value: v),
+                  onToggleBillReminders: (v) =>
+                      notifier.toggleBillReminders(value: v),
+                  onToggleMonthlySummary: (v) =>
+                      notifier.toggleMonthlySummary(value: v),
                   onSignOut: _handleSignOut,
                 ),
               ),
@@ -127,7 +126,7 @@ class _Header extends StatelessWidget {
   }
 }
 
-class _SettingsBody extends StatelessWidget {
+class _SettingsBody extends ConsumerWidget {
   const _SettingsBody({
     required this.state,
     required this.onEditProfile,
@@ -145,7 +144,7 @@ class _SettingsBody extends StatelessWidget {
   final VoidCallback onSignOut;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return SingleChildScrollView(
       padding: EdgeInsets.symmetric(
         horizontal: AppDimensions.screenPaddingH,
@@ -172,13 +171,13 @@ class _SettingsBody extends StatelessWidget {
                 icon: '🏠',
                 label: 'Tariff Type',
                 trailing: state.tariffLabel,
-                onTap: () => context.push(AppRoutes.tariffSettings),
+                onTap: () => _showTariffSheet(context, ref, state),
               ),
               SettingsListTile(
                 icon: '🎯',
                 label: 'Monthly Budget',
                 trailing: state.formattedBudget,
-                onTap: () => context.push(AppRoutes.budgetSettings),
+                onTap: () => _showBudgetSheet(context, ref, state),
                 isLast: true,
               ),
             ],
@@ -284,6 +283,58 @@ class _SettingsBody extends StatelessWidget {
           ],
           SizedBox(height: 32.h),
         ],
+      ),
+    );
+  }
+
+  void _showTariffSheet(
+    BuildContext context,
+    WidgetRef ref,
+    SettingsPageState state,
+  ) {
+    unawaited(
+      showModalBottomSheet(
+        context: context,
+        backgroundColor: Colors.transparent,
+        builder: (_) => TariffTypeSheet(
+          selected: state.tariffType,
+          onSelect: (value) async {
+            await ref.read(settingsProvider.notifier).updateTariffType(value);
+
+            if (context.mounted) {
+              Navigator.pop(context);
+            }
+          },
+        ),
+      ),
+    );
+  }
+
+  void _showBudgetSheet(
+    BuildContext context,
+    WidgetRef ref,
+    SettingsPageState state,
+  ) {
+    unawaited(
+      showModalBottomSheet(
+        context: context,
+        backgroundColor: Colors.transparent,
+        isScrollControlled: true,
+        builder: (_) => BudgetSheet(
+          current: state.monthlyBudget,
+          onSave: (value) async {
+            await ref
+                .read(settingsProvider.notifier)
+                .updateMonthlyBudget(value);
+
+            ref.invalidate(dashboardProvider);
+            await ref.read(dashboardProvider.future);
+
+            if (context.mounted) {
+              Navigator.pop(context);
+            }
+          },
+        ),
       ),
     );
   }
