@@ -17,28 +17,38 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
 
   @override
   AddReadingPageState build() {
-    unawaited(Future.microtask(_loadLastReading));
+    unawaited(
+      Future.microtask(
+        () => _loadLastReading(beforeDate: DateTime.now()),
+      ),
+    );
     return AddReadingPageState(selectedDate: DateTime.now());
   }
 
-  Future<void> _loadLastReading() async {
+  Future<void> _loadLastReading({DateTime? beforeDate}) async {
     final uid = _auth.currentUser?.uid;
     if (uid == null) {
       state = state.copyWith(isLoadingLastReading: false);
       return;
     }
 
+    final cutOff = beforeDate ?? state.selectedDate ?? DateTime.now();
+
     try {
       final snap = await _firestore
           .collection('users')
           .doc(uid)
           .collection('readings')
+          .where('date', isLessThan: Timestamp.fromDate(cutOff))
           .orderBy('date', descending: true)
           .limit(1)
           .get();
 
       if (snap.docs.isEmpty) {
-        state = state.copyWith(isLoadingLastReading: false);
+        state = state.copyWith(
+          isLoadingLastReading: false,
+          lastReading: 0,
+        );
         return;
       }
 
@@ -74,6 +84,8 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
 
   void setDate(DateTime date) {
     state = state.copyWith(selectedDate: date);
+    // Re-fetch last reading based on new date
+    unawaited(Future.microtask(() => _loadLastReading(beforeDate: date)));
   }
 
   void setNotes(String value) {

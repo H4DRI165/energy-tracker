@@ -1,4 +1,5 @@
 import 'package:energy_tracker/theme/theme.dart';
+import 'package:energy_tracker/ui/components/chart.dart';
 import 'package:energy_tracker/ui/features/ft_usage/notifier/usage_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -12,11 +13,14 @@ class UsageBarChart extends StatelessWidget {
 
   final List<MonthlyUsage> data;
   final double maxKwh;
+
   static const double _chartHeight = 80;
   static const double _labelHeight = 14;
 
   @override
   Widget build(BuildContext context) {
+    final maxBarHeight = _chartHeight.h - _labelHeight.h;
+
     return Container(
       padding: EdgeInsets.all(AppDimensions.cardPaddingSm),
       decoration: BoxDecoration(
@@ -32,9 +36,8 @@ class UsageBarChart extends StatelessWidget {
             children: [
               Text(
                 'kWh Usage',
-                style: AppTextStyles.bodyMd.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+                style:
+                    AppTextStyles.bodyMd.copyWith(fontWeight: FontWeight.w700),
               ),
               Row(
                 children: [
@@ -57,10 +60,7 @@ class UsageBarChart extends StatelessWidget {
             Center(
               child: Padding(
                 padding: EdgeInsets.symmetric(vertical: 20.h),
-                child: Text(
-                  'No readings yet',
-                  style: AppTextStyles.bodySm,
-                ),
+                child: Text('No readings yet', style: AppTextStyles.bodySm),
               ),
             )
           else ...[
@@ -77,75 +77,19 @@ class UsageBarChart extends StatelessWidget {
                           ? 0.0
                           : (item.kwh / maxKwh).clamp(0.05, 1.0))
                       : 0.0;
-                  final maxBarHeight = _chartHeight.h - _labelHeight.h;
 
                   return Expanded(
                     child: Padding(
                       padding: EdgeInsets.symmetric(horizontal: 3.w),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          SizedBox(
-                            height: _labelHeight.h,
-                            child: item.kwh > 0
-                                ? Align(
-                                    alignment: Alignment.bottomCenter,
-                                    child: Text(
-                                      item.kwh.toStringAsFixed(0),
-                                      style: AppTextStyles.caption.copyWith(
-                                        fontSize: 9.sp,
-                                        color: isCurrentMonth
-                                            ? AppColors.accent
-                                            : AppColors.text3,
-                                      ),
-                                    ),
-                                  )
-                                : const SizedBox.shrink(),
-                          ),
-                          TweenAnimationBuilder<double>(
-                            tween: Tween(begin: 0, end: heightFraction),
-                            duration: const Duration(milliseconds: 600),
-                            curve: Curves.easeOut,
-                            builder: (context, value, _) {
-                              return SizedBox(
-                                height: maxBarHeight * value,
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    gradient: isCurrentMonth
-                                        ? const LinearGradient(
-                                            begin: Alignment.topCenter,
-                                            end: Alignment.bottomCenter,
-                                            colors: [
-                                              AppColors.accent,
-                                              Color(0x6600D4AA),
-                                            ],
-                                          )
-                                        : null,
-                                    color: isCurrentMonth
-                                        ? null
-                                        : isHighest
-                                            ? AppColors.accent3
-                                                .withValues(alpha: 0.4)
-                                            : AppColors.surface3,
-                                    borderRadius: const BorderRadius.vertical(
-                                      top: Radius.circular(4),
-                                    ),
-                                    boxShadow: isCurrentMonth
-                                        ? [
-                                            BoxShadow(
-                                              color: AppColors.accent
-                                                  .withValues(alpha: 0.3),
-                                              blurRadius: 8,
-                                            ),
-                                          ]
-                                        : null,
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
+                      child: ChartBar(
+                        heightFraction: heightFraction,
+                        isHighlighted: isCurrentMonth,
+                        kwh: item.kwh,
+                        maxBarHeight: maxBarHeight,
+                        labelHeight: _labelHeight.h,
+                        defaultColor: isHighest
+                            ? AppColors.accent3.withValues(alpha: 0.4)
+                            : AppColors.surface3,
                       ),
                     ),
                   );
