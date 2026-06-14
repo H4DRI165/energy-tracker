@@ -457,7 +457,7 @@ class _AutoCalcCard extends StatelessWidget {
           ),
           SizedBox(height: 10.h),
           _CalcRow(
-            label: 'Usage this month',
+            label: 'Usage since last reading',
             value: '${state.usageKwh.toStringAsFixed(0)} kWh',
             valueColor: AppColors.text,
           ),
