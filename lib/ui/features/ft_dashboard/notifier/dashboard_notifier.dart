@@ -96,25 +96,15 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState> {
 
       // Calculate kWh used this month
       double kwhUsed = 0;
-      if (readingsSnap.docs.length >= 2) {
-        final first =
-            (readingsSnap.docs.first.data()['reading'] as num).toDouble();
-        final last =
-            (readingsSnap.docs.last.data()['reading'] as num).toDouble();
-        kwhUsed = (last - first).clamp(0, double.infinity).toDouble();
-      } else if (readingsSnap.docs.isNotEmpty) {
-        kwhUsed =
-            (readingsSnap.docs.last.data()['kwh'] as num?)?.toDouble() ?? 0;
+      for (final doc in readingsSnap.docs) {
+        final kwh = (doc.data()['kwh'] as num?)?.toDouble() ?? 0;
+        kwhUsed += kwh;
       }
 
-      // Calculate last month kWh
       double lastMonthKwh = 0;
-      if (lastMonthSnap.docs.length >= 2) {
-        final first =
-            (lastMonthSnap.docs.first.data()['reading'] as num).toDouble();
-        final last =
-            (lastMonthSnap.docs.last.data()['reading'] as num).toDouble();
-        lastMonthKwh = (last - first).clamp(0, double.infinity).toDouble();
+      for (final doc in lastMonthSnap.docs) {
+        final kwh = (doc.data()['kwh'] as num?)?.toDouble() ?? 0;
+        lastMonthKwh += kwh;
       }
 
       final percentVsLast = lastMonthKwh > 0

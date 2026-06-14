@@ -105,7 +105,6 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
         'kwh': state.usageKwh,
         'date': Timestamp.fromDate(date),
         'notes': state.notes.trim(),
-        'estimatedBill': state.estimatedBill,
         'tier': state.currentTier,
         'createdAt': FieldValue.serverTimestamp(),
       });

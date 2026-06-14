@@ -50,18 +50,7 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
           .get();
 
       final monthlyData = _buildMonthlyData(readingsSnap.docs, now);
-      final billHistory = billsSnap.docs.map((doc) {
-        final data = doc.data();
-        final date = (data['date'] as Timestamp).toDate();
-        return BillRecord(
-          id: doc.id,
-          monthYear: DateFormat('MMM yyyy').format(date),
-          kwh: (data['kwh'] as num?)?.toDouble() ?? 0,
-          amount: (data['amount'] as num?)?.toDouble() ?? 0,
-          isPaid: data['isPaid'] as bool? ?? true,
-          date: date,
-        );
-      }).toList();
+      final billHistory = _buildBillHistory(billsSnap.docs);
 
       // Current month data
       final currentMonthReadings = readingsSnap.docs.where((doc) {
@@ -70,8 +59,7 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
       }).toList();
 
       final currentKwh = currentMonthReadings.fold<double>(0, (total, doc) {
-        final kwh = (doc.data()['kwh'] as num?)?.toDouble() ?? 0;
-        return total + kwh;
+        return total + ((doc.data()['kwh'] as num?)?.toDouble() ?? 0);
       });
 
       final currentBill = TariffRates.calculateDomestic(currentKwh);
@@ -121,6 +109,7 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
       final month = DateTime(now.year, now.month - i);
       final key = DateFormat('MMM-yyyy').format(month);
       final kwh = monthlyMap[key] ?? 0;
+
       result.add(
         MonthlyUsage(
           month: DateFormat('MMM').format(month),
@@ -132,5 +121,39 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
       );
     }
     return result;
+  }
+
+  List<BillRecord> _buildBillHistory(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
+  ) {
+    final byMonth = <String, ({double kwh, DateTime date})>{};
+
+    for (final doc in docs) {
+      final data = doc.data();
+      final date = (data['date'] as Timestamp).toDate();
+      final key = '${date.year}-${date.month.toString().padLeft(2, '0')}';
+      final kwh = (data['kwh'] as num?)?.toDouble() ?? 0;
+
+      if (byMonth.containsKey(key)) {
+        byMonth[key] = (kwh: byMonth[key]!.kwh + kwh, date: byMonth[key]!.date);
+      } else {
+        byMonth[key] = (kwh: kwh, date: date);
+      }
+    }
+
+    return byMonth.entries.map((e) {
+      final totalKwh = e.value.kwh;
+      final amount = TariffRates.calculateDomestic(totalKwh);
+
+      return BillRecord(
+        id: e.key,
+        monthYear: DateFormat('MMM yyyy').format(e.value.date),
+        kwh: totalKwh,
+        amount: amount,
+        isPaid: false,
+        date: e.value.date,
+      );
+    }).toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
   }
 }
