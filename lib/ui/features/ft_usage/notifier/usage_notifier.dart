@@ -126,18 +126,23 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
   List<BillRecord> _buildBillHistory(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
   ) {
-    final byMonth = <String, ({double kwh, DateTime date})>{};
+    final byMonth = <String, ({double kwh, DateTime date, bool isPaid})>{};
 
     for (final doc in docs) {
       final data = doc.data();
       final date = (data['date'] as Timestamp).toDate();
       final key = '${date.year}-${date.month.toString().padLeft(2, '0')}';
       final kwh = (data['kwh'] as num?)?.toDouble() ?? 0;
+      final docIsPaid = data['isPaid'] as bool? ?? false;
 
       if (byMonth.containsKey(key)) {
-        byMonth[key] = (kwh: byMonth[key]!.kwh + kwh, date: byMonth[key]!.date);
+        byMonth[key] = (
+          kwh: byMonth[key]!.kwh + kwh,
+          date: byMonth[key]!.date,
+          isPaid: byMonth[key]!.isPaid && docIsPaid,
+        );
       } else {
-        byMonth[key] = (kwh: kwh, date: date);
+        byMonth[key] = (kwh: kwh, date: date, isPaid: docIsPaid);
       }
     }
 
@@ -150,7 +155,7 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
         monthYear: DateFormat('MMM yyyy').format(e.value.date),
         kwh: totalKwh,
         amount: amount,
-        isPaid: false,
+        isPaid: e.value.isPaid,
         date: e.value.date,
       );
     }).toList()

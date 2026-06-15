@@ -229,7 +229,7 @@ class _SettingsBody extends ConsumerWidget {
               const SettingsListTile(
                 icon: '📋',
                 label: 'Version',
-                trailing: '0.1.0',
+                trailing: '0.3.0+1',
                 showChevron: false,
               ),
               SettingsListTile(

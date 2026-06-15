@@ -103,7 +103,7 @@ class _TariffCalculatorPageState extends State<TariffCalculatorPage> {
                         tierLabel: 'Tier 5 · ${TariffRates.getTierKwhRange(5)}',
                         rateLabel: '${_state.tier5Kwh.toStringAsFixed(0)} '
                             'kWh × ${TariffRates.getTierPrice(5)}',
-                        amount: _state.tier4,
+                        amount: _state.tier5,
                         color: AppColors.danger,
                         isActive: true,
                       ),

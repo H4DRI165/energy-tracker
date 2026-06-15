@@ -26,6 +26,7 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
   }
 
   Future<void> _loadLastReading({DateTime? beforeDate}) async {
+    state = state.copyWith(isLoadingLastReading: true);
     final uid = _auth.currentUser?.uid;
     if (uid == null) {
       state = state.copyWith(isLoadingLastReading: false);
@@ -83,7 +84,10 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
   }
 
   void setDate(DateTime date) {
-    state = state.copyWith(selectedDate: date);
+     state = state.copyWith(
+      selectedDate: date,
+      isLoadingLastReading: true,
+    );
     // Re-fetch last reading based on new date
     unawaited(Future.microtask(() => _loadLastReading(beforeDate: date)));
   }

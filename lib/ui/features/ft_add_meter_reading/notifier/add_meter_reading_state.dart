@@ -28,19 +28,7 @@ class AddReadingPageState {
     return usage > 0 ? usage : 0;
   }
 
-  double get estimatedBill {
-    final kwh = usageKwh;
-
-    if (kwh <= 0) return 0;
-
-    double bill = 0;
-    bill += kwh.clamp(0.0, 200.0) * 0.218;
-    if (kwh > 200) bill += (kwh - 200).clamp(0.0, 100.0) * 0.334;
-    if (kwh > 300) bill += (kwh - 300).clamp(0.0, 300.0) * 0.516;
-    if (kwh > 600) bill += (kwh - 600) * 0.546;
-
-    return bill < 3.0 && kwh > 0 ? 3.0 : bill;
-  }
+  double get estimatedBill => TariffRates.calculateDomestic(usageKwh);
 
   int get currentTier => TariffRates.getTier(usageKwh);
 
