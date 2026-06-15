@@ -29,138 +29,89 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
       return;
     }
 
-    final now = DateTime.now();
-    final isToday = selectedDate.year == now.year &&
-        selectedDate.month == now.month &&
-        selectedDate.day == now.day;
-
-    final startOfMonth = DateTime(selectedDate.year, selectedDate.month);
-    final endOfMonth = DateTime(selectedDate.year, selectedDate.month + 1);
-
-    final endOfDay = DateTime(
-      selectedDate.year,
-      selectedDate.month,
-      selectedDate.day,
-      23,
-      59,
-      59,
-    );
-
-    // Today: use now so only past entries today are considered
-    // Past: use end of selected day so entries on that day are included
-    final beforeCutoff = isToday ? now : endOfDay;
-
     try {
-      final beforeSnap = await _firestore
-          .collection('users')
-          .doc(uid)
-          .collection('readings')
-          .where(
-            'date',
-            isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth),
-          )
-          .where('date', isLessThan: Timestamp.fromDate(beforeCutoff))
-          .orderBy('date', descending: true)
-          .limit(1)
-          .get();
+      // Single query — fetch all readings for selected month
+      final startOfMonth = DateTime(selectedDate.year, selectedDate.month);
+      final endOfMonth = DateTime(selectedDate.year, selectedDate.month + 1);
 
-      final nextFirstSnap = await _firestore
+      final snap = await _firestore
           .collection('users')
           .doc(uid)
           .collection('readings')
-          .where('date', isGreaterThan: Timestamp.fromDate(endOfDay))
+          .where('date',
+              isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
           .where('date', isLessThan: Timestamp.fromDate(endOfMonth))
           .orderBy('date', descending: false)
-          .limit(1)
           .get();
 
-      double lastReading = 0;
-      DateTime? lastReadingDate;
-      double? nextReading;
-      DateTime? nextReadingDate;
-
-      if (beforeSnap.docs.isNotEmpty) {
-        final data = beforeSnap.docs.first.data();
-        lastReading = (data['reading'] as num?)?.toDouble() ?? 0;
-        lastReadingDate = (data['date'] as Timestamp).toDate();
-      }
-
-      if (nextFirstSnap.docs.isNotEmpty) {
-        final nextEntryDate =
-            (nextFirstSnap.docs.first.data()['date'] as Timestamp).toDate();
-
-        final nextDayStart = DateTime(
-          nextEntryDate.year,
-          nextEntryDate.month,
-          nextEntryDate.day,
+      // All readings this month, sorted oldest → newest
+      final readings = snap.docs.map((doc) {
+        final data = doc.data();
+        return (
+          reading: (data['reading'] as num?)?.toDouble() ?? 0,
+          date: (data['date'] as Timestamp).toDate(),
         );
-        final nextDayEnd = DateTime(
-          nextEntryDate.year,
-          nextEntryDate.month,
-          nextEntryDate.day,
-          23,
-          59,
-          59,
-        );
+      }).toList();
 
-        final nextLastSnap = await _firestore
-            .collection('users')
-            .doc(uid)
-            .collection('readings')
-            .where(
-              'date',
-              isGreaterThanOrEqualTo: Timestamp.fromDate(nextDayStart),
-            )
-            .where(
-              'date',
-              isLessThanOrEqualTo: Timestamp.fromDate(nextDayEnd),
-            )
-            .orderBy('date', descending: true)
-            .limit(1)
-            .get();
+      // Cutoff: for today use now, for past use end of selected day
+      final now = DateTime.now();
+      final isToday = selectedDate.year == now.year &&
+          selectedDate.month == now.month &&
+          selectedDate.day == now.day;
 
-        if (nextLastSnap.docs.isNotEmpty) {
-          final data = nextLastSnap.docs.first.data();
-          nextReading = (data['reading'] as num?)?.toDouble();
-          nextReadingDate = (data['date'] as Timestamp).toDate();
-        }
+      final cutoff = isToday
+          ? now
+          : DateTime(
+              selectedDate.year,
+              selectedDate.month,
+              selectedDate.day,
+              23,
+              59,
+              59,
+            );
+
+      final startOfNextDay = DateTime(
+        selectedDate.year,
+        selectedDate.month,
+        selectedDate.day + 1,
+      );
+
+      // Previous: latest reading before or on selected day
+      final before = readings.where((r) => r.date.isBefore(cutoff)).lastOrNull;
+
+      // Next: earliest reading after selected day
+      // Group by day and get the last reading of the next day
+      final afterReadings =
+          readings.where((r) => !r.date.isBefore(startOfNextDay)).toList();
+
+      // Get last reading of the next day that has entries
+      ({double reading, DateTime date})? next;
+      if (afterReadings.isNotEmpty) {
+        // Find the first day after selected date
+        final nextDay = afterReadings.first.date;
+        final nextDayStart = DateTime(nextDay.year, nextDay.month, nextDay.day);
+        final nextDayEnd =
+            DateTime(nextDay.year, nextDay.month, nextDay.day + 1);
+
+        // Last entry of that day = highest meter reading of that day
+        next = afterReadings
+            .where((r) =>
+                !r.date.isBefore(nextDayStart) && r.date.isBefore(nextDayEnd))
+            .lastOrNull;
       }
-
-      const months = [
-        'Jan',
-        'Feb',
-        'Mar',
-        'Apr',
-        'May',
-        'Jun',
-        'Jul',
-        'Aug',
-        'Sep',
-        'Oct',
-        'Nov',
-        'Dec',
-      ];
-
-      final lastDateLabel = lastReadingDate != null
-          ? '${months[lastReadingDate.month - 1]} ${lastReadingDate.day}'
-          : '';
-
-      final nextDateLabel = nextReadingDate != null
-          ? '${months[nextReadingDate.month - 1]} ${nextReadingDate.day}'
-          : '';
 
       state = state.copyWith(
         isLoadingLastReading: false,
-        lastReading: lastReading,
-        lastReadingDate: lastReadingDate,
-        nextReading: nextReading,
-        nextReadingDate: nextReadingDate,
+        lastReading: before?.reading ?? 0,
+        lastReadingDate: before?.date,
+        nextReading: next?.reading,
+        nextReadingDate: next?.date,
         readingError: _validateReading(
-          state.currentReading,
-          lastReading,
-          nextReading,
-          lastReadingDateLabel: lastDateLabel,
-          nextReadingDateLabel: nextDateLabel,
+          reading: state.currentReading,
+          lastReading: before?.reading ?? 0,
+          nextReading: next?.reading,
+          lastDate: before?.date,
+          nextDate: next?.date,
         ),
       );
     } on Exception catch (_) {
@@ -168,43 +119,56 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
     }
   }
 
-  String? _validateReading(
-    double reading,
-    double lastReading,
-    double? nextReading, {
-    String lastReadingDateLabel = '',
-    String nextReadingDateLabel = '',
+  String? _validateReading({
+    required double reading,
+    required double lastReading,
+    required double? nextReading,
+    required DateTime? lastDate,
+    required DateTime? nextDate,
   }) {
     if (reading <= 0) return null;
 
     if (lastReading > 0 && reading < lastReading) {
-      return 'Must be above ${lastReading.toStringAsFixed(0)} kWh'
-          '${lastReadingDateLabel.isNotEmpty ? ' ($lastReadingDateLabel)' : ''}';
+      final label = lastDate != null ? ' (${_formatDate(lastDate)})' : '';
+      return 'Must be above ${lastReading.toStringAsFixed(0)} kWh$label';
     }
 
     if (nextReading != null && reading > nextReading) {
-      return 'Must be below ${nextReading.toStringAsFixed(0)} kWh'
-          '${nextReadingDateLabel.isNotEmpty ? ' ($nextReadingDateLabel)' : ''}';
+      final label = nextDate != null ? ' (${_formatDate(nextDate)})' : '';
+      return 'Must be below ${nextReading.toStringAsFixed(0)} kWh$label';
     }
 
     return null;
   }
 
-  // Helper getters for formatted dates used in _validateReading
-  String get formattedLastReadingDate => state.formattedLastReadingDate;
-  String get formattedNextReadingDate => state.formattedNextReadingDate;
+  String _formatDate(DateTime date) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    return '${months[date.month - 1]} ${date.day}';
+  }
 
   void setReading(String value) {
     final reading = double.tryParse(value) ?? 0;
-
     state = state.copyWith(
       currentReading: reading,
       readingError: _validateReading(
-        reading,
-        state.lastReading,
-        state.nextReading,
-        lastReadingDateLabel: state.formattedLastReadingDate,
-        nextReadingDateLabel: state.formattedNextReadingDate,
+        reading: reading,
+        lastReading: state.lastReading,
+        nextReading: state.nextReading,
+        lastDate: state.lastReadingDate,
+        nextDate: state.nextReadingDate,
       ),
       errorMessage: null,
     );
@@ -214,7 +178,6 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
     state = state.copyWith(
       selectedDate: date,
       isLoadingLastReading: true,
-      // Clear bounds while re-fetching
       nextReading: null,
       nextReadingDate: null,
     );
@@ -272,10 +235,7 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
       state = state.copyWith(isSaving: false);
       return true;
     } on FirebaseException catch (e) {
-      state = state.copyWith(
-        isSaving: false,
-        errorMessage: _mapError(e.code),
-      );
+      state = state.copyWith(isSaving: false, errorMessage: _mapError(e.code));
       return false;
     } on Exception catch (_) {
       state = state.copyWith(

@@ -296,7 +296,6 @@ class _LastReadingCard extends StatelessWidget {
                       : 'kWh · No previous reading',
                   style: AppTextStyles.bodyMd.copyWith(color: AppColors.text2),
                 ),
-                
                 if (state.nextReading != null) ...[
                   SizedBox(height: 8.h),
                   Container(
@@ -321,7 +320,8 @@ class _LastReadingCard extends StatelessWidget {
                         ),
                         SizedBox(width: 6.w),
                         Text(
-                          'Must be below ${state.nextReading!.toStringAsFixed(0)} kWh'
+                          'Must be below '
+                          '${state.nextReading!.toStringAsFixed(0)} kWh'
                           ' (${state.formattedNextReadingDate})',
                           style: AppTextStyles.caption
                               .copyWith(color: AppColors.warn),
