@@ -1,2 +1,2 @@
-export 'add_appliance/page.dart';
-export 'devices/page.dart';
+export 'pg_add_appliance/page.dart';
+export 'pg_devices/page.dart';

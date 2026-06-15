@@ -1,8 +1,8 @@
 import 'package:energy_tracker/models/appliance.dart';
 import 'package:energy_tracker/theme/theme.dart';
 import 'package:energy_tracker/ui/components/text.dart';
-import 'package:energy_tracker/ui/features/ft_devices/add_appliance/notifier/notifier.dart';
-import 'package:energy_tracker/ui/features/ft_devices/devices/notifier/devices_notifier.dart';
+import 'package:energy_tracker/ui/features/ft_devices/pg_add_appliance/notifier/notifier.dart';
+import 'package:energy_tracker/ui/features/ft_devices/pg_devices/notifier/devices_notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -123,7 +123,9 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
       _nameController.text = appliance.name;
       _wattageController.text = appliance.wattage.toStringAsFixed(0);
 
-      ref.read(addApplianceProvider.notifier).initForEdit(appliance);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(addApplianceProvider.notifier).initForEdit(appliance);
+      });
     }
 
     _nameController.addListener(

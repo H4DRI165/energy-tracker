@@ -1,3 +1,4 @@
+import 'package:energy_tracker/constants/tariff_rates.dart';
 import 'package:energy_tracker/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 
@@ -83,18 +84,8 @@ class DashboardPageState {
     }
   }
 
-  String get tierRange {
-    switch (currentTier) {
-      case 1:
-        return '1–200 kWh';
-      case 2:
-        return '201–300 kWh';
-      case 3:
-        return '301–600 kWh';
-      default:
-        return '600+ kWh';
-    }
-  }
+  String get tierRange => TariffRates.getTierKwhRange(currentTier);
+  Color get tierColor => TariffRates.getTierColor(currentTier);
 
   String get greetingEmoji {
     switch (budgetStatus) {
@@ -103,17 +94,6 @@ class DashboardPageState {
       case BudgetStatus.warning:
       case BudgetStatus.exceeded:
         return '⚠️';
-    }
-  }
-
-  Color get tierColor {
-    switch (currentTier) {
-      case 1:
-        return AppColors.accent;
-      case 2:
-        return AppColors.warn;
-      default:
-        return AppColors.danger;
     }
   }
 

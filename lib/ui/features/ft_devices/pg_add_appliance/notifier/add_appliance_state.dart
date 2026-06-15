@@ -1,3 +1,5 @@
+import 'package:energy_tracker/constants/tariff_rates.dart';
+
 const _categories = [
   'Cooling',
   'Lighting',
@@ -33,16 +35,7 @@ class AddAppliancePageState {
 
   double get monthlyKwh => (wattage / 1000) * dailyHours * 30;
 
-  double get monthlyCost {
-    final kwh = monthlyKwh;
-    if (kwh <= 0) return 0;
-    double bill = 0;
-    bill += kwh.clamp(0.0, 200.0) * 0.218;
-    if (kwh > 200) bill += (kwh - 200).clamp(0.0, 100.0) * 0.334;
-    if (kwh > 300) bill += (kwh - 300).clamp(0.0, 300.0) * 0.516;
-    if (kwh > 600) bill += (kwh - 600) * 0.546;
-    return bill;
-  }
+  double get monthlyCost => TariffRates.calculateDomestic(monthlyKwh);
 
   bool get canSave =>
       name.trim().isNotEmpty &&

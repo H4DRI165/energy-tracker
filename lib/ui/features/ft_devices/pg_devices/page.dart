@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'package:energy_tracker/models/appliance.dart';
 import 'package:energy_tracker/theme/theme.dart';
 import 'package:energy_tracker/ui/components/nav.dart';
-import 'package:energy_tracker/ui/features/ft_devices/devices/notifier/notifier.dart';
+import 'package:energy_tracker/ui/features/ft_devices/pg_devices/notifier/notifier.dart';
 import 'package:energy_tracker/ui/routes/routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -99,6 +99,20 @@ class _BodyContent extends StatelessWidget {
             Text(
               'Appliances',
               style: AppTextStyles.bodyMd.copyWith(fontWeight: FontWeight.w700),
+            ),
+            Row(
+              children: [
+                Icon(
+                  Icons.swipe_left_rounded,
+                  size: 14.r,
+                  color: AppColors.text3,
+                ),
+                SizedBox(width: 4.w),
+                Text(
+                  'Swipe to remove appliance',
+                  style: AppTextStyles.caption.copyWith(color: AppColors.text3),
+                ),
+              ],
             ),
             SizedBox(height: 10.h),
             ...state.appliances.map(
@@ -343,10 +357,20 @@ class _ApplianceCard extends ConsumerWidget {
           color: AppColors.danger.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
         ),
-        child: Icon(
-          Icons.delete_outline_rounded,
-          color: AppColors.danger,
-          size: 24.r,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.delete_outline_rounded,
+              color: AppColors.danger,
+              size: 24.r,
+            ),
+            SizedBox(height: 4.h),
+            Text(
+              'Remove',
+              style: AppTextStyles.caption.copyWith(color: AppColors.danger),
+            ),
+          ],
         ),
       ),
       confirmDismiss: (_) async {
@@ -417,6 +441,12 @@ class _ApplianceCard extends ConsumerWidget {
                       ),
                     ],
                   ),
+                  SizedBox(width: 8.w),
+                  Icon(
+                    Icons.chevron_left_rounded,
+                    size: 16.r,
+                    color: AppColors.text3,
+                  ),
                 ],
               ),
               SizedBox(height: 10.h),
@@ -433,10 +463,18 @@ class _ApplianceCard extends ConsumerWidget {
                     ),
                   ),
                   SizedBox(height: 3.h),
-                  Text(
-                    '${(fraction * 100).toStringAsFixed(0)}% of total usage',
-                    style: AppTextStyles.caption
-                        .copyWith(fontSize: 10.sp, color: AppColors.text3),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '${(fraction * 100).toStringAsFixed(0)}'
+                        '% of total usage',
+                        style: AppTextStyles.caption.copyWith(
+                          fontSize: 10.sp,
+                          color: AppColors.text3,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

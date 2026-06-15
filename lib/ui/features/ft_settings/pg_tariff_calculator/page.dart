@@ -1,5 +1,6 @@
+import 'package:energy_tracker/constants/tariff_rates.dart';
 import 'package:energy_tracker/theme/theme.dart';
-import 'package:energy_tracker/ui/features/ft_settings/tariff_calculator/state.dart';
+import 'package:energy_tracker/ui/features/ft_settings/pg_tariff_calculator/state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -60,27 +61,27 @@ class _TariffCalculatorPageState extends State<TariffCalculatorPage> {
                     ),
                     SizedBox(height: 10.h),
                     _TierRow(
-                      tierLabel: 'Tier 1 · 1–200 kWh',
+                      tierLabel: 'Tier 1 · ${TariffRates.getTierKwhRange(1)}',
                       rateLabel: '${_state.tier1Kwh.toStringAsFixed(0)} '
-                          'kWh × 21.8 sen',
+                          'kWh × ${TariffRates.getTierPrice(1)}',
                       amount: _state.tier1,
                       color: AppColors.accent,
                       isActive: _state.kwh > 0,
                     ),
                     SizedBox(height: 8.h),
                     _TierRow(
-                      tierLabel: 'Tier 2 · 201–300 kWh',
+                      tierLabel: 'Tier 2 · ${TariffRates.getTierKwhRange(2)}',
                       rateLabel: '${_state.tier2Kwh.toStringAsFixed(0)} '
-                          'kWh × 33.4 sen',
+                          'kWh × ${TariffRates.getTierPrice(2)}',
                       amount: _state.tier2,
                       color: AppColors.warn,
                       isActive: _state.kwh > 200,
                     ),
                     SizedBox(height: 8.h),
                     _TierRow(
-                      tierLabel: 'Tier 3 · 301–600 kWh',
+                      tierLabel: 'Tier 3 · ${TariffRates.getTierKwhRange(3)}',
                       rateLabel: '${_state.tier3Kwh.toStringAsFixed(0)} '
-                          'kWh × 51.6 sen',
+                          'kWh × ${TariffRates.getTierPrice(3)}',
                       amount: _state.tier3,
                       color: AppColors.danger,
                       isActive: _state.kwh > 300,
@@ -88,10 +89,21 @@ class _TariffCalculatorPageState extends State<TariffCalculatorPage> {
                     if (_state.hasTier4) ...[
                       SizedBox(height: 8.h),
                       _TierRow(
-                        tierLabel: 'Tier 4 · 601+ kWh',
+                        tierLabel: 'Tier 4 · ${TariffRates.getTierKwhRange(4)}',
                         rateLabel: '${_state.tier4Kwh.toStringAsFixed(0)} '
-                            'kWh × 54.6 sen',
+                            'kWh × ${TariffRates.getTierPrice(4)}',
                         amount: _state.tier4,
+                        color: AppColors.danger,
+                        isActive: true,
+                      ),
+                    ],
+                    if (_state.hasTier5) ...[
+                      SizedBox(height: 8.h),
+                      _TierRow(
+                        tierLabel: 'Tier 5 · ${TariffRates.getTierKwhRange(5)}',
+                        rateLabel: '${_state.tier5Kwh.toStringAsFixed(0)} '
+                            'kWh × ${TariffRates.getTierPrice(5)}',
+                        amount: _state.tier5,
                         color: AppColors.danger,
                         isActive: true,
                       ),
@@ -365,10 +377,31 @@ class _InfoCard extends StatelessWidget {
             style: AppTextStyles.bodySm.copyWith(fontWeight: FontWeight.w700),
           ),
           SizedBox(height: 8.h),
-          const _RateRow('Tier 1', '1–200 kWh', '21.8 sen/kWh'),
-          const _RateRow('Tier 2', '201–300 kWh', '33.4 sen/kWh'),
-          const _RateRow('Tier 3', '301–600 kWh', '51.6 sen/kWh'),
-          const _RateRow('Tier 4', '601+ kWh', '54.6 sen/kWh'),
+          _RateRow(
+            'Tier 1',
+            TariffRates.getTierKwhRange(1),
+            '${TariffRates.getTierPrice(1)}/kWh',
+          ),
+          _RateRow(
+            'Tier 2',
+            TariffRates.getTierKwhRange(2),
+            '${TariffRates.getTierPrice(2)}/kWh',
+          ),
+          _RateRow(
+            'Tier 3',
+            TariffRates.getTierKwhRange(3),
+            '${TariffRates.getTierPrice(3)}/kWh',
+          ),
+          _RateRow(
+            'Tier 4',
+            TariffRates.getTierKwhRange(4),
+            '${TariffRates.getTierPrice(4)}/kWh',
+          ),
+          _RateRow(
+            'Tier 5',
+            TariffRates.getTierKwhRange(5),
+            '${TariffRates.getTierPrice(5)}/kWh',
+          ),
           Divider(height: 16.h, color: AppColors.border),
           Text(
             'Minimum charge: RM 3.00/month',

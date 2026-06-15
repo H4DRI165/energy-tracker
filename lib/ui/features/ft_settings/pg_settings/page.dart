@@ -4,8 +4,8 @@ import 'package:energy_tracker/theme/theme.dart';
 import 'package:energy_tracker/ui/components/errors.dart';
 import 'package:energy_tracker/ui/components/nav.dart';
 import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_notifier.dart';
-import 'package:energy_tracker/ui/features/ft_settings/settings/notifier/notifier.dart';
-import 'package:energy_tracker/ui/features/ft_settings/settings/widgets/widgets.dart';
+import 'package:energy_tracker/ui/features/ft_settings/pg_settings/notifier/notifier.dart';
+import 'package:energy_tracker/ui/features/ft_settings/pg_settings/widgets/widgets.dart';
 import 'package:energy_tracker/ui/routes/routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -229,7 +229,7 @@ class _SettingsBody extends ConsumerWidget {
               const SettingsListTile(
                 icon: '📋',
                 label: 'Version',
-                trailing: '0.1.0',
+                trailing: '0.3.0+1',
                 showChevron: false,
               ),
               SettingsListTile(

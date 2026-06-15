@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:energy_tracker/constants/tariff_rates.dart';
 import 'package:energy_tracker/models/bill_record.dart';
 import 'package:energy_tracker/ui/features/ft_usage/notifier/usage_state.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -49,18 +50,7 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
           .get();
 
       final monthlyData = _buildMonthlyData(readingsSnap.docs, now);
-      final billHistory = billsSnap.docs.map((doc) {
-        final data = doc.data();
-        final date = (data['date'] as Timestamp).toDate();
-        return BillRecord(
-          id: doc.id,
-          monthYear: DateFormat('MMM yyyy').format(date),
-          kwh: (data['kwh'] as num?)?.toDouble() ?? 0,
-          amount: (data['amount'] as num?)?.toDouble() ?? 0,
-          isPaid: data['isPaid'] as bool? ?? true,
-          date: date,
-        );
-      }).toList();
+      final billHistory = _buildBillHistory(billsSnap.docs);
 
       // Current month data
       final currentMonthReadings = readingsSnap.docs.where((doc) {
@@ -69,11 +59,10 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
       }).toList();
 
       final currentKwh = currentMonthReadings.fold<double>(0, (total, doc) {
-        final kwh = (doc.data()['kwh'] as num?)?.toDouble() ?? 0;
-        return total + kwh;
+        return total + ((doc.data()['kwh'] as num?)?.toDouble() ?? 0);
       });
 
-      final currentBill = _calculateBill(currentKwh);
+      final currentBill = TariffRates.calculateDomestic(currentKwh);
       final currentMonthLabel = DateFormat('MMMM yyyy').format(now);
 
       return UsageState(
@@ -120,12 +109,13 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
       final month = DateTime(now.year, now.month - i);
       final key = DateFormat('MMM-yyyy').format(month);
       final kwh = monthlyMap[key] ?? 0;
+
       result.add(
         MonthlyUsage(
           month: DateFormat('MMM').format(month),
           year: month.year,
           kwh: kwh,
-          bill: _calculateBill(kwh),
+          bill: TariffRates.calculateDomestic(kwh),
           isPaid: i > 0,
         ),
       );
@@ -133,13 +123,42 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
     return result;
   }
 
-  double _calculateBill(double kwh) {
-    if (kwh <= 0) return 0;
-    double bill = 0;
-    bill += kwh.clamp(0, 200) * 0.218;
-    if (kwh > 200) bill += (kwh - 200).clamp(0, 100) * 0.334;
-    if (kwh > 300) bill += (kwh - 300).clamp(0, 300) * 0.516;
-    if (kwh > 600) bill += (kwh - 600) * 0.546;
-    return bill < 3.0 ? 3.0 : bill;
+  List<BillRecord> _buildBillHistory(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
+  ) {
+    final byMonth = <String, ({double kwh, DateTime date, bool isPaid})>{};
+
+    for (final doc in docs) {
+      final data = doc.data();
+      final date = (data['date'] as Timestamp).toDate();
+      final key = '${date.year}-${date.month.toString().padLeft(2, '0')}';
+      final kwh = (data['kwh'] as num?)?.toDouble() ?? 0;
+      final docIsPaid = data['isPaid'] as bool? ?? false;
+
+      if (byMonth.containsKey(key)) {
+        byMonth[key] = (
+          kwh: byMonth[key]!.kwh + kwh,
+          date: byMonth[key]!.date,
+          isPaid: byMonth[key]!.isPaid && docIsPaid,
+        );
+      } else {
+        byMonth[key] = (kwh: kwh, date: date, isPaid: docIsPaid);
+      }
+    }
+
+    return byMonth.entries.map((e) {
+      final totalKwh = e.value.kwh;
+      final amount = TariffRates.calculateDomestic(totalKwh);
+
+      return BillRecord(
+        id: e.key,
+        monthYear: DateFormat('MMM yyyy').format(e.value.date),
+        kwh: totalKwh,
+        amount: amount,
+        isPaid: e.value.isPaid,
+        date: e.value.date,
+      );
+    }).toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
   }
 }

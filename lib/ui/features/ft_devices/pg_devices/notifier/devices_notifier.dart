@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/models/appliance.dart';
-import 'package:energy_tracker/ui/features/ft_devices/devices/notifier/devices_state.dart';
+import 'package:energy_tracker/ui/features/ft_devices/pg_devices/notifier/devices_state.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
