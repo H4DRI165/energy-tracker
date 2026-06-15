@@ -1,5 +1,6 @@
 import 'package:energy_tracker/constants/tariff_types.dart';
 import 'package:energy_tracker/theme/theme.dart';
+import 'package:energy_tracker/ui/components/dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -60,7 +61,22 @@ class TariffTypeSheet extends StatelessWidget {
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: () => onSelect(tariff.value),
+                  onTap: isSelected
+                      ? null
+                      : () async {
+                          final confirmed = await ConfirmDialog.show(
+                            context,
+                            title: 'Switch Tariff Type?',
+                            message: 'Switch to ${tariff.label}?',
+                            confirmLabel: 'Switch',
+                            warning: 'This will affect how your bill is '
+                                'calculated going forward.',
+                          );
+
+                          if (confirmed && context.mounted) {
+                            onSelect(tariff.value);
+                          }
+                        },
                   child: Container(
                     width: double.infinity,
                     margin: EdgeInsets.only(bottom: 10.h),

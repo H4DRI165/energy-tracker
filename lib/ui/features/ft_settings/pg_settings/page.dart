@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:energy_tracker/theme/theme.dart';
+import 'package:energy_tracker/ui/components/dialog.dart';
 import 'package:energy_tracker/ui/components/errors.dart';
 import 'package:energy_tracker/ui/components/nav.dart';
 import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_notifier.dart';
@@ -51,7 +52,19 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                       notifier.toggleBillReminders(value: v),
                   onToggleMonthlySummary: (v) =>
                       notifier.toggleMonthlySummary(value: v),
-                  onSignOut: _handleSignOut,
+                  onSignOut: () async {
+                    final confirmed = await ConfirmDialog.show(
+                      context,
+                      title: 'Sign Out?',
+                      message: 'Are you sure you want to sign out?',
+                      confirmLabel: 'Sign Out',
+                      confirmColor: AppColors.danger,
+                    );
+                    if (confirmed && context.mounted) {
+                      await notifier.signOut();
+                      if (context.mounted) context.go(AppRoutes.login);
+                    }
+                  },
                 ),
               ),
             ),
@@ -59,50 +72,6 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         ),
       ),
       bottomNavigationBar: const AppBottomNav(currentIndex: 3),
-    );
-  }
-
-  Future<void> _handleSignOut() async {
-    final confirmed = await _showSignOutDialog(context);
-    if (confirmed == true) {
-      await ref.read(settingsProvider.notifier).signOut();
-    }
-  }
-
-  Future<bool?> _showSignOutDialog(BuildContext context) {
-    return showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
-          side: const BorderSide(color: AppColors.border),
-        ),
-        title: Text('Sign Out', style: AppTextStyles.titleMd),
-        content: Text(
-          'Are you sure you want to sign out?',
-          style: AppTextStyles.bodyMd.copyWith(color: AppColors.text2),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(
-              'Cancel',
-              style: AppTextStyles.bodyMd.copyWith(color: AppColors.text2),
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(
-              'Sign Out',
-              style: AppTextStyles.bodyMd.copyWith(
-                color: AppColors.danger,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
