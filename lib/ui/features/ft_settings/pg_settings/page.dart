@@ -60,10 +60,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                       confirmLabel: 'Sign Out',
                       confirmColor: AppColors.danger,
                     );
-                    if (confirmed && context.mounted) {
-                      await notifier.signOut();
-                      if (context.mounted) context.go(AppRoutes.login);
-                    }
+                    if (!confirmed) return;
+                    await notifier.signOut();
+                    if (context.mounted) context.go(AppRoutes.login);
                   },
                 ),
               ),

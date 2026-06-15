@@ -14,6 +14,7 @@ final NotifierProvider<AddReadingNotifier, AddReadingPageState>
 class AddReadingNotifier extends Notifier<AddReadingPageState> {
   FirebaseAuth get _auth => FirebaseAuth.instance;
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;
+  int _loadRequestId = 0;
 
   @override
   AddReadingPageState build() {
@@ -23,9 +24,12 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
   }
 
   Future<void> _loadSurroundingReadings(DateTime selectedDate) async {
+    final requestId = ++_loadRequestId;
     final uid = _auth.currentUser?.uid;
     if (uid == null) {
-      state = state.copyWith(isLoadingLastReading: false);
+      if (requestId == _loadRequestId) {
+        state = state.copyWith(isLoadingLastReading: false);
+      }
       return;
     }
 
@@ -107,6 +111,10 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
             .lastOrNull;
       }
 
+      if (requestId != _loadRequestId || state.selectedDate != selectedDate) {
+        return;
+      }
+
       state = state.copyWith(
         isLoadingLastReading: false,
         lastReading: before?.reading ?? 0,
@@ -122,7 +130,9 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
         ),
       );
     } on Exception catch (_) {
-      state = state.copyWith(isLoadingLastReading: false);
+      if (requestId == _loadRequestId) {
+        state = state.copyWith(isLoadingLastReading: false);
+      }
     }
   }
 
