@@ -1,4 +1,6 @@
 import 'package:energy_tracker/theme/theme.dart';
+import 'package:energy_tracker/ui/components/buttons.dart';
+import 'package:energy_tracker/ui/components/dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -193,18 +195,20 @@ class _BudgetSheetState extends State<BudgetSheet> {
               ),
             ),
             SizedBox(height: 20.h),
-            FilledButton(
-              onPressed: () => widget.onSave(_budget),
-              style: FilledButton.styleFrom(
-                minimumSize: Size(double.infinity, 52.h),
-                backgroundColor: AppColors.accent,
-                foregroundColor: Colors.black,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-                ),
-                textStyle: AppTextStyles.button,
-              ),
-              child: const Text('Save Budget'),
+            GradientButton(
+              label: 'Save Budget',
+              isLoading: false,
+              onTap: () async {
+                final confirmed = await ConfirmDialog.show(
+                  context,
+                  title: 'Update Budget?',
+                  message:
+                      'Set monthly budget to RM ${_budget.toStringAsFixed(0)}?',
+                  confirmLabel: 'Save',
+                );
+
+                if (confirmed && context.mounted) widget.onSave(_budget);
+              },
             ),
           ],
         ),

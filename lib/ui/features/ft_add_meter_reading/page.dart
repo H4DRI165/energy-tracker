@@ -1,5 +1,6 @@
 import 'package:energy_tracker/constants/tariff_rates.dart';
 import 'package:energy_tracker/theme/theme.dart';
+import 'package:energy_tracker/ui/components/buttons.dart';
 import 'package:energy_tracker/ui/features/ft_add_meter_reading/notifier/notifier.dart';
 import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_usage/notifier/usage_notifier.dart';
@@ -165,9 +166,10 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
               _ErrorBanner(message: widget.state.errorMessage!),
             ],
             SizedBox(height: 28.h),
-            _SaveButton(
-              canSave: widget.state.canSave,
-              isSaving: widget.state.isSaving,
+            GradientButton(
+              label: 'Save Reading',
+              isLoading: widget.state.isSaving,
+              isEnabled: widget.state.canSave,
               onTap: _handleSave,
             ),
             SizedBox(height: 24.h),
@@ -296,6 +298,40 @@ class _LastReadingCard extends StatelessWidget {
                       : 'kWh · No previous reading',
                   style: AppTextStyles.bodyMd.copyWith(color: AppColors.text2),
                 ),
+                if (state.nextReading != null) ...[
+                  SizedBox(height: 8.h),
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 10.w,
+                      vertical: 6.h,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.warn.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8.r),
+                      border: Border.all(
+                        color: AppColors.warn.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.info_outline_rounded,
+                          size: 12.r,
+                          color: AppColors.warn,
+                        ),
+                        SizedBox(width: 6.w),
+                        Text(
+                          'Must be below '
+                          '${state.nextReading!.toStringAsFixed(0)} kWh'
+                          ' (${state.formattedNextReadingDate})',
+                          style: AppTextStyles.caption
+                              .copyWith(color: AppColors.warn),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
     );
@@ -572,54 +608,6 @@ class _NotesField extends StatelessWidget {
           borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
         ),
         contentPadding: EdgeInsets.all(14.r),
-      ),
-    );
-  }
-}
-
-class _SaveButton extends StatelessWidget {
-  const _SaveButton({
-    required this.canSave,
-    required this.isSaving,
-    required this.onTap,
-  });
-
-  final bool canSave;
-  final bool isSaving;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: (canSave && !isSaving) ? onTap : null,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: double.infinity,
-        height: 52.h,
-        decoration: BoxDecoration(
-          gradient: canSave ? AppColors.primaryGradient : null,
-          color: canSave ? null : AppColors.surface2,
-          borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-          boxShadow: canSave ? AppColors.btnPrimaryShadow : null,
-          border: canSave ? null : Border.all(color: AppColors.border),
-        ),
-        child: Center(
-          child: isSaving
-              ? SizedBox(
-                  width: 20.r,
-                  height: 20.r,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: canSave ? Colors.black : AppColors.text3,
-                  ),
-                )
-              : Text(
-                  'Save Reading',
-                  style: AppTextStyles.button.copyWith(
-                    color: canSave ? Colors.black : AppColors.text3,
-                  ),
-                ),
-        ),
       ),
     );
   }

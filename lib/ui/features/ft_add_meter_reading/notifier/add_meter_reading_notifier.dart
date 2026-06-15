@@ -14,82 +14,191 @@ final NotifierProvider<AddReadingNotifier, AddReadingPageState>
 class AddReadingNotifier extends Notifier<AddReadingPageState> {
   FirebaseAuth get _auth => FirebaseAuth.instance;
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;
+  int _loadRequestId = 0;
 
   @override
   AddReadingPageState build() {
-    unawaited(
-      Future.microtask(
-        () => _loadLastReading(beforeDate: DateTime.now()),
-      ),
-    );
-    return AddReadingPageState(selectedDate: DateTime.now());
+    final today = DateTime.now();
+    unawaited(Future.microtask(() => _loadSurroundingReadings(today)));
+    return AddReadingPageState(selectedDate: today);
   }
 
-  Future<void> _loadLastReading({DateTime? beforeDate}) async {
-    state = state.copyWith(isLoadingLastReading: true);
+  Future<void> _loadSurroundingReadings(DateTime selectedDate) async {
+    final requestId = ++_loadRequestId;
     final uid = _auth.currentUser?.uid;
     if (uid == null) {
-      state = state.copyWith(isLoadingLastReading: false);
+      if (requestId == _loadRequestId) {
+        state = state.copyWith(isLoadingLastReading: false);
+      }
       return;
     }
 
-    final cutOff = beforeDate ?? state.selectedDate ?? DateTime.now();
-
     try {
+      // Single query — fetch all readings for selected month
+      final startOfMonth = DateTime(selectedDate.year, selectedDate.month);
+      final endOfMonth = DateTime(selectedDate.year, selectedDate.month + 1);
+
       final snap = await _firestore
           .collection('users')
           .doc(uid)
           .collection('readings')
-          .where('date', isLessThan: Timestamp.fromDate(cutOff))
-          .orderBy('date', descending: true)
-          .limit(1)
+          .where(
+            'date',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth),
+          )
+          .where(
+            'date',
+            isLessThan: Timestamp.fromDate(endOfMonth),
+          )
+          .orderBy('date', descending: false)
           .get();
 
-      if (snap.docs.isEmpty) {
-        state = state.copyWith(
-          isLoadingLastReading: false,
-          lastReading: 0,
+      // All readings this month, sorted oldest → newest
+      final readings = snap.docs.map((doc) {
+        final data = doc.data();
+        return (
+          reading: (data['reading'] as num?)?.toDouble() ?? 0,
+          date: (data['date'] as Timestamp).toDate(),
         );
+      }).toList();
+
+      // Cutoff: for today use now, for past use end of selected day
+      final now = DateTime.now();
+      final isToday = selectedDate.year == now.year &&
+          selectedDate.month == now.month &&
+          selectedDate.day == now.day;
+
+      final cutoff = isToday
+          ? now
+          : DateTime(
+              selectedDate.year,
+              selectedDate.month,
+              selectedDate.day,
+              23,
+              59,
+              59,
+            );
+
+      final startOfNextDay = DateTime(
+        selectedDate.year,
+        selectedDate.month,
+        selectedDate.day + 1,
+      );
+
+      // Previous: latest reading before or on selected day
+      final before = readings.where((r) => r.date.isBefore(cutoff)).lastOrNull;
+
+      // Next: earliest reading after selected day
+      // Group by day and get the last reading of the next day
+      final afterReadings =
+          readings.where((r) => !r.date.isBefore(startOfNextDay)).toList();
+
+      // Get last reading of the next day that has entries
+      ({double reading, DateTime date})? next;
+      if (afterReadings.isNotEmpty) {
+        // Find the first day after selected date
+        final nextDay = afterReadings.first.date;
+        final nextDayStart = DateTime(nextDay.year, nextDay.month, nextDay.day);
+        final nextDayEnd =
+            DateTime(nextDay.year, nextDay.month, nextDay.day + 1);
+
+        // Last entry of that day = highest meter reading of that day
+        next = afterReadings
+            .where(
+              (r) =>
+                  !r.date.isBefore(nextDayStart) && r.date.isBefore(nextDayEnd),
+            )
+            .lastOrNull;
+      }
+
+      if (requestId != _loadRequestId || state.selectedDate != selectedDate) {
         return;
       }
 
-      final data = snap.docs.first.data();
-      final reading = (data['reading'] as num?)?.toDouble() ?? 0;
-      final date = (data['date'] as Timestamp).toDate();
-
       state = state.copyWith(
         isLoadingLastReading: false,
-        lastReading: reading,
-        lastReadingDate: date,
+        lastReading: before?.reading ?? 0,
+        lastReadingDate: before?.date,
+        nextReading: next?.reading,
+        nextReadingDate: next?.date,
+        readingError: _validateReading(
+          reading: state.currentReading,
+          lastReading: before?.reading ?? 0,
+          nextReading: next?.reading,
+          lastDate: before?.date,
+          nextDate: next?.date,
+        ),
       );
     } on Exception catch (_) {
-      state = state.copyWith(isLoadingLastReading: false);
+      if (requestId == _loadRequestId) {
+        state = state.copyWith(isLoadingLastReading: false);
+      }
     }
+  }
+
+  String? _validateReading({
+    required double reading,
+    required double lastReading,
+    required double? nextReading,
+    required DateTime? lastDate,
+    required DateTime? nextDate,
+  }) {
+    if (reading <= 0) return null;
+
+    if (lastReading > 0 && reading < lastReading) {
+      final label = lastDate != null ? ' (${_formatDate(lastDate)})' : '';
+      return 'Must be above ${lastReading.toStringAsFixed(0)} kWh$label';
+    }
+
+    if (nextReading != null && reading > nextReading) {
+      final label = nextDate != null ? ' (${_formatDate(nextDate)})' : '';
+      return 'Must be below ${nextReading.toStringAsFixed(0)} kWh$label';
+    }
+
+    return null;
+  }
+
+  String _formatDate(DateTime date) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    return '${months[date.month - 1]} ${date.day}';
   }
 
   void setReading(String value) {
     final reading = double.tryParse(value) ?? 0;
-
-    String? error;
-    if (reading < state.lastReading && state.lastReading > 0) {
-      error = 'Reading cannot be less than previous '
-          'reading (${state.lastReading.toStringAsFixed(0)})';
-    }
-
     state = state.copyWith(
       currentReading: reading,
-      readingError: error,
+      readingError: _validateReading(
+        reading: reading,
+        lastReading: state.lastReading,
+        nextReading: state.nextReading,
+        lastDate: state.lastReadingDate,
+        nextDate: state.nextReadingDate,
+      ),
       errorMessage: null,
     );
   }
 
   void setDate(DateTime date) {
-     state = state.copyWith(
+    state = state.copyWith(
       selectedDate: date,
       isLoadingLastReading: true,
+      nextReading: null,
+      nextReadingDate: null,
     );
-    // Re-fetch last reading based on new date
-    unawaited(Future.microtask(() => _loadLastReading(beforeDate: date)));
+    unawaited(Future.microtask(() => _loadSurroundingReadings(date)));
   }
 
   void setNotes(String value) {
@@ -140,7 +249,6 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
       }
 
       await batch.commit();
-
       state = state.copyWith(isSaving: false);
       return true;
     } on FirebaseException catch (e) {
