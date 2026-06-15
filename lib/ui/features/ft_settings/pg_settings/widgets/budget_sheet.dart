@@ -1,4 +1,5 @@
 import 'package:energy_tracker/theme/theme.dart';
+import 'package:energy_tracker/ui/components/buttons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -193,18 +194,10 @@ class _BudgetSheetState extends State<BudgetSheet> {
               ),
             ),
             SizedBox(height: 20.h),
-            FilledButton(
-              onPressed: () => widget.onSave(_budget),
-              style: FilledButton.styleFrom(
-                minimumSize: Size(double.infinity, 52.h),
-                backgroundColor: AppColors.accent,
-                foregroundColor: Colors.black,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-                ),
-                textStyle: AppTextStyles.button,
-              ),
-              child: const Text('Save Budget'),
+            GradientButton(
+              label: 'Save Budget',
+              isLoading: false,
+              onTap: () => widget.onSave(_budget),
             ),
           ],
         ),

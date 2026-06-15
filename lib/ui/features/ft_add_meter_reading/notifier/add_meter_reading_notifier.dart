@@ -38,9 +38,14 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
           .collection('users')
           .doc(uid)
           .collection('readings')
-          .where('date',
-              isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
-          .where('date', isLessThan: Timestamp.fromDate(endOfMonth))
+          .where(
+            'date',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth),
+          )
+          .where(
+            'date',
+            isLessThan: Timestamp.fromDate(endOfMonth),
+          )
           .orderBy('date', descending: false)
           .get();
 
@@ -95,8 +100,10 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
 
         // Last entry of that day = highest meter reading of that day
         next = afterReadings
-            .where((r) =>
-                !r.date.isBefore(nextDayStart) && r.date.isBefore(nextDayEnd))
+            .where(
+              (r) =>
+                  !r.date.isBefore(nextDayStart) && r.date.isBefore(nextDayEnd),
+            )
             .lastOrNull;
       }
 

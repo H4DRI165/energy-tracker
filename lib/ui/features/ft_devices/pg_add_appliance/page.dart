@@ -1,5 +1,6 @@
 import 'package:energy_tracker/models/appliance.dart';
 import 'package:energy_tracker/theme/theme.dart';
+import 'package:energy_tracker/ui/components/buttons.dart';
 import 'package:energy_tracker/ui/components/text.dart';
 import 'package:energy_tracker/ui/features/ft_devices/pg_add_appliance/notifier/notifier.dart';
 import 'package:energy_tracker/ui/features/ft_devices/pg_devices/notifier/devices_notifier.dart';
@@ -215,44 +216,11 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
               ),
               SizedBox(height: 16.h),
             ],
-            InkWell(
-              onTap: widget.state.canSave && !widget.state.isSaving
-                  ? _handleSave
-                  : null,
-              borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-              child: Container(
-                width: double.infinity,
-                padding: EdgeInsets.symmetric(vertical: 16.h),
-                decoration: BoxDecoration(
-                  gradient: widget.state.canSave
-                      ? const LinearGradient(
-                          colors: [AppColors.accent, AppColors.accent2],
-                        )
-                      : null,
-                  color: widget.state.canSave ? null : AppColors.surface3,
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-                ),
-                child: Center(
-                  child: widget.state.isSaving
-                      ? SizedBox(
-                          width: 20.r,
-                          height: 20.r,
-                          child: const CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.black,
-                          ),
-                        )
-                      : Text(
-                          widget.isEdit ? 'Save Changes' : 'Add Appliance',
-                          style: AppTextStyles.bodyMd.copyWith(
-                            color: widget.state.canSave
-                                ? Colors.black
-                                : AppColors.text3,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                ),
-              ),
+            GradientButton(
+              label: widget.isEdit ? 'Save Changes' : 'Add Appliance',
+              isLoading: widget.state.isSaving,
+              isEnabled: widget.state.canSave,
+              onTap: _handleSave,
             ),
             SizedBox(height: 24.h),
           ],
