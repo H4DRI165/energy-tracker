@@ -17,79 +17,208 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
 
   @override
   AddReadingPageState build() {
-    unawaited(
-      Future.microtask(
-        () => _loadLastReading(beforeDate: DateTime.now()),
-      ),
-    );
-    return AddReadingPageState(selectedDate: DateTime.now());
+    final today = DateTime.now();
+    unawaited(Future.microtask(() => _loadSurroundingReadings(today)));
+    return AddReadingPageState(selectedDate: today);
   }
 
-  Future<void> _loadLastReading({DateTime? beforeDate}) async {
-    state = state.copyWith(isLoadingLastReading: true);
+  Future<void> _loadSurroundingReadings(DateTime selectedDate) async {
     final uid = _auth.currentUser?.uid;
     if (uid == null) {
       state = state.copyWith(isLoadingLastReading: false);
       return;
     }
 
-    final cutOff = beforeDate ?? state.selectedDate ?? DateTime.now();
+    final now = DateTime.now();
+    final isToday = selectedDate.year == now.year &&
+        selectedDate.month == now.month &&
+        selectedDate.day == now.day;
+
+    final startOfMonth = DateTime(selectedDate.year, selectedDate.month);
+    final endOfMonth = DateTime(selectedDate.year, selectedDate.month + 1);
+
+    final endOfDay = DateTime(
+      selectedDate.year,
+      selectedDate.month,
+      selectedDate.day,
+      23,
+      59,
+      59,
+    );
+
+    // Today: use now so only past entries today are considered
+    // Past: use end of selected day so entries on that day are included
+    final beforeCutoff = isToday ? now : endOfDay;
 
     try {
-      final snap = await _firestore
+      final beforeSnap = await _firestore
           .collection('users')
           .doc(uid)
           .collection('readings')
-          .where('date', isLessThan: Timestamp.fromDate(cutOff))
+          .where(
+            'date',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth),
+          )
+          .where('date', isLessThan: Timestamp.fromDate(beforeCutoff))
           .orderBy('date', descending: true)
           .limit(1)
           .get();
 
-      if (snap.docs.isEmpty) {
-        state = state.copyWith(
-          isLoadingLastReading: false,
-          lastReading: 0,
-        );
-        return;
+      final nextFirstSnap = await _firestore
+          .collection('users')
+          .doc(uid)
+          .collection('readings')
+          .where('date', isGreaterThan: Timestamp.fromDate(endOfDay))
+          .where('date', isLessThan: Timestamp.fromDate(endOfMonth))
+          .orderBy('date', descending: false)
+          .limit(1)
+          .get();
+
+      double lastReading = 0;
+      DateTime? lastReadingDate;
+      double? nextReading;
+      DateTime? nextReadingDate;
+
+      if (beforeSnap.docs.isNotEmpty) {
+        final data = beforeSnap.docs.first.data();
+        lastReading = (data['reading'] as num?)?.toDouble() ?? 0;
+        lastReadingDate = (data['date'] as Timestamp).toDate();
       }
 
-      final data = snap.docs.first.data();
-      final reading = (data['reading'] as num?)?.toDouble() ?? 0;
-      final date = (data['date'] as Timestamp).toDate();
+      if (nextFirstSnap.docs.isNotEmpty) {
+        final nextEntryDate =
+            (nextFirstSnap.docs.first.data()['date'] as Timestamp).toDate();
+
+        final nextDayStart = DateTime(
+          nextEntryDate.year,
+          nextEntryDate.month,
+          nextEntryDate.day,
+        );
+        final nextDayEnd = DateTime(
+          nextEntryDate.year,
+          nextEntryDate.month,
+          nextEntryDate.day,
+          23,
+          59,
+          59,
+        );
+
+        final nextLastSnap = await _firestore
+            .collection('users')
+            .doc(uid)
+            .collection('readings')
+            .where(
+              'date',
+              isGreaterThanOrEqualTo: Timestamp.fromDate(nextDayStart),
+            )
+            .where(
+              'date',
+              isLessThanOrEqualTo: Timestamp.fromDate(nextDayEnd),
+            )
+            .orderBy('date', descending: true)
+            .limit(1)
+            .get();
+
+        if (nextLastSnap.docs.isNotEmpty) {
+          final data = nextLastSnap.docs.first.data();
+          nextReading = (data['reading'] as num?)?.toDouble();
+          nextReadingDate = (data['date'] as Timestamp).toDate();
+        }
+      }
+
+      const months = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ];
+
+      final lastDateLabel = lastReadingDate != null
+          ? '${months[lastReadingDate.month - 1]} ${lastReadingDate.day}'
+          : '';
+
+      final nextDateLabel = nextReadingDate != null
+          ? '${months[nextReadingDate.month - 1]} ${nextReadingDate.day}'
+          : '';
 
       state = state.copyWith(
         isLoadingLastReading: false,
-        lastReading: reading,
-        lastReadingDate: date,
+        lastReading: lastReading,
+        lastReadingDate: lastReadingDate,
+        nextReading: nextReading,
+        nextReadingDate: nextReadingDate,
+        readingError: _validateReading(
+          state.currentReading,
+          lastReading,
+          nextReading,
+          lastReadingDateLabel: lastDateLabel,
+          nextReadingDateLabel: nextDateLabel,
+        ),
       );
     } on Exception catch (_) {
       state = state.copyWith(isLoadingLastReading: false);
     }
   }
 
+  String? _validateReading(
+    double reading,
+    double lastReading,
+    double? nextReading, {
+    String lastReadingDateLabel = '',
+    String nextReadingDateLabel = '',
+  }) {
+    if (reading <= 0) return null;
+
+    if (lastReading > 0 && reading < lastReading) {
+      return 'Must be above ${lastReading.toStringAsFixed(0)} kWh'
+          '${lastReadingDateLabel.isNotEmpty ? ' ($lastReadingDateLabel)' : ''}';
+    }
+
+    if (nextReading != null && reading > nextReading) {
+      return 'Must be below ${nextReading.toStringAsFixed(0)} kWh'
+          '${nextReadingDateLabel.isNotEmpty ? ' ($nextReadingDateLabel)' : ''}';
+    }
+
+    return null;
+  }
+
+  // Helper getters for formatted dates used in _validateReading
+  String get formattedLastReadingDate => state.formattedLastReadingDate;
+  String get formattedNextReadingDate => state.formattedNextReadingDate;
+
   void setReading(String value) {
     final reading = double.tryParse(value) ?? 0;
 
-    String? error;
-    if (reading < state.lastReading && state.lastReading > 0) {
-      error = 'Reading cannot be less than previous '
-          'reading (${state.lastReading.toStringAsFixed(0)})';
-    }
-
     state = state.copyWith(
       currentReading: reading,
-      readingError: error,
+      readingError: _validateReading(
+        reading,
+        state.lastReading,
+        state.nextReading,
+        lastReadingDateLabel: state.formattedLastReadingDate,
+        nextReadingDateLabel: state.formattedNextReadingDate,
+      ),
       errorMessage: null,
     );
   }
 
   void setDate(DateTime date) {
-     state = state.copyWith(
+    state = state.copyWith(
       selectedDate: date,
       isLoadingLastReading: true,
+      // Clear bounds while re-fetching
+      nextReading: null,
+      nextReadingDate: null,
     );
-    // Re-fetch last reading based on new date
-    unawaited(Future.microtask(() => _loadLastReading(beforeDate: date)));
+    unawaited(Future.microtask(() => _loadSurroundingReadings(date)));
   }
 
   void setNotes(String value) {
@@ -140,11 +269,13 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
       }
 
       await batch.commit();
-
       state = state.copyWith(isSaving: false);
       return true;
     } on FirebaseException catch (e) {
-      state = state.copyWith(isSaving: false, errorMessage: _mapError(e.code));
+      state = state.copyWith(
+        isSaving: false,
+        errorMessage: _mapError(e.code),
+      );
       return false;
     } on Exception catch (_) {
       state = state.copyWith(

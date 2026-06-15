@@ -6,6 +6,8 @@ class AddReadingPageState {
     this.isSaving = false,
     this.lastReading = 0,
     this.lastReadingDate,
+    this.nextReading,
+    this.nextReadingDate,
     this.currentReading = 0,
     this.selectedDate,
     this.notes = '',
@@ -17,6 +19,8 @@ class AddReadingPageState {
   final bool isSaving;
   final double lastReading;
   final DateTime? lastReadingDate;
+  final double? nextReading;
+  final DateTime? nextReadingDate;
   final double currentReading;
   final DateTime? selectedDate;
   final String notes;
@@ -24,6 +28,9 @@ class AddReadingPageState {
   final String? errorMessage;
 
   double get usageKwh {
+    if (lastReading == 0 && lastReadingDate == null) {
+      return currentReading > 0 ? currentReading : 0;
+    }
     final usage = currentReading - lastReading;
     return usage > 0 ? usage : 0;
   }
@@ -35,6 +42,7 @@ class AddReadingPageState {
   String get tierLabel => TariffRates.getTierPriceKwhLabel(currentTier);
 
   bool get hasUsage => usageKwh > 0;
+
   bool get canSave =>
       !isLoadingLastReading && currentReading > 0 && readingError == null;
 
@@ -57,6 +65,25 @@ class AddReadingPageState {
     return '${months[lastReadingDate!.month - 1]} ${lastReadingDate!.day}';
   }
 
+  String get formattedNextReadingDate {
+    if (nextReadingDate == null) return '';
+    final months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    return '${months[nextReadingDate!.month - 1]} ${nextReadingDate!.day}';
+  }
+
   static const Object _unset = Object();
 
   AddReadingPageState copyWith({
@@ -64,6 +91,8 @@ class AddReadingPageState {
     bool? isSaving,
     double? lastReading,
     DateTime? lastReadingDate,
+    Object? nextReading = _unset,
+    Object? nextReadingDate = _unset,
     double? currentReading,
     DateTime? selectedDate,
     String? notes,
@@ -75,6 +104,12 @@ class AddReadingPageState {
       isSaving: isSaving ?? this.isSaving,
       lastReading: lastReading ?? this.lastReading,
       lastReadingDate: lastReadingDate ?? this.lastReadingDate,
+      nextReading: identical(nextReading, _unset)
+          ? this.nextReading
+          : nextReading as double?,
+      nextReadingDate: identical(nextReadingDate, _unset)
+          ? this.nextReadingDate
+          : nextReadingDate as DateTime?,
       currentReading: currentReading ?? this.currentReading,
       selectedDate: selectedDate ?? this.selectedDate,
       notes: notes ?? this.notes,

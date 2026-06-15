@@ -296,6 +296,40 @@ class _LastReadingCard extends StatelessWidget {
                       : 'kWh · No previous reading',
                   style: AppTextStyles.bodyMd.copyWith(color: AppColors.text2),
                 ),
+                
+                if (state.nextReading != null) ...[
+                  SizedBox(height: 8.h),
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 10.w,
+                      vertical: 6.h,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.warn.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8.r),
+                      border: Border.all(
+                        color: AppColors.warn.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.info_outline_rounded,
+                          size: 12.r,
+                          color: AppColors.warn,
+                        ),
+                        SizedBox(width: 6.w),
+                        Text(
+                          'Must be below ${state.nextReading!.toStringAsFixed(0)} kWh'
+                          ' (${state.formattedNextReadingDate})',
+                          style: AppTextStyles.caption
+                              .copyWith(color: AppColors.warn),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
     );
