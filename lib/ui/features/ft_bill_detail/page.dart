@@ -35,28 +35,20 @@ class _BillDetailPageState extends ConsumerState<BillDetailPage> {
     });
   }
 
-  Future<void> _handleEditReading(ReadingRecord r) async {
-    await context.push(AppRoutes.addReading, extra: r);
-    if (!mounted) return;
-
-    await ref.read(billDetailProvider.notifier).init(widget.bill);
-    if (!mounted) return;
-
-    ref
-      ..invalidate(usageProvider)
-      ..invalidate(dashboardProvider);
-  }
-
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(billDetailProvider);
+
+    if (state.bill == null) {
+      return const SizedBox.shrink();
+    }
 
     return Scaffold(
       backgroundColor: AppColors.bg,
       body: SafeArea(
         child: Column(
           children: [
-            _Header(bill: widget.bill),
+            _Header(bill: state.bill!),
             Expanded(
               child: state.isLoading
                   ? const Center(
@@ -80,8 +72,7 @@ class _BillDetailPageState extends ConsumerState<BillDetailPage> {
                             vertical: 8.h,
                           ),
                           child: _BodyContent(
-                            state: state,
-                            bill: widget.bill,
+                            bill: state.bill!,
                             onEditReading: _handleEditReading,
                           ),
                         ),
@@ -90,6 +81,18 @@ class _BillDetailPageState extends ConsumerState<BillDetailPage> {
         ),
       ),
     );
+  }
+
+  Future<void> _handleEditReading(ReadingRecord r) async {
+    await context.push(AppRoutes.addReading, extra: r);
+    if (!mounted) return;
+
+    await ref.read(billDetailProvider.notifier).init(widget.bill);
+    if (!mounted) return;
+
+    ref
+      ..invalidate(usageProvider)
+      ..invalidate(dashboardProvider);
   }
 }
 
@@ -135,12 +138,10 @@ class _Header extends StatelessWidget {
 
 class _BodyContent extends ConsumerStatefulWidget {
   const _BodyContent({
-    required this.state,
     required this.bill,
     required this.onEditReading,
   });
 
-  final BillDetailPageState state;
   final BillRecord bill;
   final Future<void> Function(ReadingRecord) onEditReading;
 
@@ -151,16 +152,17 @@ class _BodyContent extends ConsumerStatefulWidget {
 class _BodyContentState extends ConsumerState<_BodyContent> {
   @override
   Widget build(BuildContext context) {
-    final tierBreakdown = _tierBreakdown(widget.bill.kwh);
+    final state = ref.watch(billDetailProvider);
+    final tierBreakdown = _tierBreakdown(state.bill!.kwh);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _BillSummaryCard(bill: widget.bill),
+        _BillSummaryCard(bill: state.bill!),
         SizedBox(height: 16.h),
         _PaidToggleCard(
-          isPaid: widget.state.isPaid,
-          isUpdating: widget.state.isUpdatingPaid,
+          isPaid: state.isPaid,
+          isUpdating: state.isUpdatingPaid,
           onToggle: () async {
             await ref.read(billDetailProvider.notifier).togglePaid(widget.bill);
             ref.invalidate(usageProvider);
@@ -169,11 +171,11 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
         SizedBox(height: 16.h),
         _TierBreakdownCard(
           tiers: tierBreakdown,
-          totalKwh: widget.bill.kwh,
+          totalKwh: state.bill!.kwh,
         ),
         SizedBox(height: 16.h),
         _ReadingsSection(
-          readings: widget.state.readings,
+          readings: state.readings,
           bill: widget.bill,
           onEditReading: widget.onEditReading,
         ),

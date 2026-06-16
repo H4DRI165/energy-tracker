@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:energy_tracker/constants/tariff_rates.dart';
 import 'package:energy_tracker/models/bill_record.dart';
 import 'package:energy_tracker/models/reading_record.dart';
 import 'package:energy_tracker/ui/features/ft_bill_detail/notifier/bill_detail_state.dart';
@@ -23,7 +24,11 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
   }
 
   Future<void> init(BillRecord bill) async {
-    state = BillDetailPageState(isPaid: bill.isPaid);
+    state = state.copyWith(
+      bill: bill,
+      isPaid: bill.isPaid,
+    );
+
     await _loadReadings(bill);
   }
 
@@ -115,6 +120,24 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
     final uid = _auth.currentUser?.uid;
     if (uid == null) return false;
 
+    final previousState = state;
+
+    final updatedReadings =
+        state.readings.where((r) => r.id != reading.id).toList();
+
+    final totalKwh = updatedReadings.fold<double>(
+      0,
+      (sum, r) => sum + r.kwh,
+    );
+
+    state = state.copyWith(
+      readings: updatedReadings,
+      bill: state.bill!.copyWith(
+        kwh: totalKwh,
+        amount: TariffRates.calculateDomestic(totalKwh),
+      ),
+    );
+
     try {
       final batch = _firestore.batch()
         ..delete(
@@ -138,12 +161,9 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
 
       await batch.commit();
 
-      state = state.copyWith(
-        readings: state.readings.where((r) => r.id != reading.id).toList(),
-      );
-
       return true;
     } on FirebaseException catch (_) {
+      state = previousState;
       return false;
     }
   }

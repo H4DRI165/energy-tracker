@@ -148,9 +148,22 @@ class BillHistoryList extends ConsumerWidget {
                           'for this month will be lost.',
                     ),
                     onDismissed: (_) async {
-                      await ref.read(usageProvider.notifier).deleteMonth(bill);
-                      ref.invalidate(dashboardProvider);
-                      await ref.read(dashboardProvider.future);
+                      try {
+                        await ref
+                            .read(usageProvider.notifier)
+                            .deleteMonth(bill);
+                        ref.invalidate(dashboardProvider);
+                        await ref.read(dashboardProvider.future);
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content:
+                                  Text('Failed to delete. Please try again.'),
+                            ),
+                          );
+                        }
+                      }
                     },
                     child: GestureDetector(
                       onTap: () =>
