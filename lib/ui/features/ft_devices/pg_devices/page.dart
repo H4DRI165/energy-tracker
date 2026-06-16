@@ -96,21 +96,28 @@ class _BodyContent extends StatelessWidget {
           children: [
             _SummaryCard(state: state),
             SizedBox(height: 16.h),
-            Text(
-              'Appliances',
-              style: AppTextStyles.bodyMd.copyWith(fontWeight: FontWeight.w700),
-            ),
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Icon(
-                  Icons.swipe_left_rounded,
-                  size: 14.r,
-                  color: AppColors.text3,
-                ),
-                SizedBox(width: 4.w),
                 Text(
-                  'Swipe to remove appliance',
-                  style: AppTextStyles.caption.copyWith(color: AppColors.text3),
+                  'Appliances',
+                  style: AppTextStyles.bodyMd
+                      .copyWith(fontWeight: FontWeight.w700),
+                ),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.swipe_left_rounded,
+                      size: 14.r,
+                      color: AppColors.text3,
+                    ),
+                    SizedBox(width: 4.w),
+                    Text(
+                      'Swipe to delete appliance',
+                      style: AppTextStyles.caption
+                          .copyWith(color: AppColors.text3),
+                    ),
+                  ],
                 ),
               ],
             ),

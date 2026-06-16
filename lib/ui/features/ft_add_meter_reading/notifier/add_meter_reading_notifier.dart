@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:energy_tracker/models/reading_record.dart';
 import 'package:energy_tracker/ui/features/ft_add_meter_reading/notifier/add_meter_reading_state.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -258,6 +259,66 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
       state = state.copyWith(
         isSaving: false,
         errorMessage: 'Failed to save reading. Please try again.',
+      );
+      return false;
+    }
+  }
+
+  Future<bool> updateReading(ReadingRecord reading) async {
+    if (!state.canSave) return false;
+
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) {
+      state = state.copyWith(errorMessage: 'Session expired.');
+      return false;
+    }
+
+    state = state.copyWith(isSaving: true, errorMessage: null);
+
+    try {
+      final date = state.selectedDate ?? DateTime.now();
+      final batch = _firestore.batch()
+        ..update(
+          _firestore
+              .collection('users')
+              .doc(uid)
+              .collection('readings')
+              .doc(reading.id),
+          {
+            'reading': state.currentReading,
+            'kwh': state.usageKwh,
+            'date': Timestamp.fromDate(date),
+            'notes': state.notes.trim(),
+            'tier': state.currentTier,
+          },
+        );
+
+      final billSnap = await _firestore
+          .collection('users')
+          .doc(uid)
+          .collection('bills')
+          .where('date', isEqualTo: Timestamp.fromDate(reading.date))
+          .get();
+
+      for (final doc in billSnap.docs) {
+        batch.update(doc.reference, {
+          'kwh': state.usageKwh,
+          'amount': state.estimatedBill,
+          'date': Timestamp.fromDate(date),
+          'tier': state.currentTier,
+        });
+      }
+
+      await batch.commit();
+      state = state.copyWith(isSaving: false);
+      return true;
+    } on FirebaseException catch (e) {
+      state = state.copyWith(isSaving: false, errorMessage: _mapError(e.code));
+      return false;
+    } on Exception catch (_) {
+      state = state.copyWith(
+        isSaving: false,
+        errorMessage: 'Failed to update reading. Please try again.',
       );
       return false;
     }

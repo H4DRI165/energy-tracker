@@ -63,7 +63,7 @@ class BillHistoryList extends ConsumerWidget {
                 ),
                 SizedBox(width: 4.w),
                 Text(
-                  'Swipe to delete',
+                  'Swipe to delete history',
                   style: AppTextStyles.caption.copyWith(color: AppColors.text3),
                 ),
               ],

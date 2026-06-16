@@ -110,4 +110,41 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
       );
     }
   }
+
+  Future<bool> deleteReading(ReadingRecord reading, BillRecord bill) async {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) return false;
+
+    try {
+      final batch = _firestore.batch()
+        ..delete(
+          _firestore
+              .collection('users')
+              .doc(uid)
+              .collection('readings')
+              .doc(reading.id),
+        );
+
+      final billSnap = await _firestore
+          .collection('users')
+          .doc(uid)
+          .collection('bills')
+          .where('date', isEqualTo: Timestamp.fromDate(reading.date))
+          .get();
+
+      for (final doc in billSnap.docs) {
+        batch.delete(doc.reference);
+      }
+
+      await batch.commit();
+
+      state = state.copyWith(
+        readings: state.readings.where((r) => r.id != reading.id).toList(),
+      );
+
+      return true;
+    } on FirebaseException catch (_) {
+      return false;
+    }
+  }
 }
