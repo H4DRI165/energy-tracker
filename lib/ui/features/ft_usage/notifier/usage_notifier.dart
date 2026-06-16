@@ -176,16 +176,20 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
             .collection('users')
             .doc(uid)
             .collection('readings')
-            .where('date',
-                isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
+            .where(
+              'date',
+              isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth),
+            )
             .where('date', isLessThan: Timestamp.fromDate(endOfMonth))
             .get(),
         _firestore
             .collection('users')
             .doc(uid)
             .collection('bills')
-            .where('date',
-                isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
+            .where(
+              'date',
+              isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth),
+            )
             .where('date', isLessThan: Timestamp.fromDate(endOfMonth))
             .get(),
       ]);
@@ -206,15 +210,17 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
         (s) => s.copyWith(
           billHistory: s.billHistory.where((b) => b.id != bill.id).toList(),
           monthlyData: s.monthlyData
-              .map((m) => m.monthYear == bill.monthYear
-                  ? MonthlyUsage(
-                      month: m.month,
-                      year: m.year,
-                      kwh: 0,
-                      bill: 0,
-                      isPaid: false,
-                    )
-                  : m)
+              .map(
+                (m) => m.monthYear == bill.monthYear
+                    ? MonthlyUsage(
+                        month: m.month,
+                        year: m.year,
+                        kwh: 0,
+                        bill: 0,
+                        isPaid: false,
+                      )
+                    : m,
+              )
               .toList(),
         ),
       );

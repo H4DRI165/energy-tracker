@@ -16,12 +16,26 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
   FirebaseAuth get _auth => FirebaseAuth.instance;
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;
   int _loadRequestId = 0;
+  String? _editingReadingId;
 
   @override
   AddReadingPageState build() {
     final today = DateTime.now();
     unawaited(Future.microtask(() => _loadSurroundingReadings(today)));
     return AddReadingPageState(selectedDate: today);
+  }
+
+  void initForEdit(ReadingRecord reading) {
+    _editingReadingId = reading.id;
+    state = state.copyWith(
+      selectedDate: reading.date,
+      currentReading: reading.reading,
+      notes: reading.notes,
+      isLoadingLastReading: true,
+    );
+    unawaited(
+      Future.microtask(() => _loadSurroundingReadings(reading.date)),
+    );
   }
 
   Future<void> _loadSurroundingReadings(DateTime selectedDate) async {
@@ -55,7 +69,9 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
           .get();
 
       // All readings this month, sorted oldest → newest
-      final readings = snap.docs.map((doc) {
+      // Exclude the entry being edited so it doesn't affect bounds
+      final readings =
+          snap.docs.where((doc) => doc.id != _editingReadingId).map((doc) {
         final data = doc.data();
         return (
           reading: (data['reading'] as num?)?.toDouble() ?? 0,

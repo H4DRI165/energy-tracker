@@ -132,10 +132,7 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
       _notesController.text = r.notes;
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        ref.read(addReadingProvider.notifier)
-          ..setReading(r.reading.toStringAsFixed(0))
-          ..setNotes(r.notes)
-          ..setDate(r.date);
+        ref.read(addReadingProvider.notifier).initForEdit(r);
       });
     }
 
