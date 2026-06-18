@@ -127,7 +127,7 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
 
     final totalKwh = updatedReadings.fold<double>(
       0,
-      (sum, r) => sum + r.kwh,
+      (total, r) => total + r.kwh,
     );
 
     state = state.copyWith(

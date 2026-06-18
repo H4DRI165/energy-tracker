@@ -309,11 +309,16 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
           },
         );
 
+      final startOfDay =
+          DateTime(reading.date.year, reading.date.month, reading.date.day);
+      final endOfDay =
+          DateTime(reading.date.year, reading.date.month, reading.date.day + 1);
       final billSnap = await _firestore
           .collection('users')
           .doc(uid)
           .collection('bills')
-          .where('date', isEqualTo: Timestamp.fromDate(reading.date))
+          .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+          .where('date', isLessThan: Timestamp.fromDate(endOfDay))
           .get();
 
       for (final doc in billSnap.docs) {

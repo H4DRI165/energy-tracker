@@ -154,7 +154,7 @@ class BillHistoryList extends ConsumerWidget {
                             .deleteMonth(bill);
                         ref.invalidate(dashboardProvider);
                         await ref.read(dashboardProvider.future);
-                      } catch (e) {
+                      } on Exception {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
