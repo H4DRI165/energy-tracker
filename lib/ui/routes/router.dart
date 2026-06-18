@@ -156,10 +156,12 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: AppRoutes.addReading,
-      name: 'add_reading',
-      pageBuilder: (context, state) => const NoTransitionPage(
-        child: AddReadingPage(),
-      ),
+      builder: (context, state) {
+        final extra = state.extra;
+        return AddReadingPage(
+          reading: extra is ReadingRecord ? extra : null,
+        );
+      },
     ),
     GoRoute(
       path: AppRoutes.billDetail,

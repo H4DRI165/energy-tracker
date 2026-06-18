@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:energy_tracker/constants/tariff_rates.dart';
 import 'package:energy_tracker/models/bill_record.dart';
 import 'package:energy_tracker/models/reading_record.dart';
 import 'package:energy_tracker/ui/features/ft_bill_detail/notifier/bill_detail_state.dart';
@@ -23,7 +24,11 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
   }
 
   Future<void> init(BillRecord bill) async {
-    state = BillDetailPageState(isPaid: bill.isPaid);
+    state = state.copyWith(
+      bill: bill,
+      isPaid: bill.isPaid,
+    );
+
     await _loadReadings(bill);
   }
 
@@ -108,6 +113,58 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
         isUpdatingPaid: false,
         errorMessage: 'Failed to update payment status: ${e.message}',
       );
+    }
+  }
+
+  Future<bool> deleteReading(ReadingRecord reading, BillRecord bill) async {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) return false;
+
+    final previousState = state;
+
+    final updatedReadings =
+        state.readings.where((r) => r.id != reading.id).toList();
+
+    final totalKwh = updatedReadings.fold<double>(
+      0,
+      (total, r) => total + r.kwh,
+    );
+
+    state = state.copyWith(
+      readings: updatedReadings,
+      bill: state.bill!.copyWith(
+        kwh: totalKwh,
+        amount: TariffRates.calculateDomestic(totalKwh),
+      ),
+    );
+
+    try {
+      final batch = _firestore.batch()
+        ..delete(
+          _firestore
+              .collection('users')
+              .doc(uid)
+              .collection('readings')
+              .doc(reading.id),
+        );
+
+      final billSnap = await _firestore
+          .collection('users')
+          .doc(uid)
+          .collection('bills')
+          .where('date', isEqualTo: Timestamp.fromDate(reading.date))
+          .get();
+
+      for (final doc in billSnap.docs) {
+        batch.delete(doc.reference);
+      }
+
+      await batch.commit();
+
+      return true;
+    } on FirebaseException catch (_) {
+      state = previousState;
+      return false;
     }
   }
 }

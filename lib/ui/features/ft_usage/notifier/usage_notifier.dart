@@ -161,4 +161,73 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
     }).toList()
       ..sort((a, b) => b.date.compareTo(a.date));
   }
+
+  Future<void> deleteMonth(BillRecord bill) async {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) return;
+
+    final startOfMonth = DateTime(bill.date.year, bill.date.month);
+    final endOfMonth = DateTime(bill.date.year, bill.date.month + 1);
+
+    try {
+      // Fetch all readings and bills for this month
+      final results = await Future.wait([
+        _firestore
+            .collection('users')
+            .doc(uid)
+            .collection('readings')
+            .where(
+              'date',
+              isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth),
+            )
+            .where('date', isLessThan: Timestamp.fromDate(endOfMonth))
+            .get(),
+        _firestore
+            .collection('users')
+            .doc(uid)
+            .collection('bills')
+            .where(
+              'date',
+              isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth),
+            )
+            .where('date', isLessThan: Timestamp.fromDate(endOfMonth))
+            .get(),
+      ]);
+
+      final batch = _firestore.batch();
+
+      for (final doc in results[0].docs) {
+        batch.delete(doc.reference);
+      }
+
+      for (final doc in results[1].docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+
+      // Remove from local state without re-fetching
+      state = state.whenData(
+        (s) => s.copyWith(
+          billHistory: s.billHistory.where((b) => b.id != bill.id).toList(),
+          monthlyData: s.monthlyData
+              .map(
+                (m) => m.monthYear == bill.monthYear
+                    ? MonthlyUsage(
+                        month: m.month,
+                        year: m.year,
+                        kwh: 0,
+                        bill: 0,
+                        isPaid: false,
+                      )
+                    : m,
+              )
+              .toList(),
+        ),
+      );
+    } on FirebaseException catch (_) {
+      // Re-fetch on error
+      state = const AsyncLoading();
+      state = await AsyncValue.guard(_fetchUsageData);
+    }
+  }
 }

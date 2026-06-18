@@ -1,4 +1,5 @@
 import 'package:energy_tracker/constants/tariff_rates.dart';
+import 'package:energy_tracker/models/reading_record.dart';
 import 'package:energy_tracker/theme/theme.dart';
 import 'package:energy_tracker/ui/components/buttons.dart';
 import 'package:energy_tracker/ui/features/ft_add_meter_reading/notifier/notifier.dart';
@@ -12,13 +13,17 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 class AddReadingPage extends ConsumerStatefulWidget {
-  const AddReadingPage({super.key});
+  const AddReadingPage({this.reading, super.key});
+
+  final ReadingRecord? reading;
 
   @override
   ConsumerState<AddReadingPage> createState() => _AddReadingPageState();
 }
 
 class _AddReadingPageState extends ConsumerState<AddReadingPage> {
+  bool get _isEdit => widget.reading != null;
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(addReadingProvider);
@@ -29,10 +34,14 @@ class _AddReadingPageState extends ConsumerState<AddReadingPage> {
         child: Column(
           children: [
             _Header(
+              isEdit: _isEdit,
               canSave: state.canSave,
               isSaving: state.isSaving,
             ),
-            _BodyContent(state: state),
+            _BodyContent(
+              state: state,
+              reading: widget.reading,
+            ),
           ],
         ),
       ),
@@ -42,10 +51,12 @@ class _AddReadingPageState extends ConsumerState<AddReadingPage> {
 
 class _Header extends StatelessWidget {
   const _Header({
+    required this.isEdit,
     required this.canSave,
     required this.isSaving,
   });
 
+  final bool isEdit;
   final bool canSave;
   final bool isSaving;
 
@@ -79,7 +90,10 @@ class _Header extends StatelessWidget {
           ),
           SizedBox(width: 12.w),
           Expanded(
-            child: Text('Add Meter Reading', style: AppTextStyles.titleMd),
+            child: Text(
+              isEdit ? 'Edit Meter Reading' : 'Add Meter Reading',
+              style: AppTextStyles.titleMd,
+            ),
           ),
         ],
       ),
@@ -90,9 +104,11 @@ class _Header extends StatelessWidget {
 class _BodyContent extends ConsumerStatefulWidget {
   const _BodyContent({
     required this.state,
+    this.reading,
   });
 
   final AddReadingPageState state;
+  final ReadingRecord? reading;
 
   @override
   ConsumerState<_BodyContent> createState() => _BodyContentState();
@@ -102,11 +118,23 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
   late final TextEditingController _readingController;
   late final TextEditingController _notesController;
 
+  bool get _isEdit => widget.reading != null;
+
   @override
   void initState() {
     super.initState();
     _readingController = TextEditingController();
     _notesController = TextEditingController();
+
+    if (_isEdit) {
+      final r = widget.reading!;
+      _readingController.text = r.reading.toStringAsFixed(0);
+      _notesController.text = r.notes;
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(addReadingProvider.notifier).initForEdit(r);
+      });
+    }
 
     _readingController.addListener(
       () => ref.read(addReadingProvider.notifier).setReading(
@@ -144,7 +172,8 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
             SizedBox(height: 6.h),
             _DatePickerField(
               selectedDate: widget.state.selectedDate ?? DateTime.now(),
-              onTap: () => _pickDate(context),
+              onTap: _isEdit ? null : () => _pickDate(context),
+              disabled: _isEdit,
             ),
             SizedBox(height: 16.h),
             Text('Meter Reading (kWh)', style: AppTextStyles.label),
@@ -167,7 +196,7 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
             ],
             SizedBox(height: 28.h),
             GradientButton(
-              label: 'Save Reading',
+              label: _isEdit ? 'Save Changes' : 'Save Reading',
               isLoading: widget.state.isSaving,
               isEnabled: widget.state.canSave,
               onTap: _handleSave,
@@ -216,7 +245,10 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
   }
 
   Future<void> _handleSave() async {
-    final success = await ref.read(addReadingProvider.notifier).saveReading();
+    final notifier = ref.read(addReadingProvider.notifier);
+    final success = _isEdit
+        ? await notifier.updateReading(widget.reading!)
+        : await notifier.saveReading();
 
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -229,7 +261,10 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
                 size: 18,
               ),
               SizedBox(width: 10.w),
-              Text('Reading saved successfully', style: AppTextStyles.bodyMd),
+              Text(
+                _isEdit ? 'Reading updated' : 'Reading saved successfully',
+                style: AppTextStyles.bodyMd,
+              ),
             ],
           ),
           backgroundColor: AppColors.surface2,
@@ -342,10 +377,12 @@ class _DatePickerField extends StatelessWidget {
   const _DatePickerField({
     required this.selectedDate,
     required this.onTap,
+    this.disabled = false,
   });
 
   final DateTime selectedDate;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
+  final bool disabled;
 
   @override
   Widget build(BuildContext context) {
@@ -354,7 +391,9 @@ class _DatePickerField extends StatelessWidget {
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
         decoration: BoxDecoration(
-          color: AppColors.surface2,
+          color: disabled
+              ? AppColors.surface3.withValues(alpha: 0.5)
+              : AppColors.surface2,
           borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
           border: Border.all(color: AppColors.border),
         ),
@@ -363,20 +402,23 @@ class _DatePickerField extends StatelessWidget {
             Icon(
               Icons.calendar_today_outlined,
               size: 18.r,
-              color: AppColors.text2,
+              color: disabled ? AppColors.text3 : AppColors.text2,
             ),
             SizedBox(width: 12.w),
             Expanded(
               child: Text(
                 DateFormat('MMMM d, yyyy').format(selectedDate),
-                style: AppTextStyles.bodyLg,
+                style: AppTextStyles.bodyLg.copyWith(
+                  color: disabled ? AppColors.text3 : AppColors.text,
+                ),
               ),
             ),
-            Icon(
-              Icons.chevron_right_rounded,
-              size: 18.r,
-              color: AppColors.text3,
-            ),
+            if (!disabled)
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 18.r,
+                color: AppColors.text3,
+              ),
           ],
         ),
       ),

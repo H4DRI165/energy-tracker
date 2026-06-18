@@ -14,4 +14,22 @@ class BillRecord {
   final double amount;
   final bool isPaid;
   final DateTime date;
+
+  BillRecord copyWith({
+    String? id,
+    String? monthYear,
+    double? kwh,
+    double? amount,
+    bool? isPaid,
+    DateTime? date,
+  }) {
+    return BillRecord(
+      id: id ?? this.id,
+      monthYear: monthYear ?? this.monthYear,
+      kwh: kwh ?? this.kwh,
+      amount: amount ?? this.amount,
+      isPaid: isPaid ?? this.isPaid,
+      date: date ?? this.date,
+    );
+  }
 }

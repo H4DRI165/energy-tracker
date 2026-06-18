@@ -96,21 +96,28 @@ class _BodyContent extends StatelessWidget {
           children: [
             _SummaryCard(state: state),
             SizedBox(height: 16.h),
-            Text(
-              'Appliances',
-              style: AppTextStyles.bodyMd.copyWith(fontWeight: FontWeight.w700),
-            ),
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Icon(
-                  Icons.swipe_left_rounded,
-                  size: 14.r,
-                  color: AppColors.text3,
-                ),
-                SizedBox(width: 4.w),
                 Text(
-                  'Swipe to remove appliance',
-                  style: AppTextStyles.caption.copyWith(color: AppColors.text3),
+                  'Appliances',
+                  style: AppTextStyles.bodyMd
+                      .copyWith(fontWeight: FontWeight.w700),
+                ),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.swipe_left_rounded,
+                      size: 14.r,
+                      color: AppColors.text3,
+                    ),
+                    SizedBox(width: 4.w),
+                    Text(
+                      'Swipe to delete appliance',
+                      style: AppTextStyles.caption
+                          .copyWith(color: AppColors.text3),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -367,7 +374,7 @@ class _ApplianceCard extends ConsumerWidget {
             ),
             SizedBox(height: 4.h),
             Text(
-              'Remove',
+              'Delete',
               style: AppTextStyles.caption.copyWith(color: AppColors.danger),
             ),
           ],
@@ -494,11 +501,11 @@ class _ApplianceCard extends ConsumerWidget {
           borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
         ),
         title: Text(
-          'Remove Appliance',
+          'Delete Appliance',
           style: AppTextStyles.bodyMd.copyWith(fontWeight: FontWeight.w700),
         ),
         content: Text(
-          'Remove "${appliance.name}" from your list?',
+          'Delete "${appliance.name}" from your list?',
           style: AppTextStyles.bodySm,
         ),
         actions: [
@@ -512,7 +519,7 @@ class _ApplianceCard extends ConsumerWidget {
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             child: Text(
-              'Remove',
+              'Delete',
               style: AppTextStyles.bodySm.copyWith(color: AppColors.danger),
             ),
           ),
