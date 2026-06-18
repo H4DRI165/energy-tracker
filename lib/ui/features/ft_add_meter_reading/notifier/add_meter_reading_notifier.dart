@@ -17,6 +17,7 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;
   int _loadRequestId = 0;
   String? _editingReadingId;
+  DateTime? _editingDate;
 
   @override
   AddReadingPageState build() {
@@ -27,6 +28,8 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
 
   void initForEdit(ReadingRecord reading) {
     _editingReadingId = reading.id;
+    _editingDate = reading.date;
+
     state = state.copyWith(
       selectedDate: reading.date,
       currentReading: reading.reading,
@@ -102,30 +105,40 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
         selectedDate.day + 1,
       );
 
-      // Previous: latest reading before or on selected day
-      final before = readings.where((r) => r.date.isBefore(cutoff)).lastOrNull;
-
-      // Next: earliest reading after selected day
-      // Group by day and get the last reading of the next day
-      final afterReadings =
-          readings.where((r) => !r.date.isBefore(startOfNextDay)).toList();
-
-      // Get last reading of the next day that has entries
+      ({double reading, DateTime date})? before;
       ({double reading, DateTime date})? next;
-      if (afterReadings.isNotEmpty) {
-        // Find the first day after selected date
-        final nextDay = afterReadings.first.date;
-        final nextDayStart = DateTime(nextDay.year, nextDay.month, nextDay.day);
-        final nextDayEnd =
-            DateTime(nextDay.year, nextDay.month, nextDay.day + 1);
 
-        // Last entry of that day = highest meter reading of that day
-        next = afterReadings
-            .where(
-              (r) =>
-                  !r.date.isBefore(nextDayStart) && r.date.isBefore(nextDayEnd),
-            )
-            .lastOrNull;
+      if (_editingDate != null) {
+        before =
+            readings.where((r) => r.date.isBefore(_editingDate!)).lastOrNull;
+
+        next = readings.where((r) => r.date.isAfter(_editingDate!)).firstOrNull;
+      } else {
+        // Previous: latest reading before or on selected day
+        before = readings.where((r) => r.date.isBefore(cutoff)).lastOrNull;
+
+        // Next: earliest reading after selected day
+        // Group by day and get the last reading of the next day
+        final afterReadings =
+            readings.where((r) => !r.date.isBefore(startOfNextDay)).toList();
+
+        if (afterReadings.isNotEmpty) {
+          // Find the first day after selected date
+          final nextDay = afterReadings.first.date;
+          final nextDayStart =
+              DateTime(nextDay.year, nextDay.month, nextDay.day);
+          final nextDayEnd =
+              DateTime(nextDay.year, nextDay.month, nextDay.day + 1);
+
+          // Last entry of that day = highest meter reading of that day
+          next = afterReadings
+              .where(
+                (r) =>
+                    !r.date.isBefore(nextDayStart) &&
+                    r.date.isBefore(nextDayEnd),
+              )
+              .lastOrNull;
+        }
       }
 
       if (requestId != _loadRequestId || state.selectedDate != selectedDate) {
