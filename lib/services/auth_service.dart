@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:energy_tracker/models/user_profile.dart';
 import 'package:energy_tracker/services/app_user_notifier.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -72,16 +73,9 @@ class AuthService {
     final uid = user.uid;
     _userDocSubscription =
         _firestore.collection('users').doc(uid).snapshots().listen(
-      (doc) {
-        final raw = doc.data()?['onboardingCompleted'];
-        if (raw is bool && raw) {
-          userNotifier.setComplete();
-        } else {
-          userNotifier.setIncomplete();
-        }
-      },
-      onError: (_) => userNotifier.setError(),
-    );
+              _applyUserDoc,
+              onError: (_) => userNotifier.setError(),
+            );
   }
 
   Future<void> _syncOnboardingListener(User? user) async {
@@ -99,12 +93,7 @@ class AuthService {
     final sub = _firestore.collection('users').doc(uid).snapshots().listen(
       (doc) {
         if (epoch != _authSyncEpoch || _auth.currentUser?.uid != uid) return;
-        final raw = doc.data()?['onboardingCompleted'];
-        if (raw is bool && raw) {
-          userNotifier.setComplete();
-        } else {
-          userNotifier.setIncomplete();
-        }
+        _applyUserDoc(doc);
       },
       onError: (_) {
         if (epoch == _authSyncEpoch && _auth.currentUser?.uid == uid) {
@@ -118,5 +107,14 @@ class AuthService {
       return;
     }
     _userDocSubscription = sub;
+  }
+
+  void _applyUserDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
+    final data = doc.data();
+    if (data == null) {
+      userNotifier.setIncomplete();
+      return;
+    }
+    userNotifier.setProfile(UserProfile.fromDoc(data));
   }
 }
