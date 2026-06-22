@@ -1,5 +1,6 @@
 import 'package:energy_tracker/theme/theme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class QuickActions extends StatelessWidget {
   const QuickActions({
@@ -22,7 +23,7 @@ class QuickActions extends StatelessWidget {
             onTap: onAddReading,
           ),
         ),
-        const SizedBox(width: 8),
+        SizedBox(width: 8.w),
         Expanded(
           child: _QuickActionTile(
             icon: '📄',
@@ -57,7 +58,7 @@ class _QuickActionTile extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           onTap: onTap,
           child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 14),
+            padding: EdgeInsets.symmetric(vertical: 14.h),
             decoration: BoxDecoration(
               color: AppColors.surface2,
               borderRadius: BorderRadius.circular(14),
@@ -65,8 +66,8 @@ class _QuickActionTile extends StatelessWidget {
             ),
             child: Column(
               children: [
-                Text(icon, style: const TextStyle(fontSize: 22)),
-                const SizedBox(height: 6),
+                Text(icon, style: TextStyle(fontSize: 22.sp)),
+                SizedBox(height: 6.h),
                 Text(
                   label,
                   style: AppTextStyles.bodySm

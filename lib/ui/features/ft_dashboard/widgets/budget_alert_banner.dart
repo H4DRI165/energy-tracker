@@ -1,6 +1,7 @@
 import 'package:energy_tracker/theme/theme.dart';
 import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_state.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class BudgetAlertBanner extends StatelessWidget {
   const BudgetAlertBanner({
@@ -35,8 +36,8 @@ class BudgetAlertBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Text(icon, style: const TextStyle(fontSize: 22)),
-          const SizedBox(width: 10),
+          Text(icon, style: TextStyle(fontSize: 22.sp)),
+          SizedBox(width: 10.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -48,7 +49,7 @@ class BudgetAlertBanner extends StatelessWidget {
                     color: color,
                   ),
                 ),
-                const SizedBox(height: 2),
+                SizedBox(height: 2.h),
                 Text(subtitle, style: AppTextStyles.caption),
               ],
             ),

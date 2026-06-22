@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:energy_tracker/app.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 class LandingPage extends StatefulWidget {
@@ -129,8 +130,8 @@ class _LandingPageState extends State<LandingPage>
             child: Align(
               alignment: const Alignment(0, -0.3),
               child: Container(
-                width: 300,
-                height: 300,
+                width: 300.w,
+                height: 300.h,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
@@ -151,7 +152,7 @@ class _LandingPageState extends State<LandingPage>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 48),
+                  SizedBox(height: 48.h),
                   FadeTransition(
                     opacity: _heroFade,
                     child: SlideTransition(
@@ -162,7 +163,7 @@ class _LandingPageState extends State<LandingPage>
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16.h),
                   FadeTransition(
                     opacity: _heroFade,
                     child: SlideTransition(
@@ -181,7 +182,7 @@ class _LandingPageState extends State<LandingPage>
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16.h),
                   FadeTransition(
                     opacity: _heroFade,
                     child: SlideTransition(
@@ -196,7 +197,7 @@ class _LandingPageState extends State<LandingPage>
                       ),
                     ),
                   ),
-                  const SizedBox(height: 40),
+                  SizedBox(height: 40.h),
                   FadeTransition(
                     opacity: _pill1Fade,
                     child: const _FeaturePill(
@@ -205,7 +206,7 @@ class _LandingPageState extends State<LandingPage>
                       color: AppColors.accent,
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  SizedBox(height: 10.h),
                   FadeTransition(
                     opacity: _pill2Fade,
                     child: const _FeaturePill(
@@ -214,7 +215,7 @@ class _LandingPageState extends State<LandingPage>
                       color: AppColors.accent2,
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  SizedBox(height: 10.h),
                   FadeTransition(
                     opacity: _pill3Fade,
                     child: const _FeaturePill(
@@ -237,22 +238,22 @@ class _LandingPageState extends State<LandingPage>
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               SizedBox(
-                                width: 14,
-                                height: 14,
+                                width: 14.r,
+                                height: 14.r,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 1.5,
                                   color:
                                       AppColors.accent.withValues(alpha: 0.6),
                                 ),
                               ),
-                              const SizedBox(width: 10),
+                              SizedBox(width: 10.w),
                               Text(
                                 'Taking you to sign in...',
                                 style: AppTextStyles.caption.copyWith(
                                   color: AppColors.text3,
                                 ),
                               ),
-                              const SizedBox(width: 6),
+                              SizedBox(width: 6.w),
                               Text(
                                 'Tap to skip',
                                 style: AppTextStyles.caption.copyWith(
@@ -263,7 +264,7 @@ class _LandingPageState extends State<LandingPage>
                             ],
                           ),
                         ),
-                        const SizedBox(height: 32),
+                        SizedBox(height: 32.h),
                       ],
                     ),
                   ),
@@ -290,7 +291,7 @@ class _FeaturePill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
       decoration: BoxDecoration(
         color: AppColors.surface2,
         borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
@@ -299,17 +300,17 @@ class _FeaturePill extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 36,
-            height: 36,
+            width: 36.r,
+            height: 36.r,
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Center(
-              child: Text(icon, style: const TextStyle(fontSize: 16)),
+              child: Text(icon, style: TextStyle(fontSize: 16.sp)),
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12.w),
           Expanded(
             child: Text(
               label,
@@ -319,10 +320,10 @@ class _FeaturePill extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          const SizedBox(width: 12),
-          const Icon(
+          SizedBox(width: 12.w),
+          Icon(
             Icons.arrow_forward_ios_rounded,
-            size: 12,
+            size: 12.r,
             color: AppColors.text3,
           ),
         ],

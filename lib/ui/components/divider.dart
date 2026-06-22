@@ -1,5 +1,6 @@
 import 'package:energy_tracker/theme/app_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class AppDivider extends StatelessWidget {
   const AppDivider({
@@ -27,11 +28,11 @@ class AppDivider extends StatelessWidget {
         ),
         if (middleText != null) ...[
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+            padding: EdgeInsets.symmetric(horizontal: 12.w),
             child: Text(
               middleText!,
-              style: const TextStyle(
-                fontSize: 12,
+              style: TextStyle(
+                fontSize: 12.sp,
                 fontWeight: FontWeight.w400,
                 color: AppColors.text2,
                 height: 1.3,

@@ -1,5 +1,6 @@
 import 'package:energy_tracker/app.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 class AppBottomNav extends StatelessWidget {
@@ -85,16 +86,16 @@ class _NavItem extends StatelessWidget {
       },
       behavior: HitTestBehavior.opaque,
       child: SizedBox(
-        width: 56,
+        width: 56.w,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               icon,
-              size: 22,
+              size: 22.r,
               color: isActive ? AppColors.accent : AppColors.text3,
             ),
-            const SizedBox(height: 3),
+            SizedBox(height: 3.h),
             Text(
               label,
               style: AppTextStyles.navLabel.copyWith(
@@ -116,16 +117,16 @@ class _NavFab extends StatelessWidget {
       child: Container(
         width: AppDimensions.navFabSize,
         height: AppDimensions.navFabSize,
-        margin: const EdgeInsets.only(bottom: 8),
+        margin: EdgeInsets.only(bottom: 8.h),
         decoration: BoxDecoration(
           gradient: AppColors.primaryGradient,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(16.r),
           boxShadow: AppColors.navFabShadow,
         ),
-        child: const Center(
+        child: Center(
           child: Text(
             '⚡',
-            style: TextStyle(fontSize: 22),
+            style: TextStyle(fontSize: 22.sp),
           ),
         ),
       ),

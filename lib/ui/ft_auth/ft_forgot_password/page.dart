@@ -4,6 +4,7 @@ import 'package:energy_tracker/app.dart';
 import 'package:energy_tracker/ui/ft_auth/ft_forgot_password/notifier/notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 class ForgotPasswordPage extends ConsumerStatefulWidget {
@@ -106,9 +107,9 @@ class _Header extends StatelessWidget {
           ),
           border: AppColors.borderAccent,
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: 20.h),
         Text('Reset Password', style: AppTextStyles.displayMd),
-        const SizedBox(height: 8),
+        SizedBox(height: 8.h),
         Text(
           "Enter your registered email and we'll send you a "
           'link to reset your password.',
@@ -165,25 +166,25 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
           labelText: 'Email',
           hintText: 'Enter your email',
           border: AppFormFieldBorder.roundedOutlined,
-          prefixIcon: const Icon(
+          prefixIcon: Icon(
             Icons.email_outlined,
-            size: 20,
+            size: 20.r,
             color: AppColors.text3,
           ),
           errorText: state.emailError,
           clearable: true,
         ),
         if (state.errorMessage != null) ...[
-          const SizedBox(height: 16),
+          SizedBox(height: 16.h),
           _ErrorBanner(message: state.errorMessage!),
         ],
-        const SizedBox(height: 28),
+        SizedBox(height: 28.h),
         GradientButton(
           label: 'Send Reset Link',
           isLoading: state.isLoading,
           onTap: ref.read(forgotPasswordProvider.notifier).sendResetEmail,
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: 20.h),
         const _InfoCard(
           icon: Icons.info_outline_rounded,
           text: "Check your spam folder if you don't "
@@ -201,7 +202,7 @@ class _ErrorBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
       decoration: BoxDecoration(
         color: AppColors.danger.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
@@ -209,12 +210,12 @@ class _ErrorBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(
+          Icon(
             Icons.error_outline_rounded,
             color: AppColors.danger,
-            size: 18,
+            size: 18.r,
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: 10.w),
           Expanded(
             child: Text(
               message,
@@ -238,7 +239,7 @@ class _InfoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
       decoration: BoxDecoration(
         color: AppColors.surface2,
         borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
@@ -246,8 +247,8 @@ class _InfoCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(icon, size: 16, color: AppColors.text3),
-          const SizedBox(width: 10),
+          Icon(icon, size: 16.r, color: AppColors.text3),
+          SizedBox(width: 10.w),
           Expanded(
             child: Text(text, style: AppTextStyles.bodySm),
           ),
@@ -269,10 +270,10 @@ class ForgotPasswordSuccess extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        const SizedBox(height: 40),
+        SizedBox(height: 40.h),
         Container(
-          width: 96,
-          height: 96,
+          width: 96.r,
+          height: 96.r,
           decoration: const BoxDecoration(
             shape: BoxShape.circle,
             gradient: LinearGradient(
@@ -282,25 +283,25 @@ class ForgotPasswordSuccess extends StatelessWidget {
               ],
             ),
           ),
-          child: const Icon(
+          child: Icon(
             Icons.check_rounded,
-            size: 52,
+            size: 52.r,
             color: Colors.black,
           ),
         ),
-        const SizedBox(height: 32),
+        SizedBox(height: 32.h),
         Text(
           'Reset Link Sent',
           style: AppTextStyles.displayMd,
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12.h),
         Text(
           "We've sent a password reset link to",
           style: AppTextStyles.bodyLg.copyWith(color: AppColors.text2),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8.h),
         Text(
           email,
           style: AppTextStyles.titleMd.copyWith(
@@ -309,7 +310,7 @@ class ForgotPasswordSuccess extends StatelessWidget {
           ),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 40),
+        SizedBox(height: 40.h),
         const _InfoCard(
           icon: Icons.mark_email_read_outlined,
           text: "Didn't receive the email? Check spam or try again.",

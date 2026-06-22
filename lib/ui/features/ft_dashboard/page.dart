@@ -59,7 +59,7 @@ class DashboardPage extends ConsumerWidget {
                               color: AppColors.text2,
                             ),
                           ),
-                          const SizedBox(height: 12),
+                          SizedBox(height: 12.h),
                           FilledButton(
                             onPressed: () => ref.invalidate(dashboardProvider),
                             child: const Text('Retry'),
@@ -110,7 +110,7 @@ class _Header extends StatelessWidget {
                   greeting,
                   style: AppTextStyles.bodySm.copyWith(color: AppColors.text2),
                 ),
-                const SizedBox(height: 2),
+                SizedBox(height: 2.h),
                 Text(
                   '${state.userName} ${state.greetingEmoji}',
                   style: AppTextStyles.titleMd,
@@ -118,7 +118,7 @@ class _Header extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12.w),
           Stack(
             clipBehavior: Clip.none,
             children: [
@@ -136,9 +136,9 @@ class _Header extends StatelessWidget {
                         )
                       : Border.all(color: AppColors.border),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.notifications_outlined,
-                  size: 20,
+                  size: 20.r,
                   color: AppColors.text2,
                 ),
               ),
@@ -147,8 +147,8 @@ class _Header extends StatelessWidget {
                   top: -2,
                   right: -2,
                   child: Container(
-                    width: 8,
-                    height: 8,
+                    width: 8.r,
+                    height: 8.r,
                     decoration: const BoxDecoration(
                       color: AppColors.danger,
                       shape: BoxShape.circle,
@@ -157,7 +157,7 @@ class _Header extends StatelessWidget {
                 ),
             ],
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: 8.w),
           Container(
             width: AppDimensions.avatarSize,
             height: AppDimensions.avatarSize,
@@ -198,24 +198,24 @@ class _BodyContent extends StatelessWidget {
             child: Padding(
               padding: EdgeInsets.symmetric(
                 horizontal: AppDimensions.screenPaddingH,
-                vertical: 8,
+                vertical: 8.h,
               ),
               child: Material(
                 color: AppColors.danger.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 10,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 12.w,
+                    vertical: 10.h,
                   ),
                   child: Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.warning_amber_rounded,
                         color: AppColors.danger,
-                        size: 18,
+                        size: 18.r,
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8.w),
                       Expanded(
                         child: Text(
                           state.errorMessage!,
@@ -249,25 +249,25 @@ class _BodyContent extends StatelessWidget {
               [
                 if (state.isNearBudget || state.isOverBudget) ...[
                   BudgetAlertBanner(state: state),
-                  const SizedBox(height: 14),
+                  SizedBox(height: 14.h),
                 ],
                 BillSummaryCard(state: state),
-                const SizedBox(height: 14),
+                SizedBox(height: 14.h),
                 StatCardsRow(state: state),
-                const SizedBox(height: 14),
+                SizedBox(height: 14.h),
                 if (!state.isNearBudget && !state.isOverBudget) ...[
                   WeeklyChart(weeklyUsage: state.weeklyUsage),
-                  const SizedBox(height: 14),
+                  SizedBox(height: 14.h),
                 ],
                 if (state.isNearBudget || state.isOverBudget) ...[
                   const SavingTipsCard(),
-                  const SizedBox(height: 14),
+                  SizedBox(height: 14.h),
                 ],
                 QuickActions(
                   onAddReading: () => context.push(AppRoutes.addReading),
                   onScanBill: () => context.push(AppRoutes.scanBill),
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: 24.h),
               ],
             ),
           ),

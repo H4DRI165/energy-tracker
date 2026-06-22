@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class StringIcon extends StatelessWidget {
   const StringIcon({
@@ -15,17 +16,17 @@ class StringIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 72,
-      height: 72,
+      width: 72.r,
+      height: 72.r,
       decoration: BoxDecoration(
         gradient: gradient,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(24.r),
         border: Border.all(color: border),
       ),
       child: Center(
         child: Text(
           icon,
-          style: const TextStyle(fontSize: 32),
+          style: TextStyle(fontSize: 32.sp),
         ),
       ),
     );

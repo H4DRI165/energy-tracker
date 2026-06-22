@@ -250,7 +250,7 @@ class _TierRow extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Container(
-              width: 3,
+              width: 3.w,
               decoration: BoxDecoration(
                 color: color,
                 borderRadius: BorderRadius.only(

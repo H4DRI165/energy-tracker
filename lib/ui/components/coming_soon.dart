@@ -32,15 +32,15 @@ class ComingSoonPage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                width: 120.w,
-                height: 120.w,
+                width: 120.r,
+                height: 120.r,
                 decoration: BoxDecoration(
                   color: AppColors.accent.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   icon,
-                  size: 56.sp,
+                  size: 56.r,
                   color: AppColors.accent,
                 ),
               ),

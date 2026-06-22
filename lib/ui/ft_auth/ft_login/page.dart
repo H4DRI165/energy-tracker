@@ -4,6 +4,7 @@ import 'package:energy_tracker/app.dart';
 import 'package:energy_tracker/ui/ft_auth/ft_login/notifier/login_notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
@@ -67,13 +68,13 @@ class _LoginPageState extends ConsumerState<LoginPage>
                       horizontal: AppDimensions.screenPaddingH,
                       vertical: AppDimensions.screenPaddingV,
                     ),
-                    child: const Column(
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        SizedBox(height: 8),
-                        _Header(),
-                        SizedBox(height: 32),
-                        _BodyContent(),
+                        SizedBox(height: 8.h),
+                        const _Header(),
+                        SizedBox(height: 32.h),
+                        const _BodyContent(),
                       ],
                     ),
                   ),
@@ -81,7 +82,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
                 Padding(
                   padding: EdgeInsets.symmetric(
                     horizontal: AppDimensions.screenPaddingH,
-                    vertical: 16,
+                    vertical: 16.h,
                   ),
                   child: const _RegisterAccountRow(),
                 ),
@@ -103,9 +104,9 @@ class _Header extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Welcome back', style: AppTextStyles.overline),
-        const SizedBox(height: 8),
+        SizedBox(height: 8.h),
         Text('Sign In', style: AppTextStyles.displayMd),
-        const SizedBox(height: 6),
+        SizedBox(height: 6.h),
         Text(
           'Track your TNB energy usage',
           style: AppTextStyles.bodyMd.copyWith(color: AppColors.text2),
@@ -159,23 +160,23 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
           labelText: 'Email',
           hintText: 'Enter your email',
           border: AppFormFieldBorder.roundedOutlined,
-          prefixIcon: const Icon(
+          prefixIcon: Icon(
             Icons.email_outlined,
-            size: 20,
+            size: 20.r,
             color: AppColors.text3,
           ),
           errorText: state.emailError,
           clearable: true,
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: 16.h),
         AppTextFloatingLabelField(
           controller: _passwordController,
           labelText: 'Password',
           hintText: 'Enter your password',
           border: AppFormFieldBorder.roundedOutlined,
-          prefixIcon: const Icon(
+          prefixIcon: Icon(
             Icons.lock_outlined,
-            size: 20,
+            size: 20.r,
             color: AppColors.text3,
           ),
           errorText: state.passwordError,
@@ -187,11 +188,11 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
                   ? Icons.visibility_off_outlined
                   : Icons.visibility_outlined,
               color: AppColors.text3,
-              size: 20,
+              size: 20.r,
             ),
           ),
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12.h),
         Align(
           alignment: Alignment.centerRight,
           child: TextButton(
@@ -209,10 +210,10 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
             ),
           ),
         ),
-        const SizedBox(height: 24),
+        SizedBox(height: 24.h),
         if (state.authError != null) ...[
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(12.r),
             decoration: BoxDecoration(
               color: AppColors.danger.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
@@ -222,12 +223,12 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
             ),
             child: Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.error_outline,
                   color: AppColors.danger,
-                  size: 16,
+                  size: 16.r,
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8.w),
                 Expanded(
                   child: Text(
                     state.authError!,
@@ -238,16 +239,16 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16.h),
         ],
         GradientButton(
           label: 'Sign In',
           isLoading: state.isLoading,
           onTap: ref.read(loginProvider.notifier).login,
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: 20.h),
         const AppDivider(middleText: 'or continue with'),
-        const SizedBox(height: 16),
+        SizedBox(height: 16.h),
         OutlinedButton(
           onPressed: state.isLoading
               ? null
@@ -256,10 +257,10 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
             minimumSize: const Size(double.infinity, 52),
           ),
           child: state.isLoading
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
+              ? SizedBox(
+                  width: 20.r,
+                  height: 20.r,
+                  child: const CircularProgressIndicator(
                     strokeWidth: 2,
                     valueColor: AlwaysStoppedAnimation<Color>(AppColors.text),
                   ),
@@ -274,7 +275,7 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
                         color: AppColors.text,
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    SizedBox(width: 10.w),
                     Text(
                       'Continue with Google',
                       style:
