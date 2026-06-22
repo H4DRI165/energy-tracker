@@ -1,10 +1,6 @@
-import 'package:energy_tracker/models/bill_record.dart';
-import 'package:energy_tracker/theme/theme.dart';
-import 'package:energy_tracker/ui/components/badge.dart';
-import 'package:energy_tracker/ui/components/dialog.dart';
+import 'package:energy_tracker/app.dart';
 import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_usage/notifier/usage_notifier.dart';
-import 'package:energy_tracker/ui/routes/routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';

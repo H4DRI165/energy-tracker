@@ -1,7 +1,4 @@
-import 'package:energy_tracker/constants/tariff_rates.dart';
-import 'package:energy_tracker/models/reading_record.dart';
-import 'package:energy_tracker/theme/theme.dart';
-import 'package:energy_tracker/ui/components/buttons.dart';
+import 'package:energy_tracker/app.dart';
 import 'package:energy_tracker/ui/features/ft_add_meter_reading/notifier/notifier.dart';
 import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_usage/notifier/usage_notifier.dart';

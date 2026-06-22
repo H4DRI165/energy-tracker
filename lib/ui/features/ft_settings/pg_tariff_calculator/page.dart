@@ -1,5 +1,4 @@
-import 'package:energy_tracker/constants/tariff_rates.dart';
-import 'package:energy_tracker/theme/theme.dart';
+import 'package:energy_tracker/app.dart';
 import 'package:energy_tracker/ui/features/ft_settings/pg_tariff_calculator/state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

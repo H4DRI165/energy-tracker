@@ -1,11 +1,7 @@
 import 'dart:async';
 
-import 'package:energy_tracker/theme/theme.dart';
-import 'package:energy_tracker/ui/components/buttons.dart';
-import 'package:energy_tracker/ui/components/icons.dart';
-import 'package:energy_tracker/ui/components/text.dart';
+import 'package:energy_tracker/app.dart';
 import 'package:energy_tracker/ui/ft_auth/ft_forgot_password/notifier/notifier.dart';
-import 'package:energy_tracker/ui/routes/routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
