@@ -39,4 +39,9 @@ extension TariffTypeX on TariffType {
         return 'commercial';
     }
   }
+
+  static TariffType fromValue(String value) => TariffType.values.firstWhere(
+        (t) => t.value == value,
+        orElse: () => TariffType.domestic,
+      );
 }

@@ -1,3 +1,4 @@
+import 'package:energy_tracker/services/notifiers/user_profile_notifier.dart';
 import 'package:energy_tracker/theme/theme.dart';
 import 'package:energy_tracker/ui/components/errors.dart';
 import 'package:energy_tracker/ui/components/nav.dart';
@@ -119,7 +120,7 @@ class _BodyContent extends ConsumerWidget {
             ),
             SizedBox(height: 14.h),
             TariffTierBreakdown(
-              tiers: state.tierBreakdown,
+              tiers: state.tierBreakdown(ref.watch(tariffTypeProvider)),
               monthLabel: state.currentMonthLabel,
             ),
             SizedBox(height: 14.h),

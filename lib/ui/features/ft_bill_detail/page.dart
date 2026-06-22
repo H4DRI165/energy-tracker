@@ -164,7 +164,7 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
           isPaid: state.isPaid,
           isUpdating: state.isUpdatingPaid,
           onToggle: () async {
-            await ref.read(billDetailProvider.notifier).togglePaid(widget.bill);
+            await ref.read(billDetailProvider.notifier).togglePaid(state.bill!);
             ref.invalidate(usageProvider);
           },
         ),
@@ -176,7 +176,7 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
         SizedBox(height: 16.h),
         _ReadingsSection(
           readings: state.readings,
-          bill: widget.bill,
+          bill: state.bill!,
           onEditReading: widget.onEditReading,
         ),
         SizedBox(height: 24.h),

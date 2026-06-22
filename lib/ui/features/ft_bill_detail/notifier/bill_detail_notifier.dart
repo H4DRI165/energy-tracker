@@ -7,6 +7,7 @@ import 'package:energy_tracker/models/reading_record.dart';
 import 'package:energy_tracker/ui/features/ft_bill_detail/notifier/bill_detail_state.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 final NotifierProvider<BillDetailNotifier, BillDetailPageState>
     billDetailProvider =
@@ -24,12 +25,14 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
   }
 
   Future<void> init(BillRecord bill) async {
+    final freshBill = await _loadBill(bill.id);
+
     state = state.copyWith(
-      bill: bill,
-      isPaid: bill.isPaid,
+      bill: freshBill ?? bill,
+      isPaid: (freshBill ?? bill).isPaid,
     );
 
-    await _loadReadings(bill);
+    await _loadReadings(freshBill ?? bill);
   }
 
   Future<void> _loadReadings(BillRecord bill) async {
@@ -77,6 +80,32 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
         errorMessage: 'Failed to load readings: ${e.message}',
       );
     }
+  }
+
+  Future<BillRecord?> _loadBill(String billId) async {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) return null;
+
+    final doc = await _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('bills')
+        .doc(billId)
+        .get();
+
+    if (!doc.exists) return null;
+
+    final data = doc.data()!;
+
+    return BillRecord(
+      id: doc.id,
+      monthYear:
+          DateFormat('MMM yyyy').format((data['date'] as Timestamp).toDate()),
+      kwh: (data['kwh'] as num).toDouble(),
+      amount: (data['amount'] as num).toDouble(),
+      isPaid: data['isPaid'] as bool? ?? false,
+      date: (data['date'] as Timestamp).toDate(),
+    );
   }
 
   Future<void> togglePaid(BillRecord bill) async {
