@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:energy_tracker/constants/tariff_rates.dart';
 import 'package:energy_tracker/models/reading_record.dart';
+import 'package:energy_tracker/services/notifiers/user_profile_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_add_meter_reading/notifier/add_meter_reading_state.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -235,14 +237,52 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
     state = state.copyWith(notes: value);
   }
 
+  String _monthKey(DateTime date) =>
+      '${date.year}-${date.month.toString().padLeft(2, '0')}';
+
+  Future<void> _recalculateMonthBill(String uid, DateTime date) async {
+    final key = _monthKey(date);
+    final start = DateTime(date.year, date.month);
+    final end = DateTime(date.year, date.month + 1);
+
+    final readingsSnap = await _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('readings')
+        .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(start))
+        .where('date', isLessThan: Timestamp.fromDate(end))
+        .get();
+
+    final billRef =
+        _firestore.collection('users').doc(uid).collection('bills').doc(key);
+
+    if (readingsSnap.docs.isEmpty) {
+      await billRef.delete();
+      return;
+    }
+
+    final totalKwh = readingsSnap.docs.fold<double>(
+      0,
+      (sum, doc) => sum + ((doc.data()['kwh'] as num?)?.toDouble() ?? 0),
+    );
+
+    final tariffType = ref.read(tariffTypeProvider);
+
+    await billRef.set({
+      'kwh': totalKwh,
+      'amount': TariffRates.calculate(totalKwh, tariffType),
+      'tier': TariffRates.getTier(totalKwh),
+      'date': Timestamp.fromDate(start),
+    }, SetOptions(merge: true));
+  }
+
   Future<bool> saveReading() async {
     if (!state.canSave) return false;
 
     final uid = _auth.currentUser?.uid;
     if (uid == null) {
       state = state.copyWith(
-        errorMessage: 'Session expired. Please sign in again.',
-      );
+          errorMessage: 'Session expired. Please sign in again.');
       return false;
     }
 
@@ -250,12 +290,8 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
 
     try {
       final date = state.selectedDate ?? DateTime.now();
-      final batch = _firestore.batch();
 
-      final readingRef =
-          _firestore.collection('users').doc(uid).collection('readings').doc();
-
-      batch.set(readingRef, {
+      await _firestore.collection('users').doc(uid).collection('readings').add({
         'reading': state.currentReading,
         'kwh': state.usageKwh,
         'date': Timestamp.fromDate(date),
@@ -264,21 +300,8 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      if (state.hasUsage) {
-        final billRef =
-            _firestore.collection('users').doc(uid).collection('bills').doc();
+      await _recalculateMonthBill(uid, date);
 
-        batch.set(billRef, {
-          'kwh': state.usageKwh,
-          'amount': state.estimatedBill,
-          'date': Timestamp.fromDate(date),
-          'tier': state.currentTier,
-          'isPaid': false,
-          'createdAt': FieldValue.serverTimestamp(),
-        });
-      }
-
-      await batch.commit();
       state = state.copyWith(isSaving: false);
       return true;
     } on FirebaseException catch (e) {
@@ -306,44 +329,29 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
 
     try {
       final date = state.selectedDate ?? DateTime.now();
-      final batch = _firestore.batch()
-        ..update(
-          _firestore
-              .collection('users')
-              .doc(uid)
-              .collection('readings')
-              .doc(reading.id),
-          {
-            'reading': state.currentReading,
-            'kwh': state.usageKwh,
-            'date': Timestamp.fromDate(date),
-            'notes': state.notes.trim(),
-            'tier': state.currentTier,
-          },
-        );
+      final oldDate = reading.date;
 
-      final startOfDay =
-          DateTime(reading.date.year, reading.date.month, reading.date.day);
-      final endOfDay =
-          DateTime(reading.date.year, reading.date.month, reading.date.day + 1);
-      final billSnap = await _firestore
+      await _firestore
           .collection('users')
           .doc(uid)
-          .collection('bills')
-          .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
-          .where('date', isLessThan: Timestamp.fromDate(endOfDay))
-          .get();
+          .collection('readings')
+          .doc(reading.id)
+          .update({
+        'reading': state.currentReading,
+        'kwh': state.usageKwh,
+        'date': Timestamp.fromDate(date),
+        'notes': state.notes.trim(),
+        'tier': state.currentTier,
+      });
 
-      for (final doc in billSnap.docs) {
-        batch.update(doc.reference, {
-          'kwh': state.usageKwh,
-          'amount': state.estimatedBill,
-          'date': Timestamp.fromDate(date),
-          'tier': state.currentTier,
-        });
+      await _recalculateMonthBill(uid, date);
+      if (date.month != oldDate.month || date.year != oldDate.year) {
+        await _recalculateMonthBill(
+          uid,
+          oldDate,
+        );
       }
 
-      await batch.commit();
       state = state.copyWith(isSaving: false);
       return true;
     } on FirebaseException catch (e) {

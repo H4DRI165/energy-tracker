@@ -18,31 +18,9 @@ class BillHistoryList extends ConsumerWidget {
 
   final List<BillRecord> bills;
 
-  List<BillRecord> get _groupedByMonth {
-    final grouped = <String, BillRecord>{};
-    for (final bill in bills) {
-      final key =
-          '${bill.date.year}-${bill.date.month.toString().padLeft(2, '0')}';
-      if (grouped.containsKey(key)) {
-        final existing = grouped[key]!;
-        grouped[key] = BillRecord(
-          id: existing.id,
-          monthYear: existing.monthYear,
-          kwh: existing.kwh + bill.kwh,
-          amount: existing.amount + bill.amount,
-          isPaid: existing.isPaid && bill.isPaid,
-          date: existing.date,
-        );
-      } else {
-        grouped[key] = bill;
-      }
-    }
-    return grouped.values.toList()..sort((a, b) => b.date.compareTo(a.date));
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final groupedBills = _groupedByMonth;
+    final sortedBills = [...bills]..sort((a, b) => b.date.compareTo(a.date));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -71,7 +49,7 @@ class BillHistoryList extends ConsumerWidget {
           ],
         ),
         SizedBox(height: 10.h),
-        if (groupedBills.isEmpty)
+        if (sortedBills.isEmpty)
           Container(
             padding: EdgeInsets.all(16.r),
             decoration: BoxDecoration(
@@ -95,9 +73,9 @@ class BillHistoryList extends ConsumerWidget {
               border: Border.all(color: AppColors.border),
             ),
             child: Column(
-              children: groupedBills.asMap().entries.map((entry) {
+              children: sortedBills.asMap().entries.map((entry) {
                 final bill = entry.value;
-                final isLast = entry.key == groupedBills.length - 1;
+                final isLast = entry.key == sortedBills.length - 1;
                 final iconBg = entry.key.isEven
                     ? AppColors.accent.withValues(alpha: 0.10)
                     : AppColors.accent2.withValues(alpha: 0.10);
