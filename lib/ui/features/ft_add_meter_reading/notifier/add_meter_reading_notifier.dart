@@ -268,12 +268,15 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
 
     final tariffType = ref.read(tariffTypeProvider);
 
-    await billRef.set({
-      'kwh': totalKwh,
-      'amount': TariffRates.calculate(totalKwh, tariffType),
-      'tier': TariffRates.getTier(totalKwh),
-      'date': Timestamp.fromDate(start),
-    }, SetOptions(merge: true));
+    await billRef.set(
+      {
+        'kwh': totalKwh,
+        'amount': TariffRates.calculate(totalKwh, tariffType),
+        'tier': TariffRates.getTier(totalKwh),
+        'date': Timestamp.fromDate(start),
+      },
+      SetOptions(merge: true),
+    );
   }
 
   Future<bool> saveReading() async {
@@ -282,7 +285,8 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
     final uid = _auth.currentUser?.uid;
     if (uid == null) {
       state = state.copyWith(
-          errorMessage: 'Session expired. Please sign in again.');
+        errorMessage: 'Session expired. Please sign in again.',
+      );
       return false;
     }
 
