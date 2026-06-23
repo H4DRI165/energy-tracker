@@ -61,10 +61,14 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
       if (_editingDate != null) {
         // Editing: neighbours are simply the readings immediately
         // chronologically before/after this entry's original date.
-        beforeQuery = readingsCol.where('date',
-            isLessThan: Timestamp.fromDate(_editingDate!));
-        nextQuery = readingsCol.where('date',
-            isGreaterThan: Timestamp.fromDate(_editingDate!));
+        beforeQuery = readingsCol.where(
+          'date',
+          isLessThan: Timestamp.fromDate(_editingDate!),
+        );
+        nextQuery = readingsCol.where(
+          'date',
+          isGreaterThan: Timestamp.fromDate(_editingDate!),
+        );
       } else {
         final now = DateTime.now();
         final isToday = selectedDate.year == now.year &&
@@ -72,10 +76,19 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
             selectedDate.day == now.day;
         final cutoff = isToday
             ? now
-            : DateTime(selectedDate.year, selectedDate.month, selectedDate.day,
-                23, 59, 59);
+            : DateTime(
+                selectedDate.year,
+                selectedDate.month,
+                selectedDate.day,
+                23,
+                59,
+                59,
+              );
         final startOfNextDay = DateTime(
-            selectedDate.year, selectedDate.month, selectedDate.day + 1);
+          selectedDate.year,
+          selectedDate.month,
+          selectedDate.day + 1,
+        );
 
         beforeQuery =
             readingsCol.where('date', isLessThan: Timestamp.fromDate(cutoff));

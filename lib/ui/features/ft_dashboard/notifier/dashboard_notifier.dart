@@ -21,6 +21,11 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState> {
     return results[0].merge(results[1]);
   }
 
+  Future<void> refresh() async {
+    ref.invalidateSelf();
+    await future;
+  }
+
   Future<DashboardPageState> _loadUserProfile() async {
     try {
       final user = _auth.currentUser;
@@ -159,11 +164,6 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState> {
         errorMessage: 'Failed to load usage data.',
       );
     }
-  }
-
-  Future<void> refresh() async {
-    ref.invalidateSelf();
-    await future;
   }
 
   String get greeting {

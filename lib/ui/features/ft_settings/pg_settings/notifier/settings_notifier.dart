@@ -23,6 +23,11 @@ class SettingsNotifier extends AsyncNotifier<SettingsPageState> {
     return _fetchSettings();
   }
 
+  Future<void> refresh() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(_fetchSettings);
+  }
+
   Future<SettingsPageState> _fetchSettings() async {
     final user = _auth.currentUser;
     if (user == null) return const SettingsPageState();
@@ -51,11 +56,6 @@ class SettingsNotifier extends AsyncNotifier<SettingsPageState> {
       billRemindersEnabled: data['billRemindersEnabled'] as bool? ?? true,
       monthlySummaryEnabled: data['monthlySummaryEnabled'] as bool? ?? false,
     );
-  }
-
-  Future<void> refresh() async {
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(_fetchSettings);
   }
 
   Future<bool> updateTariffType(String value) async {
