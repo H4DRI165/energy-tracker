@@ -109,6 +109,8 @@ class _SettingsBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final versionAsync = ref.watch(appVersionProvider);
+
     return SingleChildScrollView(
       padding: EdgeInsets.symmetric(
         horizontal: AppDimensions.screenPaddingH,
@@ -190,10 +192,14 @@ class _SettingsBody extends ConsumerWidget {
           SizedBox(height: 8.h),
           _SettingsGroup(
             children: [
-              const SettingsListTile(
+              SettingsListTile(
                 icon: '📋',
                 label: 'Version',
-                trailing: '0.3.0+1',
+                trailing: versionAsync.when(
+                  data: (v) => v,
+                  loading: () => '...',
+                  error: (_, __) => 'unknown',
+                ),
                 showChevron: false,
               ),
               SettingsListTile(
