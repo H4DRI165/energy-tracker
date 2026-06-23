@@ -1,5 +1,4 @@
-import 'package:energy_tracker/theme/theme.dart';
-import 'package:energy_tracker/ui/routes/routes.dart';
+import 'package:energy_tracker/app.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
@@ -33,15 +32,15 @@ class ComingSoonPage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                width: 120.w,
-                height: 120.w,
+                width: 120.r,
+                height: 120.r,
                 decoration: BoxDecoration(
                   color: AppColors.accent.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   icon,
-                  size: 56.sp,
+                  size: 56.r,
                   color: AppColors.accent,
                 ),
               ),

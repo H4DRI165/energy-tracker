@@ -1,6 +1,7 @@
 import 'package:energy_tracker/theme/theme.dart';
 import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_state.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class BillSummaryCard extends StatelessWidget {
   const BillSummaryCard({
@@ -16,7 +17,7 @@ class BillSummaryCard extends StatelessWidget {
     final billColor = state.billColor;
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(20.r),
       decoration: BoxDecoration(
         gradient: isAlert
             ? const LinearGradient(
@@ -40,8 +41,8 @@ class BillSummaryCard extends StatelessWidget {
             top: -20,
             right: -20,
             child: Container(
-              width: 120,
-              height: 120,
+              width: 120.r,
+              height: 120.r,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
@@ -70,12 +71,12 @@ class BillSummaryCard extends StatelessWidget {
                             letterSpacing: 2,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: 4.h),
                         Text(
                           'RM ${state.estimatedBill.toStringAsFixed(2)}',
                           style: AppTextStyles.displayLg,
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: 4.h),
                         Text(
                           isAlert && state.projectedBill != null
                               ? '${state.kwhUsed.toStringAsFixed(0)} kWh · '
@@ -96,7 +97,7 @@ class BillSummaryCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         _ChangeBadge(percent: state.percentageVsLastMonth),
-                        const SizedBox(height: 6),
+                        SizedBox(height: 6.h),
                         Text(
                           'vs last month',
                           style: AppTextStyles.caption,
@@ -105,7 +106,7 @@ class BillSummaryCard extends StatelessWidget {
                     ),
                 ],
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16.h),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -123,7 +124,7 @@ class BillSummaryCard extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 6),
+              SizedBox(height: 6.h),
               ClipRRect(
                 borderRadius: BorderRadius.circular(4),
                 child: TweenAnimationBuilder<double>(
@@ -142,7 +143,7 @@ class BillSummaryCard extends StatelessWidget {
                   },
                 ),
               ),
-              const SizedBox(height: 6),
+              SizedBox(height: 6.h),
               Text(
                 state.budgetStatusLabel,
                 style: AppTextStyles.caption.copyWith(color: billColor),
@@ -170,7 +171,7 @@ class _ChangeBadge extends StatelessWidget {
     final label = '$arrow ${percent.abs().toStringAsFixed(0)}%';
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(20),

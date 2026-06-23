@@ -1,6 +1,7 @@
 import 'package:energy_tracker/theme/theme.dart';
 import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_state.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class StatCardsRow extends StatelessWidget {
   const StatCardsRow({
@@ -31,8 +32,7 @@ class StatCardsRow extends StatelessWidget {
             compact: compact,
           ),
         ),
-        const SizedBox(width: 10),
-        // Tariff tier
+        SizedBox(width: 10.w),
         Expanded(
           child: _StatCard(
             label: 'Tariff Tier',
@@ -88,7 +88,7 @@ class _StatCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label, style: AppTextStyles.caption),
-          const SizedBox(height: 4),
+          SizedBox(height: 4.h),
           Row(
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
@@ -98,14 +98,14 @@ class _StatCard extends StatelessWidget {
                 style: AppTextStyles.statMd.copyWith(color: valueColor),
               ),
               if (unit.isNotEmpty) ...[
-                const SizedBox(width: 3),
+                SizedBox(width: 3.w),
                 Text(unit, style: AppTextStyles.caption),
               ],
             ],
           ),
-          SizedBox(height: compact ? 4 : 6),
+          SizedBox(height: compact ? 4.h : 6.h),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
             decoration: BoxDecoration(
               color: badgeBg,
               borderRadius: BorderRadius.circular(20),
@@ -114,7 +114,7 @@ class _StatCard extends StatelessWidget {
               badge,
               style: AppTextStyles.tag.copyWith(
                 color: badgeColor,
-                fontSize: 10,
+                fontSize: 10.sp,
               ),
             ),
           ),

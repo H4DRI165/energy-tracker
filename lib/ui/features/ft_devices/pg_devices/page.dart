@@ -1,10 +1,7 @@
 import 'dart:math' as math;
 
-import 'package:energy_tracker/models/appliance.dart';
-import 'package:energy_tracker/theme/theme.dart';
-import 'package:energy_tracker/ui/components/nav.dart';
+import 'package:energy_tracker/app.dart';
 import 'package:energy_tracker/ui/features/ft_devices/pg_devices/notifier/notifier.dart';
-import 'package:energy_tracker/ui/routes/routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';

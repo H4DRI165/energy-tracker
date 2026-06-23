@@ -4,6 +4,7 @@ import 'package:energy_tracker/app.dart';
 import 'package:energy_tracker/ui/features/ft_onboarding/notifier/notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class OnboardingPage extends ConsumerStatefulWidget {
   const OnboardingPage({super.key});
@@ -118,30 +119,30 @@ class _OnboardingHeader extends StatelessWidget {
                 GestureDetector(
                   onTap: onBack,
                   child: Container(
-                    width: 36,
-                    height: 36,
+                    width: 36.r,
+                    height: 36.r,
                     decoration: BoxDecoration(
                       color: AppColors.surface2,
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(color: AppColors.border),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.arrow_back_ios_new_rounded,
-                      size: 16,
+                      size: 16.r,
                       color: AppColors.text2,
                     ),
                   ),
                 )
               else
-                const SizedBox(width: 36),
+                SizedBox(width: 36.w),
               Text(
                 '${state.currentStep + 1} of ${OnboardingPageState.totalSteps}',
                 style: AppTextStyles.bodyMd.copyWith(color: AppColors.text2),
               ),
-              const SizedBox(width: 36),
+              SizedBox(width: 36.w),
             ],
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8.h),
           ClipRRect(
             borderRadius: BorderRadius.circular(2),
             child: LinearProgressIndicator(
@@ -151,7 +152,7 @@ class _OnboardingHeader extends StatelessWidget {
               minHeight: 3,
             ),
           ),
-          const SizedBox(height: 28),
+          SizedBox(height: 28.h),
         ],
       ),
     );
@@ -170,7 +171,7 @@ class _StepTariff extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: EdgeInsets.symmetric(horizontal: 20.w),
       child: Column(
         children: [
           const StringIcon(
@@ -182,18 +183,18 @@ class _StepTariff extends StatelessWidget {
             ),
             border: AppColors.borderAccent,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16.h),
           Text('Select Tariff Type', style: AppTextStyles.titleLg),
-          const SizedBox(height: 8),
+          SizedBox(height: 8.h),
           Text(
             'Choose your TNB account category',
             style: AppTextStyles.bodyMd.copyWith(color: AppColors.text2),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24.h),
           ...TariffType.values.map((tariff) {
             final isSelected = state.selectedTariff == tariff;
             return Padding(
-              padding: const EdgeInsets.only(bottom: 10),
+              padding: EdgeInsets.only(bottom: 10.h),
               child: _TariffOption(
                 tariff: tariff,
                 isSelected: isSelected,
@@ -201,13 +202,13 @@ class _StepTariff extends StatelessWidget {
               ),
             );
           }),
-          const SizedBox(height: 28),
+          SizedBox(height: 28.h),
           GradientButton(
             label: 'Continue',
             isLoading: false,
             onTap: notifier.nextFromTariff,
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24.h),
         ],
       ),
     );
@@ -231,7 +232,7 @@ class _TariffOption extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.r),
         decoration: BoxDecoration(
           color: isSelected
               ? AppColors.accent.withValues(alpha: 0.06)
@@ -254,7 +255,7 @@ class _TariffOption extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  SizedBox(height: 2.h),
                   Text(
                     tariff.subtitle,
                     style: AppTextStyles.bodySm,
@@ -262,11 +263,11 @@ class _TariffOption extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12.w),
             AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              width: 20,
-              height: 20,
+              width: 20.r,
+              height: 20.r,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: isSelected ? AppColors.accent : Colors.transparent,
@@ -276,9 +277,9 @@ class _TariffOption extends StatelessWidget {
                 ),
               ),
               child: isSelected
-                  ? const Icon(
+                  ? Icon(
                       Icons.check_rounded,
-                      size: 13,
+                      size: 13.r,
                       color: Colors.black,
                     )
                   : null,
@@ -302,7 +303,7 @@ class _StepBudget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: EdgeInsets.symmetric(horizontal: 20.w),
       child: Column(
         children: [
           const StringIcon(
@@ -314,17 +315,17 @@ class _StepBudget extends StatelessWidget {
             ),
             border: Color(0x4DFFB020),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16.h),
           Text('Set Monthly Target', style: AppTextStyles.titleLg),
-          const SizedBox(height: 8),
+          SizedBox(height: 8.h),
           Text(
             "We'll alert you before you overspend",
             style: AppTextStyles.bodyMd.copyWith(color: AppColors.text2),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24.h),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+            padding: EdgeInsets.symmetric(vertical: 20.h, horizontal: 16.w),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
@@ -340,14 +341,14 @@ class _StepBudget extends StatelessWidget {
                   'MONTHLY BUDGET (RM)',
                   style: AppTextStyles.caption.copyWith(letterSpacing: 1),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4.h),
                 Text(
                   'RM ${state.monthlyBudget.toStringAsFixed(0)}',
                   style: AppTextStyles.displayLg.copyWith(
                     color: AppColors.accent,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4.h),
                 Text(
                   state.estimatedKwh,
                   style: AppTextStyles.bodySm,
@@ -355,7 +356,7 @@ class _StepBudget extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20.h),
           SliderTheme(
             data: SliderTheme.of(context).copyWith(
               trackHeight: 4,
@@ -375,7 +376,7 @@ class _StepBudget extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
+            padding: EdgeInsets.symmetric(horizontal: 4.w),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -390,9 +391,9 @@ class _StepBudget extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20.h),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
             decoration: BoxDecoration(
               color: AppColors.surface2,
               borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
@@ -400,8 +401,8 @@ class _StepBudget extends StatelessWidget {
             ),
             child: Row(
               children: [
-                const Text('💡', style: TextStyle(fontSize: 14)),
-                const SizedBox(width: 8),
+                Text('💡', style: TextStyle(fontSize: 14.sp)),
+                SizedBox(width: 8.w),
                 Expanded(
                   child: RichText(
                     text: TextSpan(
@@ -423,13 +424,13 @@ class _StepBudget extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 28),
+          SizedBox(height: 28.h),
           GradientButton(
             label: 'Continue',
             isLoading: false,
             onTap: notifier.nextFromBudget,
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24.h),
         ],
       ),
     );
@@ -450,7 +451,7 @@ class _StepComplete extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: EdgeInsets.symmetric(horizontal: 20.w),
       child: Column(
         children: [
           const StringIcon(
@@ -462,35 +463,35 @@ class _StepComplete extends StatelessWidget {
             ),
             border: Color(0x400099FF),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16.h),
           Text("You're All Set!", style: AppTextStyles.titleLg),
-          const SizedBox(height: 8),
+          SizedBox(height: 8.h),
           Text(
             'Energy Tracker is ready to track your usage',
             style: AppTextStyles.bodyMd.copyWith(color: AppColors.text2),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24.h),
           _SummaryItem(
             icon: '✅',
             title: 'Tariff configured',
             subtitle: state.selectedTariff.label,
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10.h),
           _SummaryItem(
             icon: '✅',
             title: 'Budget set',
             subtitle: 'RM ${state.monthlyBudget.toStringAsFixed(0)} / month',
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10.h),
           const _SummaryItem(
             icon: '🔔',
             title: 'Alerts enabled',
             subtitle: '80% & 100% notifications',
           ),
           if (state.errorMessage != null) ...[
-            const SizedBox(height: 16),
+            SizedBox(height: 16.h),
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(12.r),
               decoration: BoxDecoration(
                 color: AppColors.danger.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
@@ -500,12 +501,12 @@ class _StepComplete extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.error_outline,
                     color: AppColors.danger,
-                    size: 16,
+                    size: 16.r,
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8.w),
                   Expanded(
                     child: Text(
                       state.errorMessage!,
@@ -517,13 +518,13 @@ class _StepComplete extends StatelessWidget {
               ),
             ),
           ],
-          const SizedBox(height: 28),
+          SizedBox(height: 28.h),
           GradientButton(
             label: 'Start Tracking ⚡',
             isLoading: state.isLoading,
             onTap: onStartTracking,
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24.h),
         ],
       ),
     );
@@ -544,7 +545,7 @@ class _SummaryItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(12.r),
       decoration: BoxDecoration(
         color: AppColors.surface2,
         borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
@@ -553,8 +554,8 @@ class _SummaryItem extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 36,
-            height: 36,
+            width: 36.r,
+            height: 36.r,
             decoration: BoxDecoration(
               color: AppColors.accent.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(10),
@@ -562,11 +563,11 @@ class _SummaryItem extends StatelessWidget {
             child: Center(
               child: Text(
                 icon,
-                style: const TextStyle(fontSize: 16),
+                style: TextStyle(fontSize: 16.sp),
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12.w),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -575,7 +576,7 @@ class _SummaryItem extends StatelessWidget {
                 style:
                     AppTextStyles.bodyMd.copyWith(fontWeight: FontWeight.w600),
               ),
-              const SizedBox(height: 2),
+              SizedBox(height: 2.h),
               Text(subtitle, style: AppTextStyles.bodySm),
             ],
           ),

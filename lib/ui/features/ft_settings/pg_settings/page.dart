@@ -1,13 +1,9 @@
 import 'dart:async';
 
-import 'package:energy_tracker/theme/theme.dart';
-import 'package:energy_tracker/ui/components/dialog.dart';
-import 'package:energy_tracker/ui/components/errors.dart';
-import 'package:energy_tracker/ui/components/nav.dart';
+import 'package:energy_tracker/app.dart';
 import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_settings/pg_settings/notifier/notifier.dart';
 import 'package:energy_tracker/ui/features/ft_settings/pg_settings/widgets/widgets.dart';
-import 'package:energy_tracker/ui/routes/routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -113,6 +109,8 @@ class _SettingsBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final versionAsync = ref.watch(appVersionProvider);
+
     return SingleChildScrollView(
       padding: EdgeInsets.symmetric(
         horizontal: AppDimensions.screenPaddingH,
@@ -194,10 +192,14 @@ class _SettingsBody extends ConsumerWidget {
           SizedBox(height: 8.h),
           _SettingsGroup(
             children: [
-              const SettingsListTile(
+              SettingsListTile(
                 icon: '📋',
                 label: 'Version',
-                trailing: '0.3.0+1',
+                trailing: versionAsync.when(
+                  data: (v) => v,
+                  loading: () => '...',
+                  error: (_, __) => 'unknown',
+                ),
                 showChevron: false,
               ),
               SettingsListTile(

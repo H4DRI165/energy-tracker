@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:energy_tracker/app.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 class SplashPage extends StatefulWidget {
@@ -102,8 +103,8 @@ class _SplashPageState extends State<SplashPage>
                   child: FadeTransition(
                     opacity: _fadeIn,
                     child: Container(
-                      width: 80,
-                      height: 80,
+                      width: 80.r,
+                      height: 80.r,
                       decoration: BoxDecoration(
                         gradient: AppColors.primaryGradient,
                         borderRadius: BorderRadius.circular(28),
@@ -115,16 +116,16 @@ class _SplashPageState extends State<SplashPage>
                           ),
                         ],
                       ),
-                      child: const Center(
+                      child: Center(
                         child: Text(
                           '⚡',
-                          style: TextStyle(fontSize: 36),
+                          style: TextStyle(fontSize: 36.sp),
                         ),
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 20),
+                SizedBox(height: 20.h),
                 FadeTransition(
                   opacity: _fadeIn,
                   child: Text(
@@ -132,7 +133,7 @@ class _SplashPageState extends State<SplashPage>
                     style: AppTextStyles.displayMd,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8.h),
                 FadeTransition(
                   opacity: _taglineFade,
                   child: Text(
@@ -154,8 +155,8 @@ class _SplashPageState extends State<SplashPage>
               opacity: _dotFade,
               child: Center(
                 child: Container(
-                  width: 40,
-                  height: 3,
+                  width: 40.r,
+                  height: 3.r,
                   decoration: BoxDecoration(
                     color: AppColors.accent.withValues(alpha: 0.6),
                     borderRadius: BorderRadius.circular(2),

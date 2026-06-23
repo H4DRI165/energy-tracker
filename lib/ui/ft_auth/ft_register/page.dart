@@ -5,6 +5,7 @@ import 'package:energy_tracker/ui/ft_auth/ft_register/notifier/register_notifier
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 class RegisterPage extends ConsumerStatefulWidget {
@@ -68,13 +69,13 @@ class _RegisterPageState extends ConsumerState<RegisterPage>
                       horizontal: AppDimensions.screenPaddingH,
                       vertical: AppDimensions.screenPaddingV,
                     ),
-                    child: const Column(
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        SizedBox(height: 24),
-                        _Header(),
-                        SizedBox(height: 32),
-                        _BodyContent(),
+                        SizedBox(height: 24.h),
+                        const _Header(),
+                        SizedBox(height: 32.h),
+                        const _BodyContent(),
                       ],
                     ),
                   ),
@@ -82,7 +83,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage>
                 Padding(
                   padding: EdgeInsets.symmetric(
                     horizontal: AppDimensions.screenPaddingH,
-                    vertical: 24,
+                    vertical: 24.h,
                   ),
                   child: const _LoginAccountRow(),
                 ),
@@ -107,16 +108,16 @@ class _Header extends StatelessWidget {
           'Get Started',
           style: AppTextStyles.overline.copyWith(color: AppColors.accent),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8.h),
         Text(
           'Create Account',
           style: AppTextStyles.displayMd,
         ),
-        const SizedBox(height: 6),
-        const Text(
+        SizedBox(height: 6.h),
+        Text(
           'Track your TNB energy usage & bills',
           style: TextStyle(
-            fontSize: 14,
+            fontSize: 14.sp,
             color: AppColors.text2,
           ),
         ),
@@ -184,9 +185,9 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
           labelText: 'Full Name',
           hintText: 'Enter your full name',
           border: AppFormFieldBorder.roundedOutlined,
-          prefixIcon: const Icon(
+          prefixIcon: Icon(
             Icons.person_outline,
-            size: 20,
+            size: 20.r,
             color: AppColors.text3,
           ),
           errorText: state.fullNameError,
@@ -197,31 +198,31 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
             FilteringTextInputFormatter.allow(RegExp(r"[a-zA-Z\s'\-\.]")),
           ],
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: 16.h),
         AppTextFloatingLabelField(
           controller: _emailController,
           keyboardType: TextInputType.emailAddress,
           labelText: 'Email Address',
           hintText: 'Enter your email',
           border: AppFormFieldBorder.roundedOutlined,
-          prefixIcon: const Icon(
+          prefixIcon: Icon(
             Icons.email_outlined,
-            size: 20,
+            size: 20.r,
             color: AppColors.text3,
           ),
           errorText: state.emailError,
           clearable: true,
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: 16.h),
         AppTextFloatingLabelField(
           controller: _tnbAccountController,
           keyboardType: TextInputType.number,
           labelText: 'TNB Account No.',
           hintText: 'e.g. 123456789012',
           border: AppFormFieldBorder.roundedOutlined,
-          prefixIcon: const Icon(
+          prefixIcon: Icon(
             Icons.receipt_long_outlined,
-            size: 20,
+            size: 20.r,
             color: AppColors.text3,
           ),
           errorText: state.tnbAccountError,
@@ -232,15 +233,15 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
             LengthLimitingTextInputFormatter(12),
           ],
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: 16.h),
         AppTextFloatingLabelField(
           controller: _passwordController,
           labelText: 'Password',
           hintText: 'Create a strong password',
           border: AppFormFieldBorder.roundedOutlined,
-          prefixIcon: const Icon(
+          prefixIcon: Icon(
             Icons.lock_outlined,
-            size: 20,
+            size: 20.r,
             color: AppColors.text3,
           ),
           errorText: state.passwordError,
@@ -253,12 +254,12 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
                   ? Icons.visibility_off_outlined
                   : Icons.visibility_outlined,
               color: AppColors.text3,
-              size: 20,
+              size: 20.r,
             ),
           ),
         ),
         if (_passwordController.text.isNotEmpty) ...[
-          const SizedBox(height: 8),
+          SizedBox(height: 8.h),
           _PasswordStrengthBar(
             strength: state.passwordStrength,
             label: state.strengthLabel,
@@ -266,15 +267,15 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
             password: _passwordController.text,
           ),
         ],
-        const SizedBox(height: 16),
+        SizedBox(height: 16.h),
         AppTextFloatingLabelField(
           controller: _confirmedPasswordController,
           labelText: 'Confirm Password',
           hintText: 'Confirm your password',
           border: AppFormFieldBorder.roundedOutlined,
-          prefixIcon: const Icon(
+          prefixIcon: Icon(
             Icons.lock_outline,
-            size: 20,
+            size: 20.r,
             color: AppColors.text3,
           ),
           errorText: state.confirmedPasswordError,
@@ -288,14 +289,14 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
                   ? Icons.visibility_off_outlined
                   : Icons.visibility_outlined,
               color: AppColors.text3,
-              size: 20,
+              size: 20.r,
             ),
           ),
         ),
-        const SizedBox(height: 24),
+        SizedBox(height: 24.h),
         if (state.authError != null) ...[
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(12.r),
             decoration: BoxDecoration(
               color: AppColors.danger.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
@@ -305,12 +306,12 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
             ),
             child: Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.error_outline,
                   color: AppColors.danger,
-                  size: 16,
+                  size: 16.r,
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8.w),
                 Expanded(
                   child: Text(
                     state.authError!,
@@ -321,24 +322,24 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16.h),
         ],
         GradientButton(
           label: 'Create Account',
           isLoading: state.isLoading,
           onTap: _handleRegister,
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12.h),
         Center(
           child: RichText(
             textAlign: TextAlign.center,
-            text: const TextSpan(
+            text: TextSpan(
               style: TextStyle(
-                fontSize: 11,
+                fontSize: 11.sp,
                 color: AppColors.text3,
                 height: 1.6,
               ),
-              children: [
+              children: const [
                 TextSpan(text: 'By creating an account you agree to our '),
                 TextSpan(
                   text: 'Terms of Service',
@@ -353,7 +354,7 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
             ),
           ),
         ),
-        const SizedBox(height: 32),
+        SizedBox(height: 32.h),
       ],
     );
   }
@@ -404,7 +405,7 @@ class _PasswordStrengthBar extends StatelessWidget {
             return Expanded(
               child: Container(
                 margin: EdgeInsets.only(right: i < 3 ? 4 : 0),
-                height: 4,
+                height: 4.h,
                 decoration: BoxDecoration(
                   color: i < strength ? color : AppColors.surface3,
                   borderRadius: BorderRadius.circular(3),
@@ -413,16 +414,16 @@ class _PasswordStrengthBar extends StatelessWidget {
             );
           }),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8.h),
         Text(
           label,
           style: AppTextStyles.bodyMd.copyWith(
-            fontSize: 13,
+            fontSize: 13.sp,
             fontWeight: FontWeight.w600,
             color: color,
           ),
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12.h),
         _RequirementItem(
           text: 'At least 8 characters',
           isMet: password.length >= 8,
@@ -456,7 +457,7 @@ class _RequirementItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.only(bottom: 8.h),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -465,12 +466,12 @@ class _RequirementItem extends StatelessWidget {
             size: 18,
             color: isMet ? AppColors.accent : AppColors.text3,
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: 10.w),
           Expanded(
             child: Text(
               text,
               style: AppTextStyles.bodySm.copyWith(
-                fontSize: 13,
+                fontSize: 13.sp,
                 color: isMet ? AppColors.text : AppColors.text2,
                 decoration: isMet ? TextDecoration.lineThrough : null,
               ),

@@ -1,5 +1,6 @@
 import 'package:energy_tracker/theme/theme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class SavingTipsCard extends StatelessWidget {
   const SavingTipsCard({super.key});
@@ -27,15 +28,15 @@ class SavingTipsCard extends StatelessWidget {
             '💡 Quick Saving Tips',
             style: AppTextStyles.bodyMd.copyWith(fontWeight: FontWeight.w700),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10.h),
           ...(_tips.take(2).map(
                 (tip) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
+                  padding: EdgeInsets.only(bottom: 8.h),
                   child: Row(
                     children: [
                       Container(
-                        width: 28,
-                        height: 28,
+                        width: 28.r,
+                        height: 28.r,
                         decoration: BoxDecoration(
                           color: AppColors.accent.withValues(alpha: 0.10),
                           borderRadius: BorderRadius.circular(8),
@@ -43,11 +44,11 @@ class SavingTipsCard extends StatelessWidget {
                         child: Center(
                           child: Text(
                             tip.$1,
-                            style: const TextStyle(fontSize: 13),
+                            style: TextStyle(fontSize: 13.sp),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 10),
+                      SizedBox(width: 10.w),
                       Expanded(
                         child: Text(tip.$2, style: AppTextStyles.bodySm),
                       ),

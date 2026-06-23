@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:energy_tracker/services/app_info.dart';
 import 'package:energy_tracker/ui/features/ft_settings/pg_settings/notifier/settings_state.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +8,11 @@ final settingsProvider =
     AsyncNotifierProvider<SettingsNotifier, SettingsPageState>(
   SettingsNotifier.new,
 );
+
+final appVersionProvider = FutureProvider<String>((ref) async {
+  final appInfo = await getAppInfo();
+  return appInfo.fullVersion;
+});
 
 class SettingsNotifier extends AsyncNotifier<SettingsPageState> {
   FirebaseAuth get _auth => FirebaseAuth.instance;

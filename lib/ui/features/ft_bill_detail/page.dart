@@ -1,14 +1,9 @@
 import 'dart:async';
 
-import 'package:energy_tracker/constants/tariff_rates.dart';
-import 'package:energy_tracker/models/bill_record.dart';
-import 'package:energy_tracker/models/reading_record.dart';
-import 'package:energy_tracker/theme/theme.dart';
-import 'package:energy_tracker/ui/components/dialog.dart';
+import 'package:energy_tracker/app.dart';
 import 'package:energy_tracker/ui/features/ft_bill_detail/notifier/notifier.dart';
 import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_usage/notifier/usage_notifier.dart';
-import 'package:energy_tracker/ui/routes/routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -164,7 +159,7 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
           isPaid: state.isPaid,
           isUpdating: state.isUpdatingPaid,
           onToggle: () async {
-            await ref.read(billDetailProvider.notifier).togglePaid(widget.bill);
+            await ref.read(billDetailProvider.notifier).togglePaid(state.bill!);
             ref.invalidate(usageProvider);
           },
         ),
@@ -176,7 +171,7 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
         SizedBox(height: 16.h),
         _ReadingsSection(
           readings: state.readings,
-          bill: widget.bill,
+          bill: state.bill!,
           onEditReading: widget.onEditReading,
         ),
         SizedBox(height: 24.h),

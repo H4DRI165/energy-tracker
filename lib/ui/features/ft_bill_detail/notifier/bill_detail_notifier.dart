@@ -4,9 +4,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/constants/tariff_rates.dart';
 import 'package:energy_tracker/models/bill_record.dart';
 import 'package:energy_tracker/models/reading_record.dart';
+import 'package:energy_tracker/ui/components/logger.dart';
 import 'package:energy_tracker/ui/features/ft_bill_detail/notifier/bill_detail_state.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 final NotifierProvider<BillDetailNotifier, BillDetailPageState>
     billDetailProvider =
@@ -24,12 +26,26 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
   }
 
   Future<void> init(BillRecord bill) async {
+    BillRecord? freshBill;
+    try {
+      freshBill = await _loadBill(bill.id);
+    } on Exception catch (e, st) {
+      AppLogger.error('Failed to load fresh bill ${bill.id}', e, st);
+      freshBill = null;
+    }
+
+    final resolvedBill = freshBill ?? bill;
+
     state = state.copyWith(
-      bill: bill,
-      isPaid: bill.isPaid,
+      bill: resolvedBill,
+      isPaid: resolvedBill.isPaid,
     );
 
-    await _loadReadings(bill);
+    try {
+      await _loadReadings(resolvedBill);
+    } on Exception catch (e, st) {
+      AppLogger.error('Failed to load readings for ${resolvedBill.id}', e, st);
+    }
   }
 
   Future<void> _loadReadings(BillRecord bill) async {
@@ -76,6 +92,37 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
         isLoading: false,
         errorMessage: 'Failed to load readings: ${e.message}',
       );
+    }
+  }
+
+  Future<BillRecord?> _loadBill(String billId) async {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) return null;
+
+    try {
+      final doc = await _firestore
+          .collection('users')
+          .doc(uid)
+          .collection('bills')
+          .doc(billId)
+          .get();
+
+      if (!doc.exists) return null;
+
+      final data = doc.data()!;
+
+      return BillRecord(
+        id: doc.id,
+        monthYear:
+            DateFormat('MMM yyyy').format((data['date'] as Timestamp).toDate()),
+        kwh: (data['kwh'] as num).toDouble(),
+        amount: (data['amount'] as num).toDouble(),
+        isPaid: data['isPaid'] as bool? ?? false,
+        date: (data['date'] as Timestamp).toDate(),
+      );
+    } on FirebaseException catch (e, st) {
+      AppLogger.error('Firestore error loading bill $billId', e, st);
+      return null;
     }
   }
 

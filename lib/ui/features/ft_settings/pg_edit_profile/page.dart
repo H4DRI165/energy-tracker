@@ -1,7 +1,6 @@
 import 'dart:async';
-import 'package:energy_tracker/theme/theme.dart';
-import 'package:energy_tracker/ui/components/errors.dart';
-import 'package:energy_tracker/ui/components/text.dart';
+
+import 'package:energy_tracker/app.dart';
 import 'package:energy_tracker/ui/features/ft_settings/pg_edit_profile/notifier/notifier.dart';
 import 'package:energy_tracker/ui/features/ft_settings/pg_settings/notifier/settings_notifier.dart';
 import 'package:flutter/material.dart';

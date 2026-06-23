@@ -1,10 +1,13 @@
-import 'package:energy_tracker/theme/theme.dart';
-import 'package:energy_tracker/ui/components/chart.dart';
+import 'package:energy_tracker/app.dart';
 import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_state.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class WeeklyChart extends StatelessWidget {
-  const WeeklyChart({required this.weeklyUsage, super.key});
+  const WeeklyChart({
+    required this.weeklyUsage,
+    super.key,
+  });
 
   final List<DailyUsage> weeklyUsage;
 
@@ -38,7 +41,7 @@ class WeeklyChart extends StatelessWidget {
               Text('kWh/day', style: AppTextStyles.caption),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12.h),
           SizedBox(
             height: _chartHeight,
             child: weeklyUsage.isEmpty
@@ -57,7 +60,7 @@ class WeeklyChart extends StatelessWidget {
 
                       return Expanded(
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 3),
+                          padding: EdgeInsets.symmetric(horizontal: 3.w),
                           child: ChartBar(
                             heightFraction: heightFraction,
                             isHighlighted: day.isToday,
@@ -70,7 +73,7 @@ class WeeklyChart extends StatelessWidget {
                     }).toList(),
                   ),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: 6.h),
           if (weeklyUsage.isNotEmpty)
             Row(
               children: weeklyUsage.map((day) {
@@ -79,7 +82,7 @@ class WeeklyChart extends StatelessWidget {
                     day.label,
                     textAlign: TextAlign.center,
                     style: AppTextStyles.caption.copyWith(
-                      fontSize: 10,
+                      fontSize: 10.sp,
                       color: day.isToday ? AppColors.accent : AppColors.text3,
                     ),
                   ),

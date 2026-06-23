@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/constants/tariff_rates.dart';
 import 'package:energy_tracker/models/bill_record.dart';
+import 'package:energy_tracker/services/notifiers/user_profile_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_usage/notifier/usage_state.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,6 +18,7 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
 
   @override
   Future<UsageState> build() async {
+    ref.watch(tariffTypeProvider);
     return _fetchUsageData();
   }
 
@@ -62,7 +64,8 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
         return total + ((doc.data()['kwh'] as num?)?.toDouble() ?? 0);
       });
 
-      final currentBill = TariffRates.calculateDomestic(currentKwh);
+      final tariffType = ref.read(tariffTypeProvider);
+      final currentBill = TariffRates.calculate(currentKwh, tariffType);
       final currentMonthLabel = DateFormat('MMMM yyyy').format(now);
 
       return UsageState(
@@ -126,37 +129,16 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
   List<BillRecord> _buildBillHistory(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
   ) {
-    final byMonth = <String, ({double kwh, DateTime date, bool isPaid})>{};
-
-    for (final doc in docs) {
+    return docs.map((doc) {
       final data = doc.data();
       final date = (data['date'] as Timestamp).toDate();
-      final key = '${date.year}-${date.month.toString().padLeft(2, '0')}';
-      final kwh = (data['kwh'] as num?)?.toDouble() ?? 0;
-      final docIsPaid = data['isPaid'] as bool? ?? false;
-
-      if (byMonth.containsKey(key)) {
-        byMonth[key] = (
-          kwh: byMonth[key]!.kwh + kwh,
-          date: byMonth[key]!.date,
-          isPaid: byMonth[key]!.isPaid && docIsPaid,
-        );
-      } else {
-        byMonth[key] = (kwh: kwh, date: date, isPaid: docIsPaid);
-      }
-    }
-
-    return byMonth.entries.map((e) {
-      final totalKwh = e.value.kwh;
-      final amount = TariffRates.calculateDomestic(totalKwh);
-
       return BillRecord(
-        id: e.key,
-        monthYear: DateFormat('MMM yyyy').format(e.value.date),
-        kwh: totalKwh,
-        amount: amount,
-        isPaid: e.value.isPaid,
-        date: e.value.date,
+        id: doc.id,
+        monthYear: DateFormat('MMM yyyy').format(date),
+        kwh: (data['kwh'] as num?)?.toDouble() ?? 0,
+        amount: (data['amount'] as num?)?.toDouble() ?? 0,
+        isPaid: data['isPaid'] as bool? ?? false,
+        date: date,
       );
     }).toList()
       ..sort((a, b) => b.date.compareTo(a.date));

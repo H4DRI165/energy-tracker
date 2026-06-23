@@ -1,7 +1,4 @@
-import 'package:energy_tracker/models/appliance.dart';
-import 'package:energy_tracker/theme/theme.dart';
-import 'package:energy_tracker/ui/components/buttons.dart';
-import 'package:energy_tracker/ui/components/text.dart';
+import 'package:energy_tracker/app.dart';
 import 'package:energy_tracker/ui/features/ft_devices/pg_add_appliance/notifier/notifier.dart';
 import 'package:energy_tracker/ui/features/ft_devices/pg_devices/notifier/devices_notifier.dart';
 import 'package:flutter/material.dart';

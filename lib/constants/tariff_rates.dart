@@ -1,5 +1,24 @@
+import 'package:energy_tracker/constants/tariff_types.dart';
 import 'package:energy_tracker/theme/app_colors.dart';
 import 'package:flutter/material.dart';
+
+class TierBreakdown {
+  const TierBreakdown({
+    required this.label,
+    required this.kwh,
+    required this.rate,
+    required this.amount,
+    required this.color,
+    required this.fillPercent,
+  });
+
+  final String label;
+  final double kwh;
+  final double rate;
+  final double amount;
+  final Color color;
+  final double fillPercent;
+}
 
 class TariffRates {
   // Domestic (Tariff A) — tiered
@@ -14,6 +33,20 @@ class TariffRates {
   static const double commercialTier1 = 0.435; // 1–200 kWh
   static const double commercialTier2 = 0.509; // 201+ kWh
   static const double commercialMinCharge = 7.20;
+
+  static double calculate(double kwh, TariffType tariffType) {
+    return switch (tariffType) {
+      TariffType.commercial => calculateCommercial(kwh),
+      TariffType.domestic => calculateDomestic(kwh),
+    };
+  }
+
+  static List<TierBreakdown> breakdownFor(double kwh, TariffType tariffType) {
+    return switch (tariffType) {
+      TariffType.commercial => _commercialBreakdown(kwh),
+      TariffType.domestic => _domesticBreakdown(kwh),
+    };
+  }
 
   static double calculateDomestic(double kwh) {
     if (kwh <= 0) return 0;
@@ -32,13 +65,6 @@ class TariffRates {
     bill += kwh.clamp(0.0, 200.0) * commercialTier1;
     if (kwh > 200) bill += (kwh - 200) * commercialTier2;
     return bill < commercialMinCharge ? commercialMinCharge : bill;
-  }
-
-  static double calculate(double kwh, String tariffType) {
-    if (tariffType == 'commercial') {
-      return calculateCommercial(kwh);
-    }
-    return calculateDomestic(kwh);
   }
 
   static int getTier(double kwh) {
@@ -114,4 +140,70 @@ class TariffRates {
 
   static String getTierPriceKwhLabel(int tier) =>
       'Tier $tier — ${getTierPrice(tier)}/kWh';
+
+  static List<TierBreakdown> _domesticBreakdown(double kwh) {
+    if (kwh <= 0) return [];
+
+    final breakdowns = <TierBreakdown>[];
+
+    void addTier(int tier, double tierKwh, double rate, double bandWidth) {
+      breakdowns.add(
+        TierBreakdown(
+          label: getTierRangePriceLabel(tier),
+          kwh: tierKwh,
+          rate: rate,
+          amount: tierKwh * rate,
+          color: getTierColor(tier),
+          fillPercent: (tierKwh / bandWidth).clamp(0.0, 1.0),
+        ),
+      );
+    }
+
+    addTier(1, kwh.clamp(0.0, 200.0), domesticTier1, 200);
+    if (kwh > 200) {
+      addTier(2, (kwh - 200).clamp(0.0, 100.0), domesticTier2, 100);
+    }
+    if (kwh > 300) {
+      addTier(3, (kwh - 300).clamp(0.0, 300.0), domesticTier3, 300);
+    }
+    if (kwh > 600) {
+      addTier(4, (kwh - 600).clamp(0.0, 300.0), domesticTier4, 300);
+    }
+    if (kwh > 900) addTier(5, kwh - 900, domesticTier5, 400);
+
+    return breakdowns;
+  }
+
+  static List<TierBreakdown> _commercialBreakdown(double kwh) {
+    if (kwh <= 0) return [];
+    final tier1Price = '${(commercialTier1 * 100).toStringAsFixed(1)} sen';
+    final tier2Price = '${(commercialTier2 * 100).toStringAsFixed(1)} sen';
+
+    final breakdowns = <TierBreakdown>[
+      TierBreakdown(
+        label: 'Tier 1 · 1–200 kWh · $tier1Price/kWh',
+        kwh: kwh.clamp(0.0, 200.0),
+        rate: commercialTier1,
+        amount: kwh.clamp(0.0, 200.0) * commercialTier1,
+        color: getTierColor(1),
+        fillPercent: (kwh.clamp(0.0, 200.0) / 200).clamp(0.0, 1.0),
+      ),
+    ];
+
+    if (kwh > 200) {
+      final t2 = kwh - 200;
+      breakdowns.add(
+        TierBreakdown(
+          label: 'Tier 2 · 201+ kWh · $tier2Price/kWh',
+          kwh: t2,
+          rate: commercialTier2,
+          amount: t2 * commercialTier2,
+          color: getTierColor(2),
+          fillPercent: (t2 / 300).clamp(0.0, 1.0),
+        ),
+      );
+    }
+
+    return breakdowns;
+  }
 }
