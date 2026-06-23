@@ -1,4 +1,5 @@
 import 'package:energy_tracker/app.dart';
+import 'package:energy_tracker/services/notifiers/user_profile_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_add_meter_reading/notifier/notifier.dart';
 import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_usage/notifier/usage_notifier.dart';
@@ -181,7 +182,10 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
             ),
             SizedBox(height: 16.h),
             if (widget.state.hasUsage) ...[
-              _AutoCalcCard(state: widget.state),
+              _AutoCalcCard(
+                state: widget.state,
+                tariffType: ref.watch(tariffTypeProvider),
+              ),
               SizedBox(height: 16.h),
             ],
             Text('Notes (optional)', style: AppTextStyles.label),
@@ -508,8 +512,13 @@ class _MeterReadingField extends StatelessWidget {
 }
 
 class _AutoCalcCard extends StatelessWidget {
-  const _AutoCalcCard({required this.state});
+  const _AutoCalcCard({
+    required this.state,
+    required this.tariffType,
+  });
+
   final AddReadingPageState state;
+  final TariffType tariffType;
 
   @override
   Widget build(BuildContext context) {
@@ -539,7 +548,7 @@ class _AutoCalcCard extends StatelessWidget {
           SizedBox(height: 8.h),
           _CalcRow(
             label: 'Estimated bill',
-            value: 'RM ${state.estimatedBill.toStringAsFixed(2)}',
+            value: 'RM ${state.estimatedBill(tariffType).toStringAsFixed(2)}',
             valueColor: AppColors.accent,
           ),
           SizedBox(height: 10.h),

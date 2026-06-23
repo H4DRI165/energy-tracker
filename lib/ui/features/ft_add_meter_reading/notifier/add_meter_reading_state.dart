@@ -1,4 +1,5 @@
 import 'package:energy_tracker/constants/tariff_rates.dart';
+import 'package:energy_tracker/constants/tariff_types.dart';
 
 class AddReadingPageState {
   const AddReadingPageState({
@@ -28,14 +29,15 @@ class AddReadingPageState {
   final String? errorMessage;
 
   double get usageKwh {
-    if (lastReading == 0 && lastReadingDate == null) {
-      return currentReading > 0 ? currentReading : 0;
+    if (lastReadingDate == null) {
+      return 0; // first-ever reading —  no usage to report yet
     }
     final usage = currentReading - lastReading;
     return usage > 0 ? usage : 0;
   }
 
-  double get estimatedBill => TariffRates.calculateDomestic(usageKwh);
+  double estimatedBill(TariffType tariffType) =>
+      TariffRates.calculate(usageKwh, tariffType);
 
   int get currentTier => TariffRates.getTier(usageKwh);
 
@@ -45,6 +47,8 @@ class AddReadingPageState {
 
   bool get canSave =>
       !isLoadingLastReading && currentReading > 0 && readingError == null;
+
+  bool get isBaselineReading => lastReadingDate == null;
 
   String get formattedLastReadingDate {
     if (lastReadingDate == null) return 'No previous reading';

@@ -18,7 +18,6 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
   FirebaseAuth get _auth => FirebaseAuth.instance;
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;
   int _loadRequestId = 0;
-  String? _editingReadingId;
   DateTime? _editingDate;
 
   @override
@@ -29,7 +28,6 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
   }
 
   void initForEdit(ReadingRecord reading) {
-    _editingReadingId = reading.id;
     _editingDate = reading.date;
 
     state = state.copyWith(
@@ -54,94 +52,46 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
     }
 
     try {
-      // Single query — fetch all readings for selected month
-      final startOfMonth = DateTime(selectedDate.year, selectedDate.month);
-      final endOfMonth = DateTime(selectedDate.year, selectedDate.month + 1);
+      final readingsCol =
+          _firestore.collection('users').doc(uid).collection('readings');
 
-      final snap = await _firestore
-          .collection('users')
-          .doc(uid)
-          .collection('readings')
-          .where(
-            'date',
-            isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth),
-          )
-          .where(
-            'date',
-            isLessThan: Timestamp.fromDate(endOfMonth),
-          )
-          .orderBy('date', descending: false)
-          .get();
-
-      // All readings this month, sorted oldest → newest
-      // Exclude the entry being edited so it doesn't affect bounds
-      final readings =
-          snap.docs.where((doc) => doc.id != _editingReadingId).map((doc) {
-        final data = doc.data();
-        return (
-          reading: (data['reading'] as num?)?.toDouble() ?? 0,
-          date: (data['date'] as Timestamp).toDate(),
-        );
-      }).toList();
-
-      // Cutoff: for today use now, for past use end of selected day
-      final now = DateTime.now();
-      final isToday = selectedDate.year == now.year &&
-          selectedDate.month == now.month &&
-          selectedDate.day == now.day;
-
-      final cutoff = isToday
-          ? now
-          : DateTime(
-              selectedDate.year,
-              selectedDate.month,
-              selectedDate.day,
-              23,
-              59,
-              59,
-            );
-
-      final startOfNextDay = DateTime(
-        selectedDate.year,
-        selectedDate.month,
-        selectedDate.day + 1,
-      );
-
-      ({double reading, DateTime date})? before;
-      ({double reading, DateTime date})? next;
+      Query<Map<String, dynamic>> beforeQuery;
+      Query<Map<String, dynamic>> nextQuery;
 
       if (_editingDate != null) {
-        final pivot = selectedDate;
-        before = readings.where((r) => r.date.isBefore(pivot)).lastOrNull;
-
-        next = readings.where((r) => r.date.isAfter(pivot)).firstOrNull;
+        // Editing: neighbours are simply the readings immediately
+        // chronologically before/after this entry's original date.
+        beforeQuery = readingsCol.where('date',
+            isLessThan: Timestamp.fromDate(_editingDate!));
+        nextQuery = readingsCol.where('date',
+            isGreaterThan: Timestamp.fromDate(_editingDate!));
       } else {
-        // Previous: latest reading before or on selected day
-        before = readings.where((r) => r.date.isBefore(cutoff)).lastOrNull;
+        final now = DateTime.now();
+        final isToday = selectedDate.year == now.year &&
+            selectedDate.month == now.month &&
+            selectedDate.day == now.day;
+        final cutoff = isToday
+            ? now
+            : DateTime(selectedDate.year, selectedDate.month, selectedDate.day,
+                23, 59, 59);
+        final startOfNextDay = DateTime(
+            selectedDate.year, selectedDate.month, selectedDate.day + 1);
 
-        // Next: earliest reading after selected day
-        // Group by day and get the last reading of the next day
-        final afterReadings =
-            readings.where((r) => !r.date.isBefore(startOfNextDay)).toList();
-
-        if (afterReadings.isNotEmpty) {
-          // Find the first day after selected date
-          final nextDay = afterReadings.first.date;
-          final nextDayStart =
-              DateTime(nextDay.year, nextDay.month, nextDay.day);
-          final nextDayEnd =
-              DateTime(nextDay.year, nextDay.month, nextDay.day + 1);
-
-          // Last entry of that day = highest meter reading of that day
-          next = afterReadings
-              .where(
-                (r) =>
-                    !r.date.isBefore(nextDayStart) &&
-                    r.date.isBefore(nextDayEnd),
-              )
-              .lastOrNull;
-        }
+        beforeQuery =
+            readingsCol.where('date', isLessThan: Timestamp.fromDate(cutoff));
+        nextQuery = readingsCol.where(
+          'date',
+          isGreaterThanOrEqualTo: Timestamp.fromDate(startOfNextDay),
+        );
       }
+
+      final beforeSnap =
+          await beforeQuery.orderBy('date', descending: true).limit(1).get();
+      final nextSnap = await nextQuery.orderBy('date').limit(1).get();
+
+      final before =
+          beforeSnap.docs.isEmpty ? null : _parse(beforeSnap.docs.first);
+      final next = nextSnap.docs.isEmpty ? null : _parse(nextSnap.docs.first);
 
       if (requestId != _loadRequestId || state.selectedDate != selectedDate) {
         return;
@@ -166,6 +116,16 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
         state = state.copyWith(isLoadingLastReading: false);
       }
     }
+  }
+
+  ({double reading, DateTime date}) _parse(
+    QueryDocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
+    final data = doc.data();
+    return (
+      reading: (data['reading'] as num?)?.toDouble() ?? 0,
+      date: (data['date'] as Timestamp).toDate(),
+    );
   }
 
   String? _validateReading({
