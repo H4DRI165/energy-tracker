@@ -18,6 +18,7 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
 
   @override
   Future<UsageState> build() async {
+    ref.watch(tariffTypeProvider);
     return _fetchUsageData();
   }
 
@@ -63,7 +64,7 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
         return total + ((doc.data()['kwh'] as num?)?.toDouble() ?? 0);
       });
 
-      final tariffType = ref.watch(tariffTypeProvider);
+      final tariffType = ref.read(tariffTypeProvider);
       final currentBill = TariffRates.calculate(currentKwh, tariffType);
       final currentMonthLabel = DateFormat('MMMM yyyy').format(now);
 

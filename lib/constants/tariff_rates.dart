@@ -176,10 +176,12 @@ class TariffRates {
 
   static List<TierBreakdown> _commercialBreakdown(double kwh) {
     if (kwh <= 0) return [];
+    final tier1Price = '${(commercialTier1 * 100).toStringAsFixed(1)} sen';
+    final tier2Price = '${(commercialTier2 * 100).toStringAsFixed(1)} sen';
 
     final breakdowns = <TierBreakdown>[
       TierBreakdown(
-        label: 'Tier 1 · 1–200 kWh · ${getTierPrice(1)}/kWh',
+        label: 'Tier 1 · 1–200 kWh · $tier1Price/kWh',
         kwh: kwh.clamp(0.0, 200.0),
         rate: commercialTier1,
         amount: kwh.clamp(0.0, 200.0) * commercialTier1,
@@ -192,7 +194,7 @@ class TariffRates {
       final t2 = kwh - 200;
       breakdowns.add(
         TierBreakdown(
-          label: 'Tier 2 · 201+ kWh · ${getTierPrice(2)}/kWh',
+          label: 'Tier 2 · 201+ kWh · $tier2Price/kWh',
           kwh: t2,
           rate: commercialTier2,
           amount: t2 * commercialTier2,

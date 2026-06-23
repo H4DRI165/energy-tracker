@@ -111,10 +111,10 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
       ({double reading, DateTime date})? next;
 
       if (_editingDate != null) {
-        before =
-            readings.where((r) => r.date.isBefore(_editingDate!)).lastOrNull;
+        final pivot = selectedDate;
+        before = readings.where((r) => r.date.isBefore(pivot)).lastOrNull;
 
-        next = readings.where((r) => r.date.isAfter(_editingDate!)).firstOrNull;
+        next = readings.where((r) => r.date.isAfter(pivot)).firstOrNull;
       } else {
         // Previous: latest reading before or on selected day
         before = readings.where((r) => r.date.isBefore(cutoff)).lastOrNull;

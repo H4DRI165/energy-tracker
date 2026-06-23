@@ -85,24 +85,27 @@ class _NavItem extends StatelessWidget {
         if (!isActive) context.go(route);
       },
       behavior: HitTestBehavior.opaque,
-      child: SizedBox(
-        width: 56.w,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 22.r,
-              color: isActive ? AppColors.accent : AppColors.text3,
-            ),
-            SizedBox(height: 3.h),
-            Text(
-              label,
-              style: AppTextStyles.navLabel.copyWith(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+        child: SizedBox(
+          width: 56.w,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 22.r,
                 color: isActive ? AppColors.accent : AppColors.text3,
               ),
-            ),
-          ],
+              SizedBox(height: 3.h),
+              Text(
+                label,
+                style: AppTextStyles.navLabel.copyWith(
+                  color: isActive ? AppColors.accent : AppColors.text3,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

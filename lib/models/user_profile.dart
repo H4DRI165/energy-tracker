@@ -30,4 +30,25 @@ class UserProfile {
   final bool monthlySummaryEnabled;
   final bool isGuest;
   final bool onboardingCompleted;
+
+  UserProfile copyWith({
+    String? fullName,
+    TariffType? tariffType,
+    double? monthlyBudget,
+    String? tnbAccountNo,
+    bool? monthlySummaryEnabled,
+    bool? isGuest,
+    bool? onboardingCompleted,
+  }) {
+    return UserProfile(
+      fullName: fullName ?? this.fullName,
+      tariffType: tariffType ?? this.tariffType,
+      monthlyBudget: monthlyBudget ?? this.monthlyBudget,
+      tnbAccountNo: tnbAccountNo ?? this.tnbAccountNo,
+      monthlySummaryEnabled:
+          monthlySummaryEnabled ?? this.monthlySummaryEnabled,
+      isGuest: isGuest ?? this.isGuest,
+      onboardingCompleted: onboardingCompleted ?? this.onboardingCompleted,
+    );
+  }
 }

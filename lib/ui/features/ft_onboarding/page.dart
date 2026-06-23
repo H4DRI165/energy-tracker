@@ -325,7 +325,7 @@ class _StepBudget extends StatelessWidget {
           SizedBox(height: 24.h),
           Container(
             width: double.infinity,
-            padding: EdgeInsets.symmetric(vertical: 20.w, horizontal: 16.h),
+            padding: EdgeInsets.symmetric(vertical: 20.h, horizontal: 16.w),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
@@ -567,7 +567,7 @@ class _SummaryItem extends StatelessWidget {
               ),
             ),
           ),
-          SizedBox(width: 12.h),
+          SizedBox(width: 12.w),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

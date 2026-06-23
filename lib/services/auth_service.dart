@@ -73,9 +73,14 @@ class AuthService {
     final uid = user.uid;
     _userDocSubscription =
         _firestore.collection('users').doc(uid).snapshots().listen(
-              _applyUserDoc,
-              onError: (_) => userNotifier.setError(),
-            );
+      (doc) {
+        if (_auth.currentUser?.uid != uid) return;
+        _applyUserDoc(doc);
+      },
+      onError: (_) {
+        if (_auth.currentUser?.uid == uid) userNotifier.setError();
+      },
+    );
   }
 
   Future<void> _syncOnboardingListener(User? user) async {

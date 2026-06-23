@@ -24,12 +24,17 @@ class AppUserNotifier extends ChangeNotifier {
   }
 
   void setComplete() {
+    if (_profile != null) {
+      _profile = _profile!.copyWith(onboardingCompleted: true);
+    }
     _status = OnboardingStatus.complete;
     notifyListeners();
   }
 
   void setIncomplete() {
-    _profile = null;
+    if (_profile != null) {
+      _profile = _profile!.copyWith(onboardingCompleted: false);
+    }
     _status = OnboardingStatus.incomplete;
     notifyListeners();
   }
