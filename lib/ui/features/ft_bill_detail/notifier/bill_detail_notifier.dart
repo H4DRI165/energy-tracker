@@ -184,33 +184,43 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
       (total, r) => total + r.kwh,
     );
 
+    final remainingTariffType = updatedReadings.isEmpty
+        ? bill.tariffType
+        : (updatedReadings..sort((a, b) => b.date.compareTo(a.date)))
+            .first
+            .tariffType;
+
     state = state.copyWith(
       readings: updatedReadings,
       bill: state.bill!.copyWith(
         kwh: totalKwh,
-        amount: TariffRates.calculate(totalKwh, state.bill!.tariffType),
+        amount: TariffRates.calculate(totalKwh, remainingTariffType),
+        tariffType: remainingTariffType,
       ),
     );
 
     try {
-      final batch = _firestore.batch()
-        ..delete(
-          _firestore
-              .collection('users')
-              .doc(uid)
-              .collection('readings')
-              .doc(reading.id),
-        );
-
-      final billSnap = await _firestore
+      final readingRef = _firestore
           .collection('users')
           .doc(uid)
-          .collection('bills')
-          .where('date', isEqualTo: Timestamp.fromDate(reading.date))
-          .get();
+          .collection('readings')
+          .doc(reading.id);
 
-      for (final doc in billSnap.docs) {
-        batch.delete(doc.reference);
+      final billRef =
+          _firestore.collection('users').doc(uid).collection('bills').doc(
+                bill.id,
+              );
+
+      final batch = _firestore.batch()..delete(readingRef);
+
+      if (updatedReadings.isEmpty) {
+        batch.delete(billRef);
+      } else {
+        batch.update(billRef, {
+          'kwh': totalKwh,
+          'amount': TariffRates.calculate(totalKwh, remainingTariffType),
+          'tariffType': remainingTariffType.value,
+        });
       }
 
       await batch.commit();

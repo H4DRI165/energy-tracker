@@ -153,34 +153,16 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
     if (reading <= 0) return null;
 
     if (lastReading > 0 && reading < lastReading) {
-      final label = lastDate != null ? ' (${_formatDate(lastDate)})' : '';
+      final label = lastDate != null ? ' (${lastDate.shortDayLabel})' : '';
       return 'Must be above ${lastReading.toStringAsFixed(0)} kWh$label';
     }
 
     if (nextReading != null && reading > nextReading) {
-      final label = nextDate != null ? ' (${_formatDate(nextDate)})' : '';
+      final label = nextDate != null ? ' (${nextDate.shortDayLabel})' : '';
       return 'Must be below ${nextReading.toStringAsFixed(0)} kWh$label';
     }
 
     return null;
-  }
-
-  String _formatDate(DateTime date) {
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return '${months[date.month - 1]} ${date.day}';
   }
 
   void setReading(String value) {
@@ -230,8 +212,13 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
 
     try {
       final date = state.selectedDate ?? DateTime.now();
-
       final tariffType = ref.read(tariffTypeProvider);
+
+      final conflict = await _checkTariffConflict(uid, date, tariffType);
+      if (conflict != null) {
+        state = state.copyWith(isSaving: false, errorMessage: conflict);
+        return false;
+      }
 
       await _firestore.collection('users').doc(uid).collection('readings').add({
         'reading': state.currentReading,
@@ -243,7 +230,7 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      await _recalculateMonthBill(uid, date);
+      await _recalculateMonthBill(uid, date, tariffType);
 
       state = state.copyWith(isSaving: false);
       return true;
@@ -259,7 +246,45 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
     }
   }
 
-  Future<void> _recalculateMonthBill(String uid, DateTime date) async {
+  Future<String?> _checkTariffConflict(
+    String uid,
+    DateTime date,
+    TariffType tariffType,
+  ) async {
+    final start = DateTime(date.year, date.month);
+    final end = DateTime(date.year, date.month + 1);
+
+    final snap = await _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('readings')
+        .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(start))
+        .where('date', isLessThan: Timestamp.fromDate(end))
+        .limit(1)
+        .get();
+
+    if (snap.docs.isEmpty) return null;
+
+    final existingTariffValue = snap.docs.first.data()['tariffType'] as String?;
+    final existingTariff = TariffTypeX.fromValue(
+      existingTariffValue ?? TariffType.domestic.value,
+    );
+
+    if (existingTariff != tariffType) {
+      final monthLabel = date.monthYearLabel;
+      return 'This month already has readings under '
+          '${existingTariff.label}. Switch your tariff back, or add this '
+          'reading to a different month, to keep $monthLabel consistent.';
+    }
+
+    return null;
+  }
+
+  Future<void> _recalculateMonthBill(
+    String uid,
+    DateTime date,
+    TariffType tariffType,
+  ) async {
     final key = _monthKey(date);
     final start = DateTime(date.year, date.month);
     final end = DateTime(date.year, date.month + 1);
@@ -284,8 +309,6 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
       0,
       (sum, doc) => sum + ((doc.data()['kwh'] as num?)?.toDouble() ?? 0),
     );
-
-    final tariffType = ref.read(tariffTypeProvider);
 
     await billRef.set(
       {
@@ -314,6 +337,18 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
       final date = state.selectedDate ?? DateTime.now();
       final oldDate = reading.date;
 
+      final dateChangedMonth =
+          date.month != oldDate.month || date.year != oldDate.year;
+
+      if (dateChangedMonth) {
+        final conflict =
+            await _checkTariffConflict(uid, date, reading.tariffType);
+        if (conflict != null) {
+          state = state.copyWith(isSaving: false, errorMessage: conflict);
+          return false;
+        }
+      }
+
       await _firestore
           .collection('users')
           .doc(uid)
@@ -324,15 +359,12 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
         'kwh': state.usageKwh,
         'date': Timestamp.fromDate(date),
         'notes': state.notes.trim(),
-        'tier': state.currentTier,
+        'tier': state.currentTier(reading.tariffType),
       });
 
-      await _recalculateMonthBill(uid, date);
-      if (date.month != oldDate.month || date.year != oldDate.year) {
-        await _recalculateMonthBill(
-          uid,
-          oldDate,
-        );
+      await _recalculateMonthBill(uid, date, reading.tariffType);
+      if (dateChangedMonth) {
+        await _recalculateMonthBill(uid, oldDate, reading.tariffType);
       }
 
       state = state.copyWith(isSaving: false);

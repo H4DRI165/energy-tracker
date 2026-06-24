@@ -18,7 +18,6 @@ class BillHistoryList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sortedBills = [...bills]..sort((a, b) => b.date.compareTo(a.date));
-    final currentTariffType = ref.watch(tariffTypeProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -77,7 +76,6 @@ class BillHistoryList extends ConsumerWidget {
                 final iconBg = entry.key.isEven
                     ? AppColors.accent.withValues(alpha: 0.10)
                     : AppColors.accent2.withValues(alpha: 0.10);
-                final showTariffTag = bill.tariffType != currentTariffType;
 
                 return ClipRRect(
                   borderRadius: BorderRadius.vertical(
@@ -193,32 +191,29 @@ class BillHistoryList extends ConsumerWidget {
                                       ),
                                     ],
                                   ),
-                                  if (showTariffTag) ...[
-                                    SizedBox(height: 4.h),
-                                    Container(
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: 2.w,
-                                        vertical: 2.h,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.surface3,
-                                        borderRadius:
-                                            BorderRadius.circular(6.r),
-                                        border: Border.all(
-                                          color: AppColors.text3
-                                              .withValues(alpha: 0.3),
-                                        ),
-                                      ),
-                                      child: Text(
-                                        bill.tariffType.label,
-                                        style: AppTextStyles.caption.copyWith(
-                                          color: AppColors.text2,
-                                          fontSize: 9.sp,
-                                          height: 1.2,
-                                        ),
+                                  SizedBox(height: 4.h),
+                                  Container(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 2.w,
+                                      vertical: 2.h,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.surface3,
+                                      borderRadius: BorderRadius.circular(6.r),
+                                      border: Border.all(
+                                        color: AppColors.text3
+                                            .withValues(alpha: 0.3),
                                       ),
                                     ),
-                                  ],
+                                    child: Text(
+                                      bill.tariffType.label,
+                                      style: AppTextStyles.caption.copyWith(
+                                        color: AppColors.text2,
+                                        fontSize: 9.sp,
+                                        height: 1.2,
+                                      ),
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
