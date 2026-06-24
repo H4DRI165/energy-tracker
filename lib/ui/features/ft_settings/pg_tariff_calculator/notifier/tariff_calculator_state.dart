@@ -1,4 +1,5 @@
-import 'package:energy_tracker/constants/tariff_types.dart';
+
+import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 
 class TariffCalculatorState {
   const TariffCalculatorState({

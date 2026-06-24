@@ -2,7 +2,8 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/constants/tariff_rates.dart';
-import 'package:energy_tracker/constants/tariff_types.dart';
+import 'package:energy_tracker/extensions/date_time_extension.dart';
+import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 import 'package:energy_tracker/models/reading_record.dart';
 import 'package:energy_tracker/services/notifiers/user_profile_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_add_meter_reading/notifier/add_meter_reading_state.dart';

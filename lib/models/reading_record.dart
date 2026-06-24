@@ -1,4 +1,5 @@
 import 'package:energy_tracker/constants/constants.dart';
+import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 
 class ReadingRecord {
   const ReadingRecord({

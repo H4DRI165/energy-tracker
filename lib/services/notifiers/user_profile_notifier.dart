@@ -1,4 +1,4 @@
-import 'package:energy_tracker/constants/tariff_types.dart';
+import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 import 'package:energy_tracker/services/app_user_notifier.dart';
 import 'package:energy_tracker/services/auth_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
