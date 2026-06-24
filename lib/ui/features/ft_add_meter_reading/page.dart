@@ -153,8 +153,15 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
     super.dispose();
   }
 
+  TariffType get _effectiveTariffType {
+    if (_isEdit) return widget.reading!.tariffType;
+    return ref.watch(tariffTypeProvider);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final tariffType = _effectiveTariffType;
+
     return Expanded(
       child: SingleChildScrollView(
         padding: EdgeInsets.symmetric(
@@ -180,6 +187,8 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
               controller: _readingController,
               errorText: widget.state.readingError,
             ),
+            SizedBox(height: 10.h),
+            _TariffTypeNote(tariffType: tariffType, isEdit: _isEdit),
             SizedBox(height: 16.h),
             if (widget.state.hasUsage) ...[
               _AutoCalcCard(
@@ -506,6 +515,32 @@ class _MeterReadingField extends StatelessWidget {
             ],
           ),
         ],
+      ],
+    );
+  }
+}
+
+class _TariffTypeNote extends StatelessWidget {
+  const _TariffTypeNote({
+    required this.tariffType,
+    required this.isEdit,
+  });
+
+  final TariffType tariffType;
+  final bool isEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(Icons.receipt_long_rounded, size: 13.r, color: AppColors.text3),
+        SizedBox(width: 6.w),
+        Text(
+          isEdit
+              ? 'Billed under ${tariffType.label}'
+              : 'Calculating under ${tariffType.label} rates',
+          style: AppTextStyles.caption.copyWith(color: AppColors.text3),
+        ),
       ],
     );
   }
