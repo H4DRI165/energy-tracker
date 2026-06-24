@@ -1,9 +1,12 @@
+import 'package:energy_tracker/extensions/tariff_type_extension.dart';
+import 'package:energy_tracker/services/notifiers/user_profile_notifier.dart';
 import 'package:energy_tracker/theme/theme.dart';
 import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_state.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-class BillSummaryCard extends StatelessWidget {
+class BillSummaryCard extends ConsumerStatefulWidget {
   const BillSummaryCard({
     required this.state,
     super.key,
@@ -12,9 +15,14 @@ class BillSummaryCard extends StatelessWidget {
   final DashboardPageState state;
 
   @override
+  ConsumerState<BillSummaryCard> createState() => _BillSummaryCardState();
+}
+
+class _BillSummaryCardState extends ConsumerState<BillSummaryCard> {
+  @override
   Widget build(BuildContext context) {
-    final isAlert = state.isNearBudget || state.isOverBudget;
-    final billColor = state.billColor;
+    final isAlert = widget.state.isNearBudget || widget.state.isOverBudget;
+    final billColor = widget.state.billColor;
 
     return Container(
       padding: EdgeInsets.all(20.r),
@@ -64,26 +72,63 @@ class BillSummaryCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          state.monthLabel.toUpperCase(),
-                          style: AppTextStyles.overline.copyWith(
-                            color: billColor,
-                            letterSpacing: 2,
-                          ),
+                        Row(
+                          children: [
+                            Text(
+                              widget.state.monthLabel.toUpperCase(),
+                              style: AppTextStyles.overline.copyWith(
+                                color: billColor,
+                                letterSpacing: 2,
+                              ),
+                            ),
+                            SizedBox(width: 8.w),
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 6.w,
+                                vertical: 2.h,
+                              ),
+                              decoration: BoxDecoration(
+                                color:
+                                    AppColors.surface3.withValues(alpha: 0.6),
+                                borderRadius: BorderRadius.circular(6.r),
+                                border: Border.all(
+                                  color: AppColors.text3.withValues(alpha: 0.3),
+                                ),
+                              ),
+                              child: Text(
+                                widget.state.tariffType.shortLabel,
+                                style: AppTextStyles.caption.copyWith(
+                                  color: AppColors.text2,
+                                  fontSize: 9.sp,
+                                  height: 1.2,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
+                        if (widget.state.tariffType !=
+                            ref.watch(tariffTypeProvider)) ...[
+                          SizedBox(height: 4.h),
+                          Text(
+                            'Showing ${widget.state.tariffType.shortLabel} '
+                            "rates — matches this month's readings",
+                            style: AppTextStyles.caption
+                                .copyWith(color: AppColors.text3),
+                          ),
+                        ],
                         SizedBox(height: 4.h),
                         Text(
-                          'RM ${state.estimatedBill.toStringAsFixed(2)}',
+                          'RM ${widget.state.estimatedBill.toStringAsFixed(2)}',
                           style: AppTextStyles.displayLg,
                         ),
                         SizedBox(height: 4.h),
                         Text(
-                          isAlert && state.projectedBill != null
-                              ? '${state.kwhUsed.toStringAsFixed(0)} kWh · '
+                          isAlert && widget.state.projectedBill != null
+                              ? '${widget.state.kwhUsed.toStringAsFixed(0)} kWh · '
                                   'Projected: RM '
-                                  '${state.projectedBill!.toStringAsFixed(0)}'
+                                  '${widget.state.projectedBill!.toStringAsFixed(0)}'
                               : 'Estimated bill · '
-                                  '${state.kwhUsed.toStringAsFixed(0)} '
+                                  '${widget.state.kwhUsed.toStringAsFixed(0)} '
                                   'kWh used',
                           style: AppTextStyles.bodyMd.copyWith(
                             color: AppColors.text2,
@@ -92,11 +137,13 @@ class BillSummaryCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  if (state.percentageVsLastMonth != 0)
+                  if (widget.state.percentageVsLastMonth != 0)
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        _ChangeBadge(percent: state.percentageVsLastMonth),
+                        _ChangeBadge(
+                          percent: widget.state.percentageVsLastMonth,
+                        ),
                         SizedBox(height: 6.h),
                         Text(
                           'vs last month',
@@ -115,8 +162,8 @@ class BillSummaryCard extends StatelessWidget {
                     style: AppTextStyles.bodySm,
                   ),
                   Text(
-                    'RM ${state.estimatedBill.toStringAsFixed(0)} '
-                    '/ RM ${state.monthlyBudget.toStringAsFixed(0)}',
+                    'RM ${widget.state.estimatedBill.toStringAsFixed(0)} '
+                    '/ RM ${widget.state.monthlyBudget.toStringAsFixed(0)}',
                     style: AppTextStyles.bodySm.copyWith(
                       fontWeight: FontWeight.w600,
                       color: isAlert ? AppColors.warn : AppColors.text,
@@ -128,7 +175,7 @@ class BillSummaryCard extends StatelessWidget {
               ClipRRect(
                 borderRadius: BorderRadius.circular(4),
                 child: TweenAnimationBuilder<double>(
-                  tween: Tween(begin: 0, end: state.budgetUsedPercent),
+                  tween: Tween(begin: 0, end: widget.state.budgetUsedPercent),
                   duration: const Duration(milliseconds: 800),
                   curve: Curves.easeOut,
                   builder: (context, value, _) {
@@ -145,7 +192,7 @@ class BillSummaryCard extends StatelessWidget {
               ),
               SizedBox(height: 6.h),
               Text(
-                state.budgetStatusLabel,
+                widget.state.budgetStatusLabel,
                 style: AppTextStyles.caption.copyWith(color: billColor),
               ),
             ],

@@ -307,7 +307,7 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
 
     final totalKwh = readingsSnap.docs.fold<double>(
       0,
-      (sum, doc) => sum + ((doc.data()['kwh'] as num?)?.toDouble() ?? 0),
+      (total, doc) => total + ((doc.data()['kwh'] as num?)?.toDouble() ?? 0),
     );
 
     await billRef.set(

@@ -29,6 +29,7 @@ class UsageState {
     this.billHistory = const [],
     this.currentKwh = 0,
     this.currentBill = 0,
+    this.currentTariffType = TariffType.domestic,
     this.currentMonthLabel = '',
   });
 
@@ -37,10 +38,11 @@ class UsageState {
   final List<BillRecord> billHistory;
   final double currentKwh;
   final double currentBill;
+  final TariffType currentTariffType;
   final String currentMonthLabel;
 
-  List<TierBreakdown> tierBreakdown(TariffType tariffType) =>
-      TariffRates.breakdownFor(currentKwh, tariffType);
+  List<TierBreakdown> get tierBreakdown =>
+      TariffRates.breakdownFor(currentKwh, currentTariffType);
 
   List<MonthlyUsage> get chartData {
     if (filter == UsageFilter.yearly) {
@@ -63,6 +65,7 @@ class UsageState {
     List<BillRecord>? billHistory,
     double? currentKwh,
     double? currentBill,
+    TariffType? currentTariffType,
     String? currentMonthLabel,
   }) {
     return UsageState(
@@ -71,6 +74,7 @@ class UsageState {
       billHistory: billHistory ?? this.billHistory,
       currentKwh: currentKwh ?? this.currentKwh,
       currentBill: currentBill ?? this.currentBill,
+      currentTariffType: currentTariffType ?? this.currentTariffType,
       currentMonthLabel: currentMonthLabel ?? this.currentMonthLabel,
     );
   }

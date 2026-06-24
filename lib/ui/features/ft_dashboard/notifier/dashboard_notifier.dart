@@ -67,7 +67,7 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState> {
 
   Future<DashboardPageState> _loadUsageData(
     String uid,
-    TariffType tariffType,
+    TariffType liveTariffType,
   ) async {
     try {
       final now = DateTime.now();
@@ -115,6 +115,16 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState> {
           ? ((kwhUsed - lastMonthKwh) / lastMonthKwh) * 100
           : 0.0;
 
+      // Use whichever tariff the current month's readings were actually
+      // recorded under. Falls back to the live profile tariff when there's
+      // no data yet (new month, no readings saved).
+      final tariffType = readingsSnap.docs.isEmpty
+          ? liveTariffType
+          : TariffTypeX.fromValue(
+              readingsSnap.docs.last.data()['tariffType'] as String? ??
+                  TariffType.domestic.value,
+            );
+
       final bill = TariffRates.calculate(kwhUsed, tariffType);
       final tier = TariffRates.getTier(kwhUsed, tariffType);
 
@@ -144,6 +154,7 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState> {
         kwhUsed: kwhUsed,
         estimatedBill: bill,
         currentTier: tier,
+        tariffType: tariffType,
         dailyAvg: dailyAvg,
         daysLeft: daysLeft,
         percentageVsLastMonth: percentVsLast,

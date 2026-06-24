@@ -1,5 +1,4 @@
 import 'package:energy_tracker/app.dart';
-import 'package:energy_tracker/services/notifiers/user_profile_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_usage/notifier/usage_notifier.dart';
 import 'package:flutter/material.dart';

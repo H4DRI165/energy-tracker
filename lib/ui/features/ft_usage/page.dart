@@ -1,5 +1,4 @@
 import 'package:energy_tracker/app.dart';
-import 'package:energy_tracker/services/notifiers/user_profile_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_usage/notifier/notifier.dart';
 import 'package:energy_tracker/ui/features/ft_usage/widgets/widgets.dart';
 import 'package:flutter/material.dart';
@@ -109,6 +108,7 @@ class _BodyContent extends ConsumerWidget {
               kwh: state.currentKwh,
               bill: state.currentBill,
               monthLabel: state.currentMonthLabel,
+              tariffType: state.currentTariffType,
             ),
             SizedBox(height: 14.h),
             UsageBarChart(
@@ -117,7 +117,7 @@ class _BodyContent extends ConsumerWidget {
             ),
             SizedBox(height: 14.h),
             TariffTierBreakdown(
-              tiers: state.tierBreakdown(ref.watch(tariffTypeProvider)),
+              tiers: state.tierBreakdown,
               monthLabel: state.currentMonthLabel,
             ),
             SizedBox(height: 14.h),
