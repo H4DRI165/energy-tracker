@@ -1,4 +1,4 @@
-import 'package:energy_tracker/constants/tariff_types.dart';
+import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 import 'package:energy_tracker/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 
