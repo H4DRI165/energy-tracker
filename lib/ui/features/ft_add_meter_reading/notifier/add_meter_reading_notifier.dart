@@ -245,7 +245,7 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
       {
         'kwh': totalKwh,
         'amount': TariffRates.calculate(totalKwh, tariffType),
-        'tier': TariffRates.getTier(totalKwh),
+        'tier': TariffRates.getTier(totalKwh, tariffType),
         'date': Timestamp.fromDate(start),
       },
       SetOptions(merge: true),
@@ -268,12 +268,14 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
     try {
       final date = state.selectedDate ?? DateTime.now();
 
+      final tariffType = ref.read(tariffTypeProvider);
+
       await _firestore.collection('users').doc(uid).collection('readings').add({
         'reading': state.currentReading,
         'kwh': state.usageKwh,
         'date': Timestamp.fromDate(date),
         'notes': state.notes.trim(),
-        'tier': state.currentTier,
+        'tier': state.currentTier(tariffType),
         'createdAt': FieldValue.serverTimestamp(),
       });
 

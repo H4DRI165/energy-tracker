@@ -1,4 +1,4 @@
-import 'package:energy_tracker/constants/tariff_rates.dart';
+import 'package:energy_tracker/constants/constants.dart';
 
 class ReadingRecord {
   const ReadingRecord({
@@ -9,6 +9,7 @@ class ReadingRecord {
     required this.notes,
     required this.estimatedBill,
     required this.tier,
+    required this.tariffType,
   });
 
   final String id;
@@ -18,6 +19,7 @@ class ReadingRecord {
   final String notes;
   final double estimatedBill;
   final int tier;
+  final TariffType tariffType;
 
   String get formattedDate {
     final months = [
@@ -37,5 +39,5 @@ class ReadingRecord {
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 
-  String get tierLabel => TariffRates.getTierPriceKwhLabel(tier);
+  String get tierLabel => TariffRates.getTierPriceKwhLabel(tier, tariffType);
 }

@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/constants/tariff_rates.dart';
+import 'package:energy_tracker/constants/tariff_types.dart';
+import 'package:energy_tracker/services/notifiers/user_profile_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_state.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -17,7 +19,16 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState> {
 
   @override
   Future<DashboardPageState> build() async {
-    final results = await Future.wait([_loadUserProfile(), _loadUsageData()]);
+    final user = _auth.currentUser;
+    if (user == null) return const DashboardPageState();
+
+    final tariffType = ref.watch(tariffTypeProvider);
+
+    final results = await Future.wait([
+      _loadUserProfile(user),
+      _loadUsageData(user.uid, tariffType),
+    ]);
+
     return results[0].merge(results[1]);
   }
 
@@ -26,18 +37,12 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState> {
     await future;
   }
 
-  Future<DashboardPageState> _loadUserProfile() async {
+  Future<DashboardPageState> _loadUserProfile(User user) async {
     try {
-      final user = _auth.currentUser;
-      if (user == null) return const DashboardPageState();
-
-      final uid = user.uid;
-
-      // Fallback to auth display name if Firestore is slow
       final authName = user.displayName ?? '';
       final authFirstName = authName.split(' ').first;
 
-      final doc = await _firestore.collection('users').doc(uid).get();
+      final doc = await _firestore.collection('users').doc(user.uid).get();
       if (!doc.exists) return DashboardPageState(userName: authFirstName);
 
       final data = doc.data()!;
@@ -60,16 +65,15 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState> {
     }
   }
 
-  Future<DashboardPageState> _loadUsageData() async {
+  Future<DashboardPageState> _loadUsageData(
+    String uid,
+    TariffType tariffType,
+  ) async {
     try {
-      final uid = _auth.currentUser?.uid;
-      if (uid == null) return const DashboardPageState();
-
       final now = DateTime.now();
       final monthLabel = DateFormat('MMMM yyyy').format(now);
       final daysLeft = DateUtils.getDaysInMonth(now.year, now.month) - now.day;
 
-      // Fetch meter readings for current month
       final startOfMonth = DateTime(now.year, now.month);
       final readingsSnap = await _firestore
           .collection('users')
@@ -82,7 +86,6 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState> {
           .orderBy('date', descending: false)
           .get();
 
-      // Fetch last month readings for comparison
       final startOfLastMonth = DateTime(now.year, now.month - 1);
       final lastMonthSnap = await _firestore
           .collection('users')
@@ -92,14 +95,10 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState> {
             'date',
             isGreaterThanOrEqualTo: Timestamp.fromDate(startOfLastMonth),
           )
-          .where(
-            'date',
-            isLessThan: Timestamp.fromDate(startOfMonth),
-          )
+          .where('date', isLessThan: Timestamp.fromDate(startOfMonth))
           .orderBy('date', descending: false)
           .get();
 
-      // Calculate kWh used this month
       double kwhUsed = 0;
       for (final doc in readingsSnap.docs) {
         final kwh = (doc.data()['kwh'] as num?)?.toDouble() ?? 0;
@@ -116,20 +115,16 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState> {
           ? ((kwhUsed - lastMonthKwh) / lastMonthKwh) * 100
           : 0.0;
 
-      // Estimated bill (TNB domestic tariff)
-      final bill = TariffRates.calculateDomestic(kwhUsed);
-      final tier = TariffRates.getTier(kwhUsed);
+      final bill = TariffRates.calculate(kwhUsed, tariffType);
+      final tier = TariffRates.getTier(kwhUsed, tariffType);
 
-      // Daily average
       final daysElapsed = now.day;
       final dailyAvg = daysElapsed > 0 ? kwhUsed / daysElapsed : 0.0;
 
-      // Projected bill
       final projectedKwh =
           dailyAvg * DateUtils.getDaysInMonth(now.year, now.month);
-      final projectedBill = TariffRates.calculateDomestic(projectedKwh);
+      final projectedBill = TariffRates.calculate(projectedKwh, tariffType);
 
-      // 7-day usage — fetch last 7 readings
       final startOf7DayWindow = DateTime(now.year, now.month, now.day - 6);
       final weekSnap = await _firestore
           .collection('users')

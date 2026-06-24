@@ -561,7 +561,11 @@ class _AutoCalcCard extends StatelessWidget {
                 'Current tier',
                 style: AppTextStyles.caption,
               ),
-              _TierBadge(tierLabel: state.tierLabel, tier: state.currentTier),
+              _TierBadge(
+                tierLabel: state.tierLabel(tariffType),
+                tier: state.currentTier(tariffType),
+                tariffType: tariffType,
+              ),
             ],
           ),
         ],
@@ -606,23 +610,26 @@ class _TierBadge extends StatelessWidget {
   const _TierBadge({
     required this.tierLabel,
     required this.tier,
+    required this.tariffType,
   });
 
   final String tierLabel;
   final int tier;
+  final TariffType tariffType;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
       decoration: BoxDecoration(
-        color: TariffRates.getTierColor(tier).withValues(alpha: 0.12),
+        color:
+            TariffRates.getTierColor(tier, tariffType).withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20.r),
       ),
       child: Text(
         tierLabel,
-        style:
-            AppTextStyles.tag.copyWith(color: TariffRates.getTierColor(tier)),
+        style: AppTextStyles.tag
+            .copyWith(color: TariffRates.getTierColor(tier, tariffType)),
       ),
     );
   }

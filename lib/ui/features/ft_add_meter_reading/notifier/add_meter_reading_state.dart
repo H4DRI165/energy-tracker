@@ -39,10 +39,11 @@ class AddReadingPageState {
   double estimatedBill(TariffType tariffType) =>
       TariffRates.calculate(usageKwh, tariffType);
 
-  int get currentTier => TariffRates.getTier(usageKwh);
+  int currentTier(TariffType tariffType) =>
+      TariffRates.getTier(usageKwh, tariffType);
 
-  String get tierLabel => TariffRates.getTierPriceKwhLabel(currentTier);
-
+  String tierLabel(TariffType tariffType) =>
+      TariffRates.getTierPriceKwhLabel(currentTier(tariffType), tariffType);
   bool get hasUsage => usageKwh > 0;
 
   bool get canSave =>

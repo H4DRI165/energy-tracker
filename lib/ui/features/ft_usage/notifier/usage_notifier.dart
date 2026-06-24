@@ -22,6 +22,15 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
     return _fetchUsageData();
   }
 
+  Future<void> refresh() async {
+    final selectedFilter = state.asData?.value.filter ?? UsageFilter.monthly;
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      final fresh = await _fetchUsageData();
+      return fresh.copyWith(filter: selectedFilter);
+    });
+  }
+
   Future<UsageState> _fetchUsageData() async {
     final uid = _auth.currentUser?.uid;
     if (uid == null) return const UsageState();
@@ -82,15 +91,6 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
 
   void setFilter(UsageFilter filter) {
     state = state.whenData((s) => s.copyWith(filter: filter));
-  }
-
-  Future<void> refresh() async {
-    final selectedFilter = state.asData?.value.filter ?? UsageFilter.monthly;
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(() async {
-      final fresh = await _fetchUsageData();
-      return fresh.copyWith(filter: selectedFilter);
-    });
   }
 
   List<MonthlyUsage> _buildMonthlyData(

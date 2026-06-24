@@ -1,4 +1,5 @@
 import 'package:energy_tracker/constants/tariff_rates.dart';
+import 'package:energy_tracker/constants/tariff_types.dart';
 import 'package:energy_tracker/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 
@@ -25,6 +26,7 @@ class DashboardPageState {
     this.monthlyBudget = 150,
     this.dailyAvg = 0,
     this.currentTier = 1,
+    this.tariffType = TariffType.domestic,
     this.daysLeft = 0,
     this.percentageVsLastMonth = 0,
     this.projectedBill,
@@ -40,6 +42,7 @@ class DashboardPageState {
   final double monthlyBudget;
   final double dailyAvg;
   final int currentTier;
+  final TariffType tariffType;
   final int daysLeft;
   final double percentageVsLastMonth;
   final double? projectedBill;
@@ -84,8 +87,8 @@ class DashboardPageState {
     }
   }
 
-  String get tierRange => TariffRates.getTierKwhRange(currentTier);
-  Color get tierColor => TariffRates.getTierColor(currentTier);
+  Color get tierColor => TariffRates.getTierColor(currentTier, tariffType);
+  String get tierRange => TariffRates.getTierKwhRange(currentTier, tariffType);
 
   String get greetingEmoji {
     switch (budgetStatus) {
@@ -105,6 +108,7 @@ class DashboardPageState {
     double? monthlyBudget,
     double? dailyAvg,
     int? currentTier,
+    TariffType? tariffType,
     int? daysLeft,
     double? percentageVsLastMonth,
     Object? projectedBill = _unset,
@@ -120,6 +124,7 @@ class DashboardPageState {
       monthlyBudget: monthlyBudget ?? this.monthlyBudget,
       dailyAvg: dailyAvg ?? this.dailyAvg,
       currentTier: currentTier ?? this.currentTier,
+      tariffType: tariffType ?? this.tariffType,
       daysLeft: daysLeft ?? this.daysLeft,
       percentageVsLastMonth:
           percentageVsLastMonth ?? this.percentageVsLastMonth,
@@ -143,6 +148,8 @@ class DashboardPageState {
       kwhUsed: other.kwhUsed != 0 ? other.kwhUsed : null,
       estimatedBill: other.estimatedBill != 0 ? other.estimatedBill : null,
       currentTier: other.currentTier != 1 ? other.currentTier : null,
+      tariffType:
+          other.tariffType != TariffType.domestic ? other.tariffType : null,
       dailyAvg: other.dailyAvg != 0 ? other.dailyAvg : null,
       daysLeft: other.daysLeft != 0 ? other.daysLeft : null,
       percentageVsLastMonth:

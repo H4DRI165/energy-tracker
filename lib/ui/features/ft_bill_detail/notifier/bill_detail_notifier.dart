@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/constants/tariff_rates.dart';
 import 'package:energy_tracker/models/bill_record.dart';
 import 'package:energy_tracker/models/reading_record.dart';
+import 'package:energy_tracker/services/notifiers/user_profile_notifier.dart';
 import 'package:energy_tracker/ui/components/logger.dart';
 import 'package:energy_tracker/ui/features/ft_bill_detail/notifier/bill_detail_state.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -72,6 +73,8 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
           .orderBy('date', descending: true)
           .get();
 
+      final tariffType = ref.read(tariffTypeProvider);
+
       final readings = snap.docs.map((doc) {
         final data = doc.data();
         final date = (data['date'] as Timestamp).toDate();
@@ -83,6 +86,7 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
           notes: data['notes'] as String? ?? '',
           estimatedBill: (data['estimatedBill'] as num?)?.toDouble() ?? 0,
           tier: (data['tier'] as num?)?.toInt() ?? 1,
+          tariffType: tariffType,
         );
       }).toList();
 

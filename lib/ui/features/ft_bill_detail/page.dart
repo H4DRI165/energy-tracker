@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:energy_tracker/app.dart';
+import 'package:energy_tracker/services/notifiers/user_profile_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_bill_detail/notifier/notifier.dart';
 import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_usage/notifier/usage_notifier.dart';
@@ -147,8 +148,9 @@ class _BodyContent extends ConsumerStatefulWidget {
 class _BodyContentState extends ConsumerState<_BodyContent> {
   @override
   Widget build(BuildContext context) {
+    final tariffType = ref.read(tariffTypeProvider);
     final state = ref.watch(billDetailProvider);
-    final tierBreakdown = _tierBreakdown(state.bill!.kwh);
+    final tierBreakdown = TariffRates.breakdownFor(state.bill!.kwh, tariffType);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -177,76 +179,6 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
         SizedBox(height: 24.h),
       ],
     );
-  }
-
-  List<_TierRow> _tierBreakdown(double kwh) {
-    final rows = <_TierRow>[];
-    if (kwh <= 0) return rows;
-
-    final t1 = kwh.clamp(0.0, 200.0);
-    rows.add(
-      _TierRow(
-        label: TariffRates.getTierRangePriceLabel(1),
-        kwh: t1,
-        amount: t1 * TariffRates.domesticTier1,
-        color: TariffRates.getTierColor(1),
-        fraction: t1 / kwh,
-      ),
-    );
-
-    if (kwh > 200) {
-      final t2 = (kwh - 200).clamp(0.0, 100.0);
-      rows.add(
-        _TierRow(
-          label: TariffRates.getTierRangePriceLabel(2),
-          kwh: t2,
-          amount: t2 * TariffRates.domesticTier2,
-          color: TariffRates.getTierColor(2),
-          fraction: t2 / kwh,
-        ),
-      );
-    }
-
-    if (kwh > 300) {
-      final t3 = (kwh - 300).clamp(0.0, 300.0);
-      rows.add(
-        _TierRow(
-          label: TariffRates.getTierRangePriceLabel(3),
-          kwh: t3,
-          amount: t3 * TariffRates.domesticTier3,
-          color: TariffRates.getTierColor(3),
-          fraction: t3 / kwh,
-        ),
-      );
-    }
-
-    if (kwh > 600) {
-      final t4 = (kwh - 600).clamp(0.0, 300.0);
-      rows.add(
-        _TierRow(
-          label: TariffRates.getTierRangePriceLabel(4),
-          kwh: t4,
-          amount: t4 * TariffRates.domesticTier4,
-          color: TariffRates.getTierColor(4),
-          fraction: t4 / kwh,
-        ),
-      );
-    }
-
-    if (kwh > 900) {
-      final t5 = kwh - 900;
-      rows.add(
-        _TierRow(
-          label: TariffRates.getTierRangePriceLabel(5),
-          kwh: t5,
-          amount: t5 * TariffRates.domesticTier5,
-          color: TariffRates.getTierColor(5),
-          fraction: t5 / kwh,
-        ),
-      );
-    }
-
-    return rows;
   }
 }
 
@@ -399,28 +331,13 @@ class _PaidToggleCard extends StatelessWidget {
   }
 }
 
-class _TierRow {
-  const _TierRow({
-    required this.label,
-    required this.kwh,
-    required this.amount,
-    required this.color,
-    required this.fraction,
-  });
-  final String label;
-  final double kwh;
-  final double amount;
-  final Color color;
-  final double fraction;
-}
-
 class _TierBreakdownCard extends StatelessWidget {
   const _TierBreakdownCard({
     required this.tiers,
     required this.totalKwh,
   });
 
-  final List<_TierRow> tiers;
+  final List<TierBreakdown> tiers;
   final double totalKwh;
 
   @override
@@ -463,7 +380,7 @@ class _TierBreakdownCard extends StatelessWidget {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(3.r),
                     child: LinearProgressIndicator(
-                      value: tier.fraction,
+                      value: tier.fillPercent,
                       minHeight: 6.h,
                       backgroundColor: AppColors.surface3,
                       valueColor: AlwaysStoppedAnimation<Color>(tier.color),
