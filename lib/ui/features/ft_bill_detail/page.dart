@@ -593,6 +593,28 @@ class _ReadingsSection extends ConsumerWidget {
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ],
+                                  SizedBox(width: 6.w),
+                                  Container(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 6.w,
+                                      vertical: 1.h,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.surface3,
+                                      borderRadius: BorderRadius.circular(6.r),
+                                      border: Border.all(
+                                        color: AppColors.text3
+                                            .withValues(alpha: 0.3),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      r.tariffType.label,
+                                      style: AppTextStyles.caption.copyWith(
+                                        color: AppColors.text2,
+                                        fontSize: 9.sp,
+                                      ),
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),

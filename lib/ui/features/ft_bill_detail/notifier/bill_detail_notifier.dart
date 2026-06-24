@@ -74,8 +74,6 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
           .orderBy('date', descending: true)
           .get();
 
-      final tariffType = ref.read(tariffTypeProvider);
-
       final readings = snap.docs.map((doc) {
         final data = doc.data();
         final date = (data['date'] as Timestamp).toDate();
@@ -87,7 +85,9 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
           notes: data['notes'] as String? ?? '',
           estimatedBill: (data['estimatedBill'] as num?)?.toDouble() ?? 0,
           tier: (data['tier'] as num?)?.toInt() ?? 1,
-          tariffType: tariffType,
+          tariffType: TariffTypeX.fromValue(
+            data['tariffType'] as String? ?? TariffType.domestic.value,
+          ),
         );
       }).toList();
 
@@ -189,7 +189,7 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
       readings: updatedReadings,
       bill: state.bill!.copyWith(
         kwh: totalKwh,
-        amount: TariffRates.calculateDomestic(totalKwh),
+        amount: TariffRates.calculate(totalKwh, state.bill!.tariffType),
       ),
     );
 
