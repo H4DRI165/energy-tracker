@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:energy_tracker/app.dart';
-import 'package:energy_tracker/services/notifiers/user_profile_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_bill_detail/notifier/notifier.dart';
 import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_usage/notifier/usage_notifier.dart';
@@ -148,14 +147,14 @@ class _BodyContent extends ConsumerStatefulWidget {
 class _BodyContentState extends ConsumerState<_BodyContent> {
   @override
   Widget build(BuildContext context) {
-    final tariffType = ref.read(tariffTypeProvider);
     final state = ref.watch(billDetailProvider);
-    final tierBreakdown = TariffRates.breakdownFor(state.bill!.kwh, tariffType);
+    final bill = state.bill!;
+    final tierBreakdown = TariffRates.breakdownFor(bill.kwh, bill.tariffType);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _BillSummaryCard(bill: state.bill!),
+        _BillSummaryCard(bill: bill),
         SizedBox(height: 16.h),
         _PaidToggleCard(
           isPaid: state.isPaid,
@@ -168,12 +167,12 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
         SizedBox(height: 16.h),
         _TierBreakdownCard(
           tiers: tierBreakdown,
-          totalKwh: state.bill!.kwh,
+          totalKwh: bill.kwh,
         ),
         SizedBox(height: 16.h),
         _ReadingsSection(
           readings: state.readings,
-          bill: state.bill!,
+          bill: bill,
           onEditReading: widget.onEditReading,
         ),
         SizedBox(height: 24.h),
@@ -219,6 +218,24 @@ class _BillSummaryCard extends StatelessWidget {
           Text(
             '${bill.kwh.toStringAsFixed(0)} kWh · ${bill.monthYear}',
             style: AppTextStyles.bodySm.copyWith(color: AppColors.text2),
+          ),
+          SizedBox(height: 4.h),
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 4.h),
+            decoration: BoxDecoration(
+              color: AppColors.surface3,
+              borderRadius: BorderRadius.circular(6.r),
+              border: Border.all(
+                color: AppColors.text3.withValues(alpha: 0.3),
+              ),
+            ),
+            child: Text(
+              bill.tariffType.label,
+              style: AppTextStyles.caption.copyWith(
+                color: AppColors.text2,
+                fontSize: 10.sp,
+              ),
+            ),
           ),
         ],
       ),

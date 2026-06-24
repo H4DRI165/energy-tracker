@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/constants/tariff_rates.dart';
+import 'package:energy_tracker/constants/tariff_types.dart';
 import 'package:energy_tracker/models/bill_record.dart';
 import 'package:energy_tracker/models/reading_record.dart';
 import 'package:energy_tracker/services/notifiers/user_profile_notifier.dart';
@@ -122,6 +123,9 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
         kwh: (data['kwh'] as num).toDouble(),
         amount: (data['amount'] as num).toDouble(),
         isPaid: data['isPaid'] as bool? ?? false,
+        tariffType: TariffTypeX.fromValue(
+          data['tariffType'] as String? ?? TariffType.domestic.value,
+        ),
         date: (data['date'] as Timestamp).toDate(),
       );
     } on FirebaseException catch (e, st) {

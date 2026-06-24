@@ -1,3 +1,5 @@
+import 'package:energy_tracker/constants/tariff_types.dart';
+
 class BillRecord {
   const BillRecord({
     required this.id,
@@ -6,6 +8,7 @@ class BillRecord {
     required this.amount,
     required this.isPaid,
     required this.date,
+    required this.tariffType,
   });
 
   final String id;
@@ -14,6 +17,7 @@ class BillRecord {
   final double amount;
   final bool isPaid;
   final DateTime date;
+  final TariffType tariffType;
 
   BillRecord copyWith({
     String? id,
@@ -22,6 +26,7 @@ class BillRecord {
     double? amount,
     bool? isPaid,
     DateTime? date,
+    TariffType? tariffType,
   }) {
     return BillRecord(
       id: id ?? this.id,
@@ -30,6 +35,7 @@ class BillRecord {
       amount: amount ?? this.amount,
       isPaid: isPaid ?? this.isPaid,
       date: date ?? this.date,
+      tariffType: tariffType ?? this.tariffType,
     );
   }
 }

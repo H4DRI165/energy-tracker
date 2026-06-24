@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/constants/tariff_rates.dart';
+import 'package:energy_tracker/constants/tariff_types.dart';
 import 'package:energy_tracker/models/bill_record.dart';
 import 'package:energy_tracker/services/notifiers/user_profile_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_usage/notifier/usage_state.dart';
@@ -60,7 +61,8 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
           .limit(12)
           .get();
 
-      final monthlyData = _buildMonthlyData(readingsSnap.docs, now);
+      final tariffType = ref.read(tariffTypeProvider);
+      final monthlyData = _buildMonthlyData(readingsSnap.docs, now, tariffType);
       final billHistory = _buildBillHistory(billsSnap.docs);
 
       // Current month data
@@ -73,7 +75,6 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
         return total + ((doc.data()['kwh'] as num?)?.toDouble() ?? 0);
       });
 
-      final tariffType = ref.read(tariffTypeProvider);
       final currentBill = TariffRates.calculate(currentKwh, tariffType);
       final currentMonthLabel = DateFormat('MMMM yyyy').format(now);
 
@@ -96,6 +97,7 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
   List<MonthlyUsage> _buildMonthlyData(
     List<QueryDocumentSnapshot> docs,
     DateTime now,
+    TariffType tariffType,
   ) {
     final monthlyMap = <String, double>{};
 
@@ -118,7 +120,7 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
           month: DateFormat('MMM').format(month),
           year: month.year,
           kwh: kwh,
-          bill: TariffRates.calculateDomestic(kwh),
+          bill: TariffRates.calculate(kwh, tariffType),
           isPaid: i > 0,
         ),
       );
@@ -139,6 +141,9 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
         amount: (data['amount'] as num?)?.toDouble() ?? 0,
         isPaid: data['isPaid'] as bool? ?? false,
         date: date,
+        tariffType: TariffTypeX.fromValue(
+          data['tariffType'] as String? ?? TariffType.domestic.value,
+        ),
       );
     }).toList()
       ..sort((a, b) => b.date.compareTo(a.date));

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/constants/tariff_rates.dart';
+import 'package:energy_tracker/constants/tariff_types.dart';
 import 'package:energy_tracker/models/reading_record.dart';
 import 'package:energy_tracker/services/notifiers/user_profile_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_add_meter_reading/notifier/add_meter_reading_state.dart';
@@ -213,6 +214,50 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
   String _monthKey(DateTime date) =>
       '${date.year}-${date.month.toString().padLeft(2, '0')}';
 
+  Future<bool> saveReading() async {
+    if (!state.canSave) return false;
+
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) {
+      state = state.copyWith(
+        errorMessage: 'Session expired. Please sign in again.',
+      );
+      return false;
+    }
+
+    state = state.copyWith(isSaving: true, errorMessage: null);
+
+    try {
+      final date = state.selectedDate ?? DateTime.now();
+
+      final tariffType = ref.read(tariffTypeProvider);
+
+      await _firestore.collection('users').doc(uid).collection('readings').add({
+        'reading': state.currentReading,
+        'kwh': state.usageKwh,
+        'date': Timestamp.fromDate(date),
+        'notes': state.notes.trim(),
+        'tier': state.currentTier(tariffType),
+        'tariffType': tariffType.value,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      await _recalculateMonthBill(uid, date);
+
+      state = state.copyWith(isSaving: false);
+      return true;
+    } on FirebaseException catch (e) {
+      state = state.copyWith(isSaving: false, errorMessage: _mapError(e.code));
+      return false;
+    } on Exception catch (_) {
+      state = state.copyWith(
+        isSaving: false,
+        errorMessage: 'Failed to save reading. Please try again.',
+      );
+      return false;
+    }
+  }
+
   Future<void> _recalculateMonthBill(String uid, DateTime date) async {
     final key = _monthKey(date);
     final start = DateTime(date.year, date.month);
@@ -246,53 +291,11 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
         'kwh': totalKwh,
         'amount': TariffRates.calculate(totalKwh, tariffType),
         'tier': TariffRates.getTier(totalKwh, tariffType),
+        'tariffType': tariffType.value,
         'date': Timestamp.fromDate(start),
       },
       SetOptions(merge: true),
     );
-  }
-
-  Future<bool> saveReading() async {
-    if (!state.canSave) return false;
-
-    final uid = _auth.currentUser?.uid;
-    if (uid == null) {
-      state = state.copyWith(
-        errorMessage: 'Session expired. Please sign in again.',
-      );
-      return false;
-    }
-
-    state = state.copyWith(isSaving: true, errorMessage: null);
-
-    try {
-      final date = state.selectedDate ?? DateTime.now();
-
-      final tariffType = ref.read(tariffTypeProvider);
-
-      await _firestore.collection('users').doc(uid).collection('readings').add({
-        'reading': state.currentReading,
-        'kwh': state.usageKwh,
-        'date': Timestamp.fromDate(date),
-        'notes': state.notes.trim(),
-        'tier': state.currentTier(tariffType),
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-
-      await _recalculateMonthBill(uid, date);
-
-      state = state.copyWith(isSaving: false);
-      return true;
-    } on FirebaseException catch (e) {
-      state = state.copyWith(isSaving: false, errorMessage: _mapError(e.code));
-      return false;
-    } on Exception catch (_) {
-      state = state.copyWith(
-        isSaving: false,
-        errorMessage: 'Failed to save reading. Please try again.',
-      );
-      return false;
-    }
   }
 
   Future<bool> updateReading(ReadingRecord reading) async {
