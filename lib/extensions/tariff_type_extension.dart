@@ -13,6 +13,15 @@ extension TariffTypeX on TariffType {
     }
   }
 
+  String get shortLabel {
+    switch (this) {
+      case TariffType.domestic:
+        return 'Domestic';
+      case TariffType.commercial:
+        return 'Commercial';
+    }
+  }
+
   String get subtitle {
     switch (this) {
       case TariffType.domestic:

@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/constants/tariff_rates.dart';
+import 'package:energy_tracker/extensions/date_time_extension.dart';
+import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 import 'package:energy_tracker/models/reading_record.dart';
 import 'package:energy_tracker/services/notifiers/user_profile_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_add_meter_reading/notifier/add_meter_reading_state.dart';
@@ -18,7 +20,6 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
   FirebaseAuth get _auth => FirebaseAuth.instance;
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;
   int _loadRequestId = 0;
-  String? _editingReadingId;
   DateTime? _editingDate;
 
   @override
@@ -29,7 +30,6 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
   }
 
   void initForEdit(ReadingRecord reading) {
-    _editingReadingId = reading.id;
     _editingDate = reading.date;
 
     state = state.copyWith(
@@ -54,94 +54,59 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
     }
 
     try {
-      // Single query — fetch all readings for selected month
-      final startOfMonth = DateTime(selectedDate.year, selectedDate.month);
-      final endOfMonth = DateTime(selectedDate.year, selectedDate.month + 1);
+      final readingsCol =
+          _firestore.collection('users').doc(uid).collection('readings');
 
-      final snap = await _firestore
-          .collection('users')
-          .doc(uid)
-          .collection('readings')
-          .where(
-            'date',
-            isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth),
-          )
-          .where(
-            'date',
-            isLessThan: Timestamp.fromDate(endOfMonth),
-          )
-          .orderBy('date', descending: false)
-          .get();
-
-      // All readings this month, sorted oldest → newest
-      // Exclude the entry being edited so it doesn't affect bounds
-      final readings =
-          snap.docs.where((doc) => doc.id != _editingReadingId).map((doc) {
-        final data = doc.data();
-        return (
-          reading: (data['reading'] as num?)?.toDouble() ?? 0,
-          date: (data['date'] as Timestamp).toDate(),
-        );
-      }).toList();
-
-      // Cutoff: for today use now, for past use end of selected day
-      final now = DateTime.now();
-      final isToday = selectedDate.year == now.year &&
-          selectedDate.month == now.month &&
-          selectedDate.day == now.day;
-
-      final cutoff = isToday
-          ? now
-          : DateTime(
-              selectedDate.year,
-              selectedDate.month,
-              selectedDate.day,
-              23,
-              59,
-              59,
-            );
-
-      final startOfNextDay = DateTime(
-        selectedDate.year,
-        selectedDate.month,
-        selectedDate.day + 1,
-      );
-
-      ({double reading, DateTime date})? before;
-      ({double reading, DateTime date})? next;
+      Query<Map<String, dynamic>> beforeQuery;
+      Query<Map<String, dynamic>> nextQuery;
 
       if (_editingDate != null) {
-        final pivot = selectedDate;
-        before = readings.where((r) => r.date.isBefore(pivot)).lastOrNull;
-
-        next = readings.where((r) => r.date.isAfter(pivot)).firstOrNull;
+        // Editing: neighbours are simply the readings immediately
+        // chronologically before/after this entry's original date.
+        beforeQuery = readingsCol.where(
+          'date',
+          isLessThan: Timestamp.fromDate(_editingDate!),
+        );
+        nextQuery = readingsCol.where(
+          'date',
+          isGreaterThan: Timestamp.fromDate(_editingDate!),
+        );
       } else {
-        // Previous: latest reading before or on selected day
-        before = readings.where((r) => r.date.isBefore(cutoff)).lastOrNull;
+        final now = DateTime.now();
+        final isToday = selectedDate.year == now.year &&
+            selectedDate.month == now.month &&
+            selectedDate.day == now.day;
+        final cutoff = isToday
+            ? now
+            : DateTime(
+                selectedDate.year,
+                selectedDate.month,
+                selectedDate.day,
+                23,
+                59,
+                59,
+              );
+        final startOfNextDay = DateTime(
+          selectedDate.year,
+          selectedDate.month,
+          selectedDate.day + 1,
+        );
 
-        // Next: earliest reading after selected day
-        // Group by day and get the last reading of the next day
-        final afterReadings =
-            readings.where((r) => !r.date.isBefore(startOfNextDay)).toList();
-
-        if (afterReadings.isNotEmpty) {
-          // Find the first day after selected date
-          final nextDay = afterReadings.first.date;
-          final nextDayStart =
-              DateTime(nextDay.year, nextDay.month, nextDay.day);
-          final nextDayEnd =
-              DateTime(nextDay.year, nextDay.month, nextDay.day + 1);
-
-          // Last entry of that day = highest meter reading of that day
-          next = afterReadings
-              .where(
-                (r) =>
-                    !r.date.isBefore(nextDayStart) &&
-                    r.date.isBefore(nextDayEnd),
-              )
-              .lastOrNull;
-        }
+        beforeQuery =
+            readingsCol.where('date', isLessThan: Timestamp.fromDate(cutoff));
+        nextQuery = readingsCol.where(
+          'date',
+          isGreaterThanOrEqualTo: Timestamp.fromDate(startOfNextDay),
+        );
       }
+
+      final beforeSnap =
+          await beforeQuery.orderBy('date', descending: true).limit(1).get();
+      final nextSnap = await nextQuery.orderBy('date').limit(1).get();
+
+      final before =
+          beforeSnap.docs.isEmpty ? null : _parse(beforeSnap.docs.first);
+      final next = nextSnap.docs.isEmpty ? null : _parse(nextSnap.docs.first);
 
       if (requestId != _loadRequestId || state.selectedDate != selectedDate) {
         return;
@@ -153,6 +118,7 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
         lastReadingDate: before?.date,
         nextReading: next?.reading,
         nextReadingDate: next?.date,
+        nextReadingId: next?.id,
         readingError: _validateReading(
           reading: state.currentReading,
           lastReading: before?.reading ?? 0,
@@ -168,6 +134,17 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
     }
   }
 
+  ({double reading, DateTime date, String id}) _parse(
+    QueryDocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
+    final data = doc.data();
+    return (
+      reading: (data['reading'] as num?)?.toDouble() ?? 0,
+      date: (data['date'] as Timestamp).toDate(),
+      id: doc.id,
+    );
+  }
+
   String? _validateReading({
     required double reading,
     required double lastReading,
@@ -178,34 +155,16 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
     if (reading <= 0) return null;
 
     if (lastReading > 0 && reading < lastReading) {
-      final label = lastDate != null ? ' (${_formatDate(lastDate)})' : '';
+      final label = lastDate != null ? ' (${lastDate.shortDayLabel})' : '';
       return 'Must be above ${lastReading.toStringAsFixed(0)} kWh$label';
     }
 
     if (nextReading != null && reading > nextReading) {
-      final label = nextDate != null ? ' (${_formatDate(nextDate)})' : '';
+      final label = nextDate != null ? ' (${nextDate.shortDayLabel})' : '';
       return 'Must be below ${nextReading.toStringAsFixed(0)} kWh$label';
     }
 
     return null;
-  }
-
-  String _formatDate(DateTime date) {
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return '${months[date.month - 1]} ${date.day}';
   }
 
   void setReading(String value) {
@@ -229,6 +188,7 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
       isLoadingLastReading: true,
       nextReading: null,
       nextReadingDate: null,
+      nextReadingId: null,
     );
     unawaited(Future.microtask(() => _loadSurroundingReadings(date)));
   }
@@ -240,7 +200,95 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
   String _monthKey(DateTime date) =>
       '${date.year}-${date.month.toString().padLeft(2, '0')}';
 
-  Future<void> _recalculateMonthBill(String uid, DateTime date) async {
+  Future<bool> saveReading() async {
+    if (!state.canSave) return false;
+
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) {
+      state = state.copyWith(
+        errorMessage: 'Session expired. Please sign in again.',
+      );
+      return false;
+    }
+
+    state = state.copyWith(isSaving: true, errorMessage: null);
+
+    try {
+      final date = state.selectedDate ?? DateTime.now();
+      final tariffType = ref.read(tariffTypeProvider);
+
+      final conflict = await _checkTariffConflict(uid, date, tariffType);
+      if (conflict != null) {
+        state = state.copyWith(isSaving: false, errorMessage: conflict);
+        return false;
+      }
+
+      await _firestore.collection('users').doc(uid).collection('readings').add({
+        'reading': state.currentReading,
+        'kwh': state.usageKwh,
+        'date': Timestamp.fromDate(date),
+        'notes': state.notes.trim(),
+        'tier': state.currentTier(tariffType),
+        'tariffType': tariffType.value,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      await _recalculateMonthBill(uid, date, tariffType);
+      await _fixUpNextReading(uid, date);
+
+      state = state.copyWith(isSaving: false);
+      return true;
+    } on FirebaseException catch (e) {
+      state = state.copyWith(isSaving: false, errorMessage: _mapError(e.code));
+      return false;
+    } on Exception catch (_) {
+      state = state.copyWith(
+        isSaving: false,
+        errorMessage: 'Failed to save reading. Please try again.',
+      );
+      return false;
+    }
+  }
+
+  Future<String?> _checkTariffConflict(
+    String uid,
+    DateTime date,
+    TariffType tariffType,
+  ) async {
+    final start = DateTime(date.year, date.month);
+    final end = DateTime(date.year, date.month + 1);
+
+    final snap = await _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('readings')
+        .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(start))
+        .where('date', isLessThan: Timestamp.fromDate(end))
+        .limit(1)
+        .get();
+
+    if (snap.docs.isEmpty) return null;
+
+    final existingTariffValue = snap.docs.first.data()['tariffType'] as String?;
+    final existingTariff = TariffTypeX.fromValue(
+      existingTariffValue ?? TariffType.domestic.value,
+    );
+
+    if (existingTariff != tariffType) {
+      final monthLabel = date.monthYearLabel;
+      return 'This month already has readings under '
+          '${existingTariff.label}. Switch your tariff back, or add this '
+          'reading to a different month, to keep $monthLabel consistent.';
+    }
+
+    return null;
+  }
+
+  Future<void> _recalculateMonthBill(
+    String uid,
+    DateTime date,
+    TariffType tariffType,
+  ) async {
     final key = _monthKey(date);
     final start = DateTime(date.year, date.month);
     final end = DateTime(date.year, date.month + 1);
@@ -263,60 +311,60 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
 
     final totalKwh = readingsSnap.docs.fold<double>(
       0,
-      (sum, doc) => sum + ((doc.data()['kwh'] as num?)?.toDouble() ?? 0),
+      (total, doc) => total + ((doc.data()['kwh'] as num?)?.toDouble() ?? 0),
     );
-
-    final tariffType = ref.read(tariffTypeProvider);
 
     await billRef.set(
       {
         'kwh': totalKwh,
         'amount': TariffRates.calculate(totalKwh, tariffType),
-        'tier': TariffRates.getTier(totalKwh),
+        'tier': TariffRates.getTier(totalKwh, tariffType),
+        'tariffType': tariffType.value,
         'date': Timestamp.fromDate(start),
       },
       SetOptions(merge: true),
     );
   }
 
-  Future<bool> saveReading() async {
-    if (!state.canSave) return false;
+  /// If a reading exists immediately after [insertedDate] (the value is
+  /// already cached as `state.nextReadingId` from `_loadSurroundingReadings`),
+  /// its stored kWh was computed against its old "previous" reading — which
+  /// is no longer accurate now that this reading sits between them. Recompute
+  /// and persist that reading's kwh/tier, and recalculate its bill month too
+  /// if it falls outside the month we already just recalculated.
+  Future<void> _fixUpNextReading(String uid, DateTime insertedDate) async {
+    final nextId = state.nextReadingId;
+    if (nextId == null) return;
 
-    final uid = _auth.currentUser?.uid;
-    if (uid == null) {
-      state = state.copyWith(
-        errorMessage: 'Session expired. Please sign in again.',
-      );
-      return false;
-    }
+    final nextRef = _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('readings')
+        .doc(nextId);
 
-    state = state.copyWith(isSaving: true, errorMessage: null);
+    final nextSnap = await nextRef.get();
+    if (!nextSnap.exists) return;
 
-    try {
-      final date = state.selectedDate ?? DateTime.now();
+    final nextData = nextSnap.data()!;
+    final nextReadingValue = (nextData['reading'] as num?)?.toDouble() ?? 0;
+    final nextDate = (nextData['date'] as Timestamp).toDate();
+    final nextTariffType = TariffTypeX.fromValue(
+      nextData['tariffType'] as String? ?? TariffType.domestic.value,
+    );
 
-      await _firestore.collection('users').doc(uid).collection('readings').add({
-        'reading': state.currentReading,
-        'kwh': state.usageKwh,
-        'date': Timestamp.fromDate(date),
-        'notes': state.notes.trim(),
-        'tier': state.currentTier,
-        'createdAt': FieldValue.serverTimestamp(),
-      });
+    final newKwh =
+        (nextReadingValue - state.currentReading).clamp(0, double.infinity);
+    final newTier = TariffRates.getTier(newKwh.toDouble(), nextTariffType);
 
-      await _recalculateMonthBill(uid, date);
+    await nextRef.update({
+      'kwh': newKwh,
+      'tier': newTier,
+    });
 
-      state = state.copyWith(isSaving: false);
-      return true;
-    } on FirebaseException catch (e) {
-      state = state.copyWith(isSaving: false, errorMessage: _mapError(e.code));
-      return false;
-    } on Exception catch (_) {
-      state = state.copyWith(
-        isSaving: false,
-        errorMessage: 'Failed to save reading. Please try again.',
-      );
-      return false;
+    final sameMonth = nextDate.year == insertedDate.year &&
+        nextDate.month == insertedDate.month;
+    if (!sameMonth) {
+      await _recalculateMonthBill(uid, nextDate, nextTariffType);
     }
   }
 
@@ -332,8 +380,8 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
     state = state.copyWith(isSaving: true, errorMessage: null);
 
     try {
-      final date = state.selectedDate ?? DateTime.now();
-      final oldDate = reading.date;
+      // date is fixed in edit mode, never changes
+      final date = reading.date;
 
       await _firestore
           .collection('users')
@@ -343,18 +391,12 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
           .update({
         'reading': state.currentReading,
         'kwh': state.usageKwh,
-        'date': Timestamp.fromDate(date),
         'notes': state.notes.trim(),
-        'tier': state.currentTier,
+        'tier': state.currentTier(reading.tariffType),
       });
 
-      await _recalculateMonthBill(uid, date);
-      if (date.month != oldDate.month || date.year != oldDate.year) {
-        await _recalculateMonthBill(
-          uid,
-          oldDate,
-        );
-      }
+      await _recalculateMonthBill(uid, date, reading.tariffType);
+      await _fixUpNextReading(uid, date);
 
       state = state.copyWith(isSaving: false);
       return true;

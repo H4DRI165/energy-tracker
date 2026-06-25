@@ -1,3 +1,4 @@
+import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 import 'package:energy_tracker/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -7,33 +8,67 @@ class UsageSummaryRow extends StatelessWidget {
     required this.kwh,
     required this.bill,
     required this.monthLabel,
+    required this.tariffType,
     super.key,
   });
 
   final double kwh;
   final double bill;
   final String monthLabel;
+  final TariffType tariffType;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: _SummaryStat(
-            label: 'kWh Used',
-            value: kwh.toStringAsFixed(0),
-            unit: 'kWh',
-            color: AppColors.accent2,
-          ),
+        Row(
+          children: [
+            Text(
+              monthLabel,
+              style: AppTextStyles.bodySm.copyWith(color: AppColors.text2),
+            ),
+            SizedBox(width: 6.w),
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+              decoration: BoxDecoration(
+                color: AppColors.surface3,
+                borderRadius: BorderRadius.circular(6.r),
+                border: Border.all(
+                  color: AppColors.text3.withValues(alpha: 0.3),
+                ),
+              ),
+              child: Text(
+                tariffType.shortLabel,
+                style: AppTextStyles.caption.copyWith(
+                  color: AppColors.text2,
+                  fontSize: 9.sp,
+                ),
+              ),
+            ),
+          ],
         ),
-        SizedBox(width: 10.w),
-        Expanded(
-          child: _SummaryStat(
-            label: 'Est. Bill',
-            value: 'RM ${bill.toStringAsFixed(2)}',
-            unit: monthLabel,
-            color: AppColors.accent,
-          ),
+        SizedBox(height: 8.h),
+        Row(
+          children: [
+            Expanded(
+              child: _SummaryStat(
+                label: 'kWh Used',
+                value: kwh.toStringAsFixed(0),
+                unit: 'kWh',
+                color: AppColors.accent2,
+              ),
+            ),
+            SizedBox(width: 10.w),
+            Expanded(
+              child: _SummaryStat(
+                label: 'Est. Bill',
+                value: 'RM ${bill.toStringAsFixed(2)}',
+                unit: monthLabel,
+                color: AppColors.accent,
+              ),
+            ),
+          ],
         ),
       ],
     );

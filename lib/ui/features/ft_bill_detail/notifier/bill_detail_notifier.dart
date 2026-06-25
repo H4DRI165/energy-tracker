@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/constants/tariff_rates.dart';
+import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 import 'package:energy_tracker/models/bill_record.dart';
 import 'package:energy_tracker/models/reading_record.dart';
 import 'package:energy_tracker/ui/components/logger.dart';
@@ -75,6 +76,7 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
       final readings = snap.docs.map((doc) {
         final data = doc.data();
         final date = (data['date'] as Timestamp).toDate();
+        final rawTariffType = data['tariffType'] as String?;
         return ReadingRecord(
           id: doc.id,
           reading: (data['reading'] as num?)?.toDouble() ?? 0,
@@ -83,6 +85,9 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
           notes: data['notes'] as String? ?? '',
           estimatedBill: (data['estimatedBill'] as num?)?.toDouble() ?? 0,
           tier: (data['tier'] as num?)?.toInt() ?? 1,
+          tariffType: rawTariffType == null
+              ? bill.tariffType
+              : TariffTypeX.fromValue(rawTariffType),
         );
       }).toList();
 
@@ -118,6 +123,9 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
         kwh: (data['kwh'] as num).toDouble(),
         amount: (data['amount'] as num).toDouble(),
         isPaid: data['isPaid'] as bool? ?? false,
+        tariffType: TariffTypeX.fromValue(
+          data['tariffType'] as String? ?? TariffType.domestic.value,
+        ),
         date: (data['date'] as Timestamp).toDate(),
       );
     } on FirebaseException catch (e, st) {
@@ -177,33 +185,43 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
       (total, r) => total + r.kwh,
     );
 
+    final remainingTariffType = updatedReadings.isEmpty
+        ? bill.tariffType
+        : (updatedReadings..sort((a, b) => b.date.compareTo(a.date)))
+            .first
+            .tariffType;
+
     state = state.copyWith(
       readings: updatedReadings,
       bill: state.bill!.copyWith(
         kwh: totalKwh,
-        amount: TariffRates.calculateDomestic(totalKwh),
+        amount: TariffRates.calculate(totalKwh, remainingTariffType),
+        tariffType: remainingTariffType,
       ),
     );
 
     try {
-      final batch = _firestore.batch()
-        ..delete(
-          _firestore
-              .collection('users')
-              .doc(uid)
-              .collection('readings')
-              .doc(reading.id),
-        );
-
-      final billSnap = await _firestore
+      final readingRef = _firestore
           .collection('users')
           .doc(uid)
-          .collection('bills')
-          .where('date', isEqualTo: Timestamp.fromDate(reading.date))
-          .get();
+          .collection('readings')
+          .doc(reading.id);
 
-      for (final doc in billSnap.docs) {
-        batch.delete(doc.reference);
+      final billRef =
+          _firestore.collection('users').doc(uid).collection('bills').doc(
+                bill.id,
+              );
+
+      final batch = _firestore.batch()..delete(readingRef);
+
+      if (updatedReadings.isEmpty) {
+        batch.delete(billRef);
+      } else {
+        batch.update(billRef, {
+          'kwh': totalKwh,
+          'amount': TariffRates.calculate(totalKwh, remainingTariffType),
+          'tariffType': remainingTariffType.value,
+        });
       }
 
       await batch.commit();

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:energy_tracker/app.dart';
+import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_settings/pg_edit_profile/notifier/notifier.dart';
 import 'package:energy_tracker/ui/features/ft_settings/pg_settings/notifier/settings_notifier.dart';
 import 'package:flutter/material.dart';
@@ -98,33 +99,35 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   Future<void> _handleSave() async {
     final success = await ref.read(editProfileProvider.notifier).save();
 
-    if (success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(
-                Icons.check_circle_outline_rounded,
-                color: AppColors.accent,
-                size: 18,
-              ),
-              SizedBox(width: 10.w),
-              Text('Profile updated successfully', style: AppTextStyles.bodyMd),
-            ],
-          ),
-          backgroundColor: AppColors.surface2,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-          ),
-        ),
-      );
+    if (!success) return;
+    if (!mounted) return;
 
-      if (context.mounted) {
-        ref.invalidate(settingsProvider);
-        context.pop();
-      }
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              Icons.check_circle_outline_rounded,
+              color: AppColors.accent,
+              size: 18.r,
+            ),
+            SizedBox(width: 10.w),
+            Text('Profile updated successfully', style: AppTextStyles.bodyMd),
+          ],
+        ),
+        backgroundColor: AppColors.surface2,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+        ),
+      ),
+    );
+
+    await ref.read(dashboardProvider.notifier).refresh();
+    await ref.read(settingsProvider.notifier).refresh();
+
+    if (!mounted) return;
+    context.pop();
   }
 }
 

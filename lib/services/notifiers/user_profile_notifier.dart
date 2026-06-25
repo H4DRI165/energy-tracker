@@ -1,4 +1,4 @@
-import 'package:energy_tracker/constants/tariff_types.dart';
+import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 import 'package:energy_tracker/services/app_user_notifier.dart';
 import 'package:energy_tracker/services/auth_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,4 +11,8 @@ final userProfileProvider = ChangeNotifierProvider<AppUserNotifier>((ref) {
 final tariffTypeProvider = Provider<TariffType>((ref) {
   final user = ref.watch(userProfileProvider);
   return user.profile?.tariffType ?? TariffType.domestic;
+});
+
+final isProfileLoadingProvider = Provider<bool>((ref) {
+  return ref.watch(userProfileProvider).isLoading;
 });

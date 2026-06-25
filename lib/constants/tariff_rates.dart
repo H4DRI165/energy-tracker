@@ -1,4 +1,4 @@
-import 'package:energy_tracker/constants/tariff_types.dart';
+import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 import 'package:energy_tracker/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 
@@ -67,15 +67,38 @@ class TariffRates {
     return bill < commercialMinCharge ? commercialMinCharge : bill;
   }
 
-  static int getTier(double kwh) {
+  static double minChargeFor(TariffType tariffType) => switch (tariffType) {
+        TariffType.domestic => domesticMinCharge,
+        TariffType.commercial => commercialMinCharge,
+      };
+
+  static int getTier(double kwh, TariffType tariffType) {
+    if (tariffType == TariffType.commercial) {
+      return kwh <= 200 ? 1 : 2;
+    }
+
     if (kwh <= 200) return 1;
     if (kwh <= 300) return 2;
     if (kwh <= 600) return 3;
     if (kwh <= 900) return 4;
+
     return 5;
   }
 
-  static String getTierKwhRange(int tier) {
+  static int _validatedCommercialTier(int tier) {
+    if (tier == 1 || tier == 2) return tier;
+    throw RangeError.value(
+      tier,
+      'tier',
+      'Commercial tariff supports only tier 1 or 2',
+    );
+  }
+
+  static String getTierKwhRange(int tier, TariffType tariffType) {
+    if (tariffType == TariffType.commercial) {
+      return _validatedCommercialTier(tier) == 1 ? '1–200 kWh' : '201+ kWh';
+    }
+
     switch (tier) {
       case 1:
         return '1–200 kWh';
@@ -90,7 +113,13 @@ class TariffRates {
     }
   }
 
-  static String getTierPrice(int tier) {
+  static String getTierPrice(int tier, TariffType tariffType) {
+    if (tariffType == TariffType.commercial) {
+      return _validatedCommercialTier(tier) == 1
+          ? '${(commercialTier1 * 100).toStringAsFixed(1)} sen'
+          : '${(commercialTier2 * 100).toStringAsFixed(1)} sen';
+    }
+
     switch (tier) {
       case 1:
         return '21.8 sen';
@@ -105,7 +134,13 @@ class TariffRates {
     }
   }
 
-  static Color getTierColor(int tier) {
+  static Color getTierColor(int tier, TariffType tariffType) {
+    if (tariffType == TariffType.commercial) {
+      return _validatedCommercialTier(tier) == 1
+          ? AppColors.accent
+          : AppColors.danger;
+    }
+
     switch (tier) {
       case 1:
         return AppColors.accent;
@@ -120,7 +155,13 @@ class TariffRates {
     }
   }
 
-  static String tierBadgeLabel(int tier) {
+  static String tierBadgeLabel(int tier, TariffType tariffType) {
+    if (tariffType == TariffType.commercial) {
+      return _validatedCommercialTier(tier) == 1
+          ? 'Tier 1 — Low usage ✓'
+          : 'Tier 2 — High usage';
+    }
+
     switch (tier) {
       case 1:
         return 'Tier 1 — Low usage ✓';
@@ -135,11 +176,12 @@ class TariffRates {
     }
   }
 
-  static String getTierRangePriceLabel(int tier) =>
-      'Tier $tier · ${getTierKwhRange(tier)} · ${getTierPrice(tier)}';
+  static String getTierRangePriceLabel(int tier, TariffType tariffType) =>
+      'Tier $tier · ${getTierKwhRange(tier, tariffType)} · '
+      '${getTierPrice(tier, tariffType)}';
 
-  static String getTierPriceKwhLabel(int tier) =>
-      'Tier $tier — ${getTierPrice(tier)}/kWh';
+  static String getTierPriceKwhLabel(int tier, TariffType tariffType) =>
+      'Tier $tier — ${getTierPrice(tier, tariffType)}/kWh';
 
   static List<TierBreakdown> _domesticBreakdown(double kwh) {
     if (kwh <= 0) return [];
@@ -149,11 +191,11 @@ class TariffRates {
     void addTier(int tier, double tierKwh, double rate, double bandWidth) {
       breakdowns.add(
         TierBreakdown(
-          label: getTierRangePriceLabel(tier),
+          label: getTierRangePriceLabel(tier, TariffType.domestic),
           kwh: tierKwh,
           rate: rate,
           amount: tierKwh * rate,
-          color: getTierColor(tier),
+          color: getTierColor(tier, TariffType.domestic),
           fillPercent: (tierKwh / bandWidth).clamp(0.0, 1.0),
         ),
       );
@@ -176,16 +218,14 @@ class TariffRates {
 
   static List<TierBreakdown> _commercialBreakdown(double kwh) {
     if (kwh <= 0) return [];
-    final tier1Price = '${(commercialTier1 * 100).toStringAsFixed(1)} sen';
-    final tier2Price = '${(commercialTier2 * 100).toStringAsFixed(1)} sen';
 
     final breakdowns = <TierBreakdown>[
       TierBreakdown(
-        label: 'Tier 1 · 1–200 kWh · $tier1Price/kWh',
+        label: getTierRangePriceLabel(1, TariffType.commercial),
         kwh: kwh.clamp(0.0, 200.0),
         rate: commercialTier1,
         amount: kwh.clamp(0.0, 200.0) * commercialTier1,
-        color: getTierColor(1),
+        color: getTierColor(1, TariffType.commercial),
         fillPercent: (kwh.clamp(0.0, 200.0) / 200).clamp(0.0, 1.0),
       ),
     ];
@@ -194,11 +234,11 @@ class TariffRates {
       final t2 = kwh - 200;
       breakdowns.add(
         TierBreakdown(
-          label: 'Tier 2 · 201+ kWh · $tier2Price/kWh',
+          label: getTierRangePriceLabel(2, TariffType.commercial),
           kwh: t2,
           rate: commercialTier2,
           amount: t2 * commercialTier2,
-          color: getTierColor(2),
+          color: getTierColor(2, TariffType.commercial),
           fillPercent: (t2 / 300).clamp(0.0, 1.0),
         ),
       );

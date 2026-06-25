@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/constants/tariff_rates.dart';
+import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 import 'package:energy_tracker/models/bill_record.dart';
 import 'package:energy_tracker/services/notifiers/user_profile_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_usage/notifier/usage_state.dart';
@@ -20,6 +21,15 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
   Future<UsageState> build() async {
     ref.watch(tariffTypeProvider);
     return _fetchUsageData();
+  }
+
+  Future<void> refresh() async {
+    final selectedFilter = state.asData?.value.filter ?? UsageFilter.monthly;
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      final fresh = await _fetchUsageData();
+      return fresh.copyWith(filter: selectedFilter);
+    });
   }
 
   Future<UsageState> _fetchUsageData() async {
@@ -51,9 +61,7 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
           .limit(12)
           .get();
 
-      final monthlyData = _buildMonthlyData(readingsSnap.docs, now);
       final billHistory = _buildBillHistory(billsSnap.docs);
-
       // Current month data
       final currentMonthReadings = readingsSnap.docs.where((doc) {
         final date = (doc.data()['date'] as Timestamp).toDate();
@@ -64,8 +72,19 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
         return total + ((doc.data()['kwh'] as num?)?.toDouble() ?? 0);
       });
 
-      final tariffType = ref.read(tariffTypeProvider);
-      final currentBill = TariffRates.calculate(currentKwh, tariffType);
+      // Derive this month's tariff from its actual readings, same rule as
+      // the dashboard: most-recent-reading wins, fall back to live tariff
+      // only when there's no data yet.
+      final liveTariffType = ref.read(tariffTypeProvider);
+      final currentTariffType = currentMonthReadings.isEmpty
+          ? liveTariffType
+          : TariffTypeX.fromValue(
+              currentMonthReadings.last.data()['tariffType'] as String? ??
+                  TariffType.domestic.value,
+            );
+
+      final monthlyData = _buildMonthlyData(readingsSnap.docs, now);
+      final currentBill = TariffRates.calculate(currentKwh, currentTariffType);
       final currentMonthLabel = DateFormat('MMMM yyyy').format(now);
 
       return UsageState(
@@ -73,6 +92,7 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
         billHistory: billHistory,
         currentKwh: currentKwh,
         currentBill: currentBill,
+        currentTariffType: currentTariffType,
         currentMonthLabel: currentMonthLabel,
       );
     } on FirebaseException catch (e) {
@@ -84,41 +104,40 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
     state = state.whenData((s) => s.copyWith(filter: filter));
   }
 
-  Future<void> refresh() async {
-    final selectedFilter = state.asData?.value.filter ?? UsageFilter.monthly;
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(() async {
-      final fresh = await _fetchUsageData();
-      return fresh.copyWith(filter: selectedFilter);
-    });
-  }
-
   List<MonthlyUsage> _buildMonthlyData(
     List<QueryDocumentSnapshot> docs,
     DateTime now,
   ) {
-    final monthlyMap = <String, double>{};
+    final monthlyKwh = <String, double>{};
+    final monthlyTariff = <String, TariffType>{};
 
     for (final doc in docs) {
       final data = doc.data()! as Map<String, dynamic>;
       final date = (data['date'] as Timestamp).toDate();
       final key = DateFormat('MMM-yyyy').format(date);
       final kwh = (data['kwh'] as num?)?.toDouble() ?? 0;
-      monthlyMap[key] = (monthlyMap[key] ?? 0) + kwh;
+      monthlyKwh[key] = (monthlyKwh[key] ?? 0) + kwh;
+
+      // Most recent reading per month wins, consistent with other places
+      // in the app that resolve a month's tariff from its readings.
+      monthlyTariff[key] = TariffTypeX.fromValue(
+        data['tariffType'] as String? ?? TariffType.domestic.value,
+      );
     }
 
     final result = <MonthlyUsage>[];
     for (var i = 11; i >= 0; i--) {
       final month = DateTime(now.year, now.month - i);
       final key = DateFormat('MMM-yyyy').format(month);
-      final kwh = monthlyMap[key] ?? 0;
+      final kwh = monthlyKwh[key] ?? 0;
+      final tariffType = monthlyTariff[key] ?? TariffType.domestic;
 
       result.add(
         MonthlyUsage(
           month: DateFormat('MMM').format(month),
           year: month.year,
           kwh: kwh,
-          bill: TariffRates.calculateDomestic(kwh),
+          bill: TariffRates.calculate(kwh, tariffType),
           isPaid: i > 0,
         ),
       );
@@ -139,6 +158,9 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
         amount: (data['amount'] as num?)?.toDouble() ?? 0,
         isPaid: data['isPaid'] as bool? ?? false,
         date: date,
+        tariffType: TariffTypeX.fromValue(
+          data['tariffType'] as String? ?? TariffType.domestic.value,
+        ),
       );
     }).toList()
       ..sort((a, b) => b.date.compareTo(a.date));

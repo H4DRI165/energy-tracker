@@ -181,9 +181,37 @@ class BillHistoryList extends ConsumerWidget {
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
-                                  Text(
-                                    '${bill.kwh.toStringAsFixed(0)} kWh',
-                                    style: AppTextStyles.caption,
+                                  SizedBox(height: 4.h),
+                                  Row(
+                                    children: [
+                                      Text(
+                                        '${bill.kwh.toStringAsFixed(0)} kWh',
+                                        style: AppTextStyles.caption,
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(height: 4.h),
+                                  Container(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 2.w,
+                                      vertical: 2.h,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.surface3,
+                                      borderRadius: BorderRadius.circular(6.r),
+                                      border: Border.all(
+                                        color: AppColors.text3
+                                            .withValues(alpha: 0.3),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      bill.tariffType.label,
+                                      style: AppTextStyles.caption.copyWith(
+                                        color: AppColors.text2,
+                                        fontSize: 9.sp,
+                                        height: 1.2,
+                                      ),
+                                    ),
                                   ),
                                 ],
                               ),

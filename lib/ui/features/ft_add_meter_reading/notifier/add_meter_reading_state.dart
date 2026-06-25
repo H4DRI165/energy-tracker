@@ -1,4 +1,6 @@
 import 'package:energy_tracker/constants/tariff_rates.dart';
+import 'package:energy_tracker/extensions/date_time_extension.dart';
+import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 
 class AddReadingPageState {
   const AddReadingPageState({
@@ -8,6 +10,7 @@ class AddReadingPageState {
     this.lastReadingDate,
     this.nextReading,
     this.nextReadingDate,
+    this.nextReadingId,
     this.currentReading = 0,
     this.selectedDate,
     this.notes = '',
@@ -21,6 +24,7 @@ class AddReadingPageState {
   final DateTime? lastReadingDate;
   final double? nextReading;
   final DateTime? nextReadingDate;
+  final String? nextReadingId;
   final double currentReading;
   final DateTime? selectedDate;
   final String notes;
@@ -28,60 +32,37 @@ class AddReadingPageState {
   final String? errorMessage;
 
   double get usageKwh {
-    if (lastReading == 0 && lastReadingDate == null) {
-      return currentReading > 0 ? currentReading : 0;
+    if (lastReadingDate == null) {
+      return 0; // first-ever reading —  no usage to report yet
     }
     final usage = currentReading - lastReading;
     return usage > 0 ? usage : 0;
   }
 
-  double get estimatedBill => TariffRates.calculateDomestic(usageKwh);
+  double estimatedBill(TariffType tariffType) =>
+      TariffRates.calculate(usageKwh, tariffType);
 
-  int get currentTier => TariffRates.getTier(usageKwh);
+  int currentTier(TariffType tariffType) =>
+      TariffRates.getTier(usageKwh, tariffType);
 
-  String get tierLabel => TariffRates.getTierPriceKwhLabel(currentTier);
+  String tierLabel(TariffType tariffType) =>
+      TariffRates.getTierPriceKwhLabel(currentTier(tariffType), tariffType);
 
   bool get hasUsage => usageKwh > 0;
 
   bool get canSave =>
       !isLoadingLastReading && currentReading > 0 && readingError == null;
 
+  bool get isBaselineReading => lastReadingDate == null;
+
   String get formattedLastReadingDate {
     if (lastReadingDate == null) return 'No previous reading';
-    final months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return '${months[lastReadingDate!.month - 1]} ${lastReadingDate!.day}';
+    return lastReadingDate!.shortDayLabel;
   }
 
   String get formattedNextReadingDate {
     if (nextReadingDate == null) return '';
-    final months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return '${months[nextReadingDate!.month - 1]} ${nextReadingDate!.day}';
+    return nextReadingDate!.shortDayLabel;
   }
 
   static const Object _unset = Object();
@@ -90,9 +71,10 @@ class AddReadingPageState {
     bool? isLoadingLastReading,
     bool? isSaving,
     double? lastReading,
-    DateTime? lastReadingDate,
+    Object? lastReadingDate = _unset,
     Object? nextReading = _unset,
     Object? nextReadingDate = _unset,
+    Object? nextReadingId = _unset,
     double? currentReading,
     DateTime? selectedDate,
     String? notes,
@@ -103,13 +85,18 @@ class AddReadingPageState {
       isLoadingLastReading: isLoadingLastReading ?? this.isLoadingLastReading,
       isSaving: isSaving ?? this.isSaving,
       lastReading: lastReading ?? this.lastReading,
-      lastReadingDate: lastReadingDate ?? this.lastReadingDate,
+      lastReadingDate: identical(lastReadingDate, _unset)
+          ? this.lastReadingDate
+          : lastReadingDate as DateTime?,
       nextReading: identical(nextReading, _unset)
           ? this.nextReading
           : nextReading as double?,
       nextReadingDate: identical(nextReadingDate, _unset)
           ? this.nextReadingDate
           : nextReadingDate as DateTime?,
+      nextReadingId: identical(nextReadingId, _unset)
+          ? this.nextReadingId
+          : nextReadingId as String?,
       currentReading: currentReading ?? this.currentReading,
       selectedDate: selectedDate ?? this.selectedDate,
       notes: notes ?? this.notes,

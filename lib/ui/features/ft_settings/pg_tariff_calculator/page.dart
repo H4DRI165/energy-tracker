@@ -1,30 +1,29 @@
 import 'package:energy_tracker/app.dart';
-import 'package:energy_tracker/ui/features/ft_settings/pg_tariff_calculator/state.dart';
+import 'package:energy_tracker/ui/features/ft_settings/pg_tariff_calculator/notifier/notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-class TariffCalculatorPage extends StatefulWidget {
+class TariffCalculatorPage extends ConsumerStatefulWidget {
   const TariffCalculatorPage({super.key});
 
   @override
-  State<TariffCalculatorPage> createState() => _TariffCalculatorPageState();
+  ConsumerState<TariffCalculatorPage> createState() =>
+      _TariffCalculatorPageState();
 }
 
-class _TariffCalculatorPageState extends State<TariffCalculatorPage> {
-  final _controller = TextEditingController(text: '350');
-  TariffCalculatorState _state = const TariffCalculatorState();
+class _TariffCalculatorPageState extends ConsumerState<TariffCalculatorPage> {
+  late final TextEditingController _controller;
 
   @override
   void initState() {
     super.initState();
+    final initialKwh = ref.read(tariffCalculatorProvider).kwh;
+    _controller = TextEditingController(text: initialKwh.toStringAsFixed(0));
     _controller.addListener(() {
       final value = double.tryParse(_controller.text) ?? 0;
-      if (value != _state.kwh) {
-        setState(() {
-          _state = _state.copyWith(kwh: value);
-        });
-      }
+      ref.read(tariffCalculatorProvider.notifier).setKwh(value);
     });
   }
 
@@ -36,6 +35,17 @@ class _TariffCalculatorPageState extends State<TariffCalculatorPage> {
 
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(tariffCalculatorProvider);
+    final tariffType = state.tariffType;
+    final kwh = state.kwh;
+
+    final breakdown = TariffRates.breakdownFor(kwh, tariffType);
+    final total = TariffRates.calculate(kwh, tariffType);
+    final minCharge = TariffRates.minChargeFor(tariffType);
+    final currentTier = TariffRates.getTier(kwh, tariffType);
+    final tierBadgeLabel = TariffRates.tierBadgeLabel(currentTier, tariffType);
+    final tierBadgeColor = TariffRates.getTierColor(currentTier, tariffType);
+
     return Scaffold(
       backgroundColor: AppColors.bg,
       body: SafeArea(
@@ -51,71 +61,35 @@ class _TariffCalculatorPageState extends State<TariffCalculatorPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _KwhInputCard(controller: _controller, kwh: _state.kwh),
+                    _TariffTypeSwitch(selected: tariffType),
+                    SizedBox(height: 16.h),
+                    _KwhInputCard(controller: _controller, kwh: kwh),
                     SizedBox(height: 20.h),
                     Text(
-                      'Tariff Breakdown (Domestic)',
+                      'Tariff Breakdown (${tariffType.label})',
                       style: AppTextStyles.bodyMd
                           .copyWith(fontWeight: FontWeight.w700),
                     ),
                     SizedBox(height: 10.h),
-                    _TierRow(
-                      tierLabel: 'Tier 1 · ${TariffRates.getTierKwhRange(1)}',
-                      rateLabel: '${_state.tier1Kwh.toStringAsFixed(0)} '
-                          'kWh × ${TariffRates.getTierPrice(1)}',
-                      amount: _state.tier1,
-                      color: AppColors.accent,
-                      isActive: _state.kwh > 0,
-                    ),
-                    SizedBox(height: 8.h),
-                    _TierRow(
-                      tierLabel: 'Tier 2 · ${TariffRates.getTierKwhRange(2)}',
-                      rateLabel: '${_state.tier2Kwh.toStringAsFixed(0)} '
-                          'kWh × ${TariffRates.getTierPrice(2)}',
-                      amount: _state.tier2,
-                      color: AppColors.warn,
-                      isActive: _state.kwh > 200,
-                    ),
-                    SizedBox(height: 8.h),
-                    _TierRow(
-                      tierLabel: 'Tier 3 · ${TariffRates.getTierKwhRange(3)}',
-                      rateLabel: '${_state.tier3Kwh.toStringAsFixed(0)} '
-                          'kWh × ${TariffRates.getTierPrice(3)}',
-                      amount: _state.tier3,
-                      color: AppColors.danger,
-                      isActive: _state.kwh > 300,
-                    ),
-                    if (_state.hasTier4) ...[
-                      SizedBox(height: 8.h),
+                    for (final tier in breakdown) ...[
                       _TierRow(
-                        tierLabel: 'Tier 4 · ${TariffRates.getTierKwhRange(4)}',
-                        rateLabel: '${_state.tier4Kwh.toStringAsFixed(0)} '
-                            'kWh × ${TariffRates.getTierPrice(4)}',
-                        amount: _state.tier4,
-                        color: AppColors.danger,
-                        isActive: true,
+                        tierLabel: tier.label,
+                        rateLabel: '${tier.kwh.toStringAsFixed(0)} kWh × '
+                            '${(tier.rate * 100).toStringAsFixed(1)} sen',
+                        amount: tier.amount,
+                        color: tier.color,
+                        isActive: tier.kwh > 0,
                       ),
-                    ],
-                    if (_state.hasTier5) ...[
                       SizedBox(height: 8.h),
-                      _TierRow(
-                        tierLabel: 'Tier 5 · ${TariffRates.getTierKwhRange(5)}',
-                        rateLabel: '${_state.tier5Kwh.toStringAsFixed(0)} '
-                            'kWh × ${TariffRates.getTierPrice(5)}',
-                        amount: _state.tier5,
-                        color: AppColors.danger,
-                        isActive: true,
-                      ),
                     ],
-                    SizedBox(height: 16.h),
                     _TotalCard(
-                      total: _state.total,
-                      minCharge: _state.minCharge,
-                      tierBadgeLabel: _state.tierBadgeLabel,
-                      tierBadgeColor: _state.tierBadgeColor,
+                      total: total,
+                      minCharge: minCharge,
+                      tierBadgeLabel: tierBadgeLabel,
+                      tierBadgeColor: tierBadgeColor,
                     ),
                     SizedBox(height: 16.h),
-                    _InfoCard(),
+                    _InfoCard(tariffType: tariffType),
                     SizedBox(height: 24.h),
                   ],
                 ),
@@ -162,6 +136,66 @@ class _Header extends StatelessWidget {
           Text('Tariff Calculator', style: AppTextStyles.titleMd),
         ],
       ),
+    );
+  }
+}
+
+class _TariffTypeSwitch extends ConsumerWidget {
+  const _TariffTypeSwitch({required this.selected});
+
+  final TariffType selected;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Row(
+      children: TariffType.values.map((type) {
+        final isSelected = type == selected;
+        return Expanded(
+          child: Padding(
+            padding: EdgeInsets.only(
+              right: type == TariffType.values.first ? 8.w : 0,
+            ),
+            child: GestureDetector(
+              onTap: () => ref
+                  .read(tariffCalculatorProvider.notifier)
+                  .setTariffType(type),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 10.w),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? AppColors.accent.withValues(alpha: 0.08)
+                      : AppColors.surface2,
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+                  border: Border.all(
+                    color: isSelected ? AppColors.accent : AppColors.border,
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(type.icon, style: TextStyle(fontSize: 16.sp)),
+                    SizedBox(width: 6.w),
+                    Expanded(
+                      child: Text(
+                        type.shortLabel,
+                        textAlign: TextAlign.center,
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                        style: AppTextStyles.bodySm.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color:
+                              isSelected ? AppColors.accent : AppColors.text2,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 }
@@ -359,8 +393,14 @@ class _TotalCard extends StatelessWidget {
 }
 
 class _InfoCard extends StatelessWidget {
+  const _InfoCard({required this.tariffType});
+
+  final TariffType tariffType;
+
   @override
   Widget build(BuildContext context) {
+    final tierCount = tariffType == TariffType.commercial ? 2 : 5;
+
     return Container(
       padding: EdgeInsets.all(14.r),
       decoration: BoxDecoration(
@@ -372,38 +412,21 @@ class _InfoCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '💡 TNB Domestic Tariff Rates',
+            '💡 TNB ${tariffType.label} Tariff Rates',
             style: AppTextStyles.bodySm.copyWith(fontWeight: FontWeight.w700),
           ),
           SizedBox(height: 8.h),
-          _RateRow(
-            'Tier 1',
-            TariffRates.getTierKwhRange(1),
-            '${TariffRates.getTierPrice(1)}/kWh',
-          ),
-          _RateRow(
-            'Tier 2',
-            TariffRates.getTierKwhRange(2),
-            '${TariffRates.getTierPrice(2)}/kWh',
-          ),
-          _RateRow(
-            'Tier 3',
-            TariffRates.getTierKwhRange(3),
-            '${TariffRates.getTierPrice(3)}/kWh',
-          ),
-          _RateRow(
-            'Tier 4',
-            TariffRates.getTierKwhRange(4),
-            '${TariffRates.getTierPrice(4)}/kWh',
-          ),
-          _RateRow(
-            'Tier 5',
-            TariffRates.getTierKwhRange(5),
-            '${TariffRates.getTierPrice(5)}/kWh',
-          ),
+          for (var tier = 1; tier <= tierCount; tier++)
+            _RateRow(
+              'Tier $tier',
+              TariffRates.getTierKwhRange(tier, tariffType),
+              '${TariffRates.getTierPrice(tier, tariffType)}/kWh',
+            ),
           Divider(height: 16.h, color: AppColors.border),
           Text(
-            'Minimum charge: RM 3.00/month',
+            'Minimum charge: RM '
+            '${TariffRates.minChargeFor(tariffType).toStringAsFixed(2)}'
+            '/month',
             style: AppTextStyles.caption,
           ),
         ],

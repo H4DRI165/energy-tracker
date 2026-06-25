@@ -1,4 +1,5 @@
 import 'package:energy_tracker/app.dart';
+import 'package:energy_tracker/services/notifiers/user_profile_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_add_meter_reading/notifier/notifier.dart';
 import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_usage/notifier/usage_notifier.dart';
@@ -152,8 +153,15 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
     super.dispose();
   }
 
+  TariffType get _effectiveTariffType {
+    if (_isEdit) return widget.reading!.tariffType;
+    return ref.watch(tariffTypeProvider);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final tariffType = _effectiveTariffType;
+
     return Expanded(
       child: SingleChildScrollView(
         padding: EdgeInsets.symmetric(
@@ -179,9 +187,14 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
               controller: _readingController,
               errorText: widget.state.readingError,
             ),
+            SizedBox(height: 10.h),
+            _TariffTypeNote(tariffType: tariffType, isEdit: _isEdit),
             SizedBox(height: 16.h),
             if (widget.state.hasUsage) ...[
-              _AutoCalcCard(state: widget.state),
+              _AutoCalcCard(
+                state: widget.state,
+                tariffType: tariffType,
+              ),
               SizedBox(height: 16.h),
             ],
             Text('Notes (optional)', style: AppTextStyles.label),
@@ -507,9 +520,40 @@ class _MeterReadingField extends StatelessWidget {
   }
 }
 
+class _TariffTypeNote extends StatelessWidget {
+  const _TariffTypeNote({
+    required this.tariffType,
+    required this.isEdit,
+  });
+
+  final TariffType tariffType;
+  final bool isEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(Icons.receipt_long_rounded, size: 13.r, color: AppColors.text3),
+        SizedBox(width: 6.w),
+        Text(
+          isEdit
+              ? 'Billed under ${tariffType.label}'
+              : 'Calculating under ${tariffType.label} rates',
+          style: AppTextStyles.caption.copyWith(color: AppColors.text3),
+        ),
+      ],
+    );
+  }
+}
+
 class _AutoCalcCard extends StatelessWidget {
-  const _AutoCalcCard({required this.state});
+  const _AutoCalcCard({
+    required this.state,
+    required this.tariffType,
+  });
+
   final AddReadingPageState state;
+  final TariffType tariffType;
 
   @override
   Widget build(BuildContext context) {
@@ -539,7 +583,7 @@ class _AutoCalcCard extends StatelessWidget {
           SizedBox(height: 8.h),
           _CalcRow(
             label: 'Estimated bill',
-            value: 'RM ${state.estimatedBill.toStringAsFixed(2)}',
+            value: 'RM ${state.estimatedBill(tariffType).toStringAsFixed(2)}',
             valueColor: AppColors.accent,
           ),
           SizedBox(height: 10.h),
@@ -552,7 +596,11 @@ class _AutoCalcCard extends StatelessWidget {
                 'Current tier',
                 style: AppTextStyles.caption,
               ),
-              _TierBadge(tierLabel: state.tierLabel, tier: state.currentTier),
+              _TierBadge(
+                tierLabel: state.tierLabel(tariffType),
+                tier: state.currentTier(tariffType),
+                tariffType: tariffType,
+              ),
             ],
           ),
         ],
@@ -597,23 +645,26 @@ class _TierBadge extends StatelessWidget {
   const _TierBadge({
     required this.tierLabel,
     required this.tier,
+    required this.tariffType,
   });
 
   final String tierLabel;
   final int tier;
+  final TariffType tariffType;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
       decoration: BoxDecoration(
-        color: TariffRates.getTierColor(tier).withValues(alpha: 0.12),
+        color:
+            TariffRates.getTierColor(tier, tariffType).withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20.r),
       ),
       child: Text(
         tierLabel,
-        style:
-            AppTextStyles.tag.copyWith(color: TariffRates.getTierColor(tier)),
+        style: AppTextStyles.tag
+            .copyWith(color: TariffRates.getTierColor(tier, tariffType)),
       ),
     );
   }
