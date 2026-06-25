@@ -85,9 +85,18 @@ class TariffRates {
     return 5;
   }
 
+  static int _validatedCommercialTier(int tier) {
+    if (tier == 1 || tier == 2) return tier;
+    throw RangeError.value(
+      tier,
+      'tier',
+      'Commercial tariff supports only tier 1 or 2',
+    );
+  }
+
   static String getTierKwhRange(int tier, TariffType tariffType) {
     if (tariffType == TariffType.commercial) {
-      return tier == 1 ? '1–200 kWh' : '201+ kWh';
+      return _validatedCommercialTier(tier) == 1 ? '1–200 kWh' : '201+ kWh';
     }
 
     switch (tier) {
@@ -106,7 +115,7 @@ class TariffRates {
 
   static String getTierPrice(int tier, TariffType tariffType) {
     if (tariffType == TariffType.commercial) {
-      return tier == 1
+      return _validatedCommercialTier(tier) == 1
           ? '${(commercialTier1 * 100).toStringAsFixed(1)} sen'
           : '${(commercialTier2 * 100).toStringAsFixed(1)} sen';
     }
@@ -127,7 +136,9 @@ class TariffRates {
 
   static Color getTierColor(int tier, TariffType tariffType) {
     if (tariffType == TariffType.commercial) {
-      return tier == 1 ? AppColors.accent : AppColors.danger;
+      return _validatedCommercialTier(tier) == 1
+          ? AppColors.accent
+          : AppColors.danger;
     }
 
     switch (tier) {
@@ -146,7 +157,9 @@ class TariffRates {
 
   static String tierBadgeLabel(int tier, TariffType tariffType) {
     if (tariffType == TariffType.commercial) {
-      return tier == 1 ? 'Tier 1 — Low usage ✓' : 'Tier 2 — High usage';
+      return _validatedCommercialTier(tier) == 1
+          ? 'Tier 1 — Low usage ✓'
+          : 'Tier 2 — High usage';
     }
 
     switch (tier) {

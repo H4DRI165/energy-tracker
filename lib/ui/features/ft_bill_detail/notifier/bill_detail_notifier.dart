@@ -76,6 +76,7 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
       final readings = snap.docs.map((doc) {
         final data = doc.data();
         final date = (data['date'] as Timestamp).toDate();
+        final rawTariffType = data['tariffType'] as String?;
         return ReadingRecord(
           id: doc.id,
           reading: (data['reading'] as num?)?.toDouble() ?? 0,
@@ -84,9 +85,9 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
           notes: data['notes'] as String? ?? '',
           estimatedBill: (data['estimatedBill'] as num?)?.toDouble() ?? 0,
           tier: (data['tier'] as num?)?.toInt() ?? 1,
-          tariffType: TariffTypeX.fromValue(
-            data['tariffType'] as String? ?? TariffType.domestic.value,
-          ),
+          tariffType: rawTariffType == null
+              ? bill.tariffType
+              : TariffTypeX.fromValue(rawTariffType),
         );
       }).toList();
 

@@ -593,7 +593,7 @@ class _ReadingsSection extends ConsumerWidget {
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ],
-                                  SizedBox(width: 6.w),
+                                  SizedBox(height: 4.h),
                                   Container(
                                     padding: EdgeInsets.symmetric(
                                       horizontal: 6.w,

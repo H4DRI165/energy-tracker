@@ -193,7 +193,7 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
             if (widget.state.hasUsage) ...[
               _AutoCalcCard(
                 state: widget.state,
-                tariffType: ref.watch(tariffTypeProvider),
+                tariffType: tariffType,
               ),
               SizedBox(height: 16.h),
             ],

@@ -96,7 +96,7 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
         currentMonthLabel: currentMonthLabel,
       );
     } on FirebaseException catch (e) {
-      throw Exception('Failed to load usage: $e.message');
+      throw Exception('Failed to load usage: ${e.message}');
     }
   }
 

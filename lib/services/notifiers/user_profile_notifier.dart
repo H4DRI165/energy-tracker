@@ -12,3 +12,7 @@ final tariffTypeProvider = Provider<TariffType>((ref) {
   final user = ref.watch(userProfileProvider);
   return user.profile?.tariffType ?? TariffType.domestic;
 });
+
+final isProfileLoadingProvider = Provider<bool>((ref) {
+  return ref.watch(userProfileProvider).isLoading;
+});

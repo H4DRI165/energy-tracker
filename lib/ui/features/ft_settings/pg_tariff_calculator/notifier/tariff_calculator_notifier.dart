@@ -12,12 +12,17 @@ class TariffCalculatorNotifier extends Notifier<TariffCalculatorState> {
   @override
   TariffCalculatorState build() {
     // flipping it here never writes back to the account setting.
+    final isLoading = ref.watch(isProfileLoadingProvider);
     final savedTariffType = ref.read(tariffTypeProvider);
-    return TariffCalculatorState(tariffType: savedTariffType);
+
+    return TariffCalculatorState(
+      tariffType: savedTariffType,
+      isInitializing: isLoading,
+    );
   }
 
   void setKwh(double kwh) => state = state.copyWith(kwh: kwh);
 
   void setTariffType(TariffType type) =>
-      state = state.copyWith(tariffType: type);
+      state = state.copyWith(tariffType: type, isInitializing: false);
 }

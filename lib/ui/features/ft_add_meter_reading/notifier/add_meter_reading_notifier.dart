@@ -118,6 +118,7 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
         lastReadingDate: before?.date,
         nextReading: next?.reading,
         nextReadingDate: next?.date,
+        nextReadingId: next?.id,
         readingError: _validateReading(
           reading: state.currentReading,
           lastReading: before?.reading ?? 0,
@@ -133,13 +134,14 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
     }
   }
 
-  ({double reading, DateTime date}) _parse(
+  ({double reading, DateTime date, String id}) _parse(
     QueryDocumentSnapshot<Map<String, dynamic>> doc,
   ) {
     final data = doc.data();
     return (
       reading: (data['reading'] as num?)?.toDouble() ?? 0,
       date: (data['date'] as Timestamp).toDate(),
+      id: doc.id,
     );
   }
 
@@ -186,6 +188,7 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
       isLoadingLastReading: true,
       nextReading: null,
       nextReadingDate: null,
+      nextReadingId: null,
     );
     unawaited(Future.microtask(() => _loadSurroundingReadings(date)));
   }
@@ -231,6 +234,7 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
       });
 
       await _recalculateMonthBill(uid, date, tariffType);
+      await _fixUpNextReading(uid, date);
 
       state = state.copyWith(isSaving: false);
       return true;
@@ -322,6 +326,48 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
     );
   }
 
+  /// If a reading exists immediately after [insertedDate] (the value is
+  /// already cached as `state.nextReadingId` from `_loadSurroundingReadings`),
+  /// its stored kWh was computed against its old "previous" reading — which
+  /// is no longer accurate now that this reading sits between them. Recompute
+  /// and persist that reading's kwh/tier, and recalculate its bill month too
+  /// if it falls outside the month we already just recalculated.
+  Future<void> _fixUpNextReading(String uid, DateTime insertedDate) async {
+    final nextId = state.nextReadingId;
+    if (nextId == null) return;
+
+    final nextRef = _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('readings')
+        .doc(nextId);
+
+    final nextSnap = await nextRef.get();
+    if (!nextSnap.exists) return;
+
+    final nextData = nextSnap.data()!;
+    final nextReadingValue = (nextData['reading'] as num?)?.toDouble() ?? 0;
+    final nextDate = (nextData['date'] as Timestamp).toDate();
+    final nextTariffType = TariffTypeX.fromValue(
+      nextData['tariffType'] as String? ?? TariffType.domestic.value,
+    );
+
+    final newKwh =
+        (nextReadingValue - state.currentReading).clamp(0, double.infinity);
+    final newTier = TariffRates.getTier(newKwh.toDouble(), nextTariffType);
+
+    await nextRef.update({
+      'kwh': newKwh,
+      'tier': newTier,
+    });
+
+    final sameMonth = nextDate.year == insertedDate.year &&
+        nextDate.month == insertedDate.month;
+    if (!sameMonth) {
+      await _recalculateMonthBill(uid, nextDate, nextTariffType);
+    }
+  }
+
   Future<bool> updateReading(ReadingRecord reading) async {
     if (!state.canSave) return false;
 
@@ -334,20 +380,8 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
     state = state.copyWith(isSaving: true, errorMessage: null);
 
     try {
-      final date = state.selectedDate ?? DateTime.now();
-      final oldDate = reading.date;
-
-      final dateChangedMonth =
-          date.month != oldDate.month || date.year != oldDate.year;
-
-      if (dateChangedMonth) {
-        final conflict =
-            await _checkTariffConflict(uid, date, reading.tariffType);
-        if (conflict != null) {
-          state = state.copyWith(isSaving: false, errorMessage: conflict);
-          return false;
-        }
-      }
+      // date is fixed in edit mode, never changes
+      final date = reading.date;
 
       await _firestore
           .collection('users')
@@ -357,15 +391,12 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
           .update({
         'reading': state.currentReading,
         'kwh': state.usageKwh,
-        'date': Timestamp.fromDate(date),
         'notes': state.notes.trim(),
         'tier': state.currentTier(reading.tariffType),
       });
 
       await _recalculateMonthBill(uid, date, reading.tariffType);
-      if (dateChangedMonth) {
-        await _recalculateMonthBill(uid, oldDate, reading.tariffType);
-      }
+      await _fixUpNextReading(uid, date);
 
       state = state.copyWith(isSaving: false);
       return true;
