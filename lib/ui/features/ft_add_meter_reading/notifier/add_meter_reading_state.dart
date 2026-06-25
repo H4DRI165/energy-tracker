@@ -71,7 +71,7 @@ class AddReadingPageState {
     bool? isLoadingLastReading,
     bool? isSaving,
     double? lastReading,
-    DateTime? lastReadingDate,
+    Object? lastReadingDate = _unset,
     Object? nextReading = _unset,
     Object? nextReadingDate = _unset,
     Object? nextReadingId = _unset,
@@ -85,7 +85,9 @@ class AddReadingPageState {
       isLoadingLastReading: isLoadingLastReading ?? this.isLoadingLastReading,
       isSaving: isSaving ?? this.isSaving,
       lastReading: lastReading ?? this.lastReading,
-      lastReadingDate: lastReadingDate ?? this.lastReadingDate,
+      lastReadingDate: identical(lastReadingDate, _unset)
+          ? this.lastReadingDate
+          : lastReadingDate as DateTime?,
       nextReading: identical(nextReading, _unset)
           ? this.nextReading
           : nextReading as double?,
