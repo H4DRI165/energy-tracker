@@ -233,8 +233,8 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      await _recalculateMonthBill(uid, date, tariffType);
       await _fixUpNextReading(uid, date);
+      await _recalculateMonthBill(uid, date, tariffType);
 
       state = state.copyWith(isSaving: false);
       return true;
