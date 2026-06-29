@@ -177,22 +177,60 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
 
     final previousState = state;
 
-    final updatedReadings =
-        state.readings.where((r) => r.id != reading.id).toList();
+    final sortedBefore = [...state.readings]
+      ..sort((a, b) => a.date.compareTo(b.date));
+    final deletedIndex = sortedBefore.indexWhere((r) => r.id == reading.id);
+    final remaining = sortedBefore.where((r) => r.id != reading.id).toList();
 
-    final totalKwh = updatedReadings.fold<double>(
-      0,
-      (total, r) => total + r.kwh,
-    );
+    // Determine if the deleted reading's next-neighbour needs its kwh
+    // recomputed against its new previous reading.
+    ReadingRecord? fixedNext;
+    final hadNext = deletedIndex >= 0 && deletedIndex < sortedBefore.length - 1;
+    if (hadNext) {
+      final next = sortedBefore[deletedIndex + 1];
+      final hadPrevious = deletedIndex > 0;
 
-    final remainingTariffType = updatedReadings.isEmpty
+      final double newKwh;
+      if (!hadPrevious) {
+        // The deleted reading had no previous reading — it WAS the baseline.
+        // Its next-neighbors now becomes the new baseline, not a delta
+        // against an assumed-zero meter value.
+        newKwh = 0;
+      } else {
+        final newPreviousValue = sortedBefore[deletedIndex - 1].reading;
+        newKwh = (next.reading - newPreviousValue)
+            .clamp(0, double.infinity)
+            .toDouble();
+      }
+
+      final tariffType = next.tariffType;
+      fixedNext = ReadingRecord(
+        id: next.id,
+        reading: next.reading,
+        kwh: newKwh,
+        date: next.date,
+        notes: next.notes,
+        estimatedBill: next.estimatedBill,
+        tier: TariffRates.getTier(newKwh, tariffType),
+        tariffType: tariffType,
+      );
+    }
+
+    final finalReadingsAscending = remaining
+        .map((r) => fixedNext != null && r.id == fixedNext.id ? fixedNext : r)
+        .toList();
+
+    final totalKwh =
+        finalReadingsAscending.fold<double>(0, (total, r) => total + r.kwh);
+    final remainingTariffType = finalReadingsAscending.isEmpty
         ? bill.tariffType
-        : (updatedReadings..sort((a, b) => b.date.compareTo(a.date)))
-            .first
-            .tariffType;
+        : finalReadingsAscending.last.tariffType;
+
+    final finalReadingsDescending = [...finalReadingsAscending]
+      ..sort((a, b) => b.date.compareTo(a.date));
 
     state = state.copyWith(
-      readings: updatedReadings,
+      readings: finalReadingsDescending,
       bill: state.bill!.copyWith(
         kwh: totalKwh,
         amount: TariffRates.calculate(totalKwh, remainingTariffType),
@@ -201,31 +239,44 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
     );
 
     try {
-      final readingRef = _firestore
+      final batch = _firestore.batch()
+        ..delete(
+          _firestore
+              .collection('users')
+              .doc(uid)
+              .collection('readings')
+              .doc(reading.id),
+        );
+
+      if (fixedNext != null) {
+        batch.update(
+          _firestore
+              .collection('users')
+              .doc(uid)
+              .collection('readings')
+              .doc(fixedNext.id),
+          {'kwh': fixedNext.kwh, 'tier': fixedNext.tier},
+        );
+      }
+
+      final billRef = _firestore
           .collection('users')
           .doc(uid)
-          .collection('readings')
-          .doc(reading.id);
+          .collection('bills')
+          .doc(bill.id);
 
-      final billRef =
-          _firestore.collection('users').doc(uid).collection('bills').doc(
-                bill.id,
-              );
-
-      final batch = _firestore.batch()..delete(readingRef);
-
-      if (updatedReadings.isEmpty) {
+      if (finalReadingsAscending.isEmpty) {
         batch.delete(billRef);
       } else {
         batch.update(billRef, {
           'kwh': totalKwh,
           'amount': TariffRates.calculate(totalKwh, remainingTariffType),
+          'tier': TariffRates.getTier(totalKwh, remainingTariffType),
           'tariffType': remainingTariffType.value,
         });
       }
 
       await batch.commit();
-
       return true;
     } on FirebaseException catch (_) {
       state = previousState;
