@@ -1,10 +1,11 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:energy_tracker/constants/tariff_rates.dart';
 import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 import 'package:energy_tracker/models/bill_record.dart';
 import 'package:energy_tracker/models/reading_record.dart';
+import 'package:energy_tracker/services/bill_recalculation_service.dart';
+import 'package:energy_tracker/services/reading_chain_service.dart';
 import 'package:energy_tracker/ui/components/logger.dart';
 import 'package:energy_tracker/ui/features/ft_bill_detail/notifier/bill_detail_state.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -20,6 +21,10 @@ final NotifierProvider<BillDetailNotifier, BillDetailPageState>
 class BillDetailNotifier extends Notifier<BillDetailPageState> {
   FirebaseAuth get _auth => FirebaseAuth.instance;
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;
+  late final ReadingChainService _chainService =
+      ReadingChainService(_firestore);
+  late final BillRecalculationService _billService =
+      BillRecalculationService(_firestore);
 
   @override
   BillDetailPageState build() {
@@ -177,59 +182,70 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
 
     final previousState = state;
 
-    final updatedReadings =
-        state.readings.where((r) => r.id != reading.id).toList();
-
-    final totalKwh = updatedReadings.fold<double>(
-      0,
-      (total, r) => total + r.kwh,
-    );
-
-    final remainingTariffType = updatedReadings.isEmpty
-        ? bill.tariffType
-        : (updatedReadings..sort((a, b) => b.date.compareTo(a.date)))
-            .first
-            .tariffType;
-
+    // update widget tree update on Dismissible's
     state = state.copyWith(
-      readings: updatedReadings,
-      bill: state.bill!.copyWith(
-        kwh: totalKwh,
-        amount: TariffRates.calculate(totalKwh, remainingTariffType),
-        tariffType: remainingTariffType,
-      ),
+      readings: state.readings.where((r) => r.id != reading.id).toList(),
     );
 
+    var committed = false;
     try {
-      final readingRef = _firestore
-          .collection('users')
-          .doc(uid)
-          .collection('readings')
-          .doc(reading.id);
+      final previous = await _chainService.findPrevious(uid, reading.date);
+      final next = await _chainService.findNext(uid, reading.date);
 
-      final billRef =
-          _firestore.collection('users').doc(uid).collection('bills').doc(
-                bill.id,
-              );
+      final batch = _firestore.batch()
+        ..delete(
+          _firestore
+              .collection('users')
+              .doc(uid)
+              .collection('readings')
+              .doc(reading.id),
+        );
 
-      final batch = _firestore.batch()..delete(readingRef);
-
-      if (updatedReadings.isEmpty) {
-        batch.delete(billRef);
-      } else {
-        batch.update(billRef, {
-          'kwh': totalKwh,
-          'amount': TariffRates.calculate(totalKwh, remainingTariffType),
-          'tariffType': remainingTariffType.value,
-        });
+      ChainFixResult? fix;
+      if (next != null) {
+        // If there's no previous reading, the deleted reading WAS the
+        // baseline — next becomes the new baseline (kwh: 0).
+        fix = _chainService.computeFix(next, previous?.reading);
+        _chainService.applyFix(batch, uid, fix);
       }
 
       await batch.commit();
+      committed = true;
+
+      await _billService.recalculateMonth(uid, reading.date, bill.tariffType);
+
+      final fixInDifferentMonth = fix != null &&
+          (fix.date.year != reading.date.year ||
+              fix.date.month != reading.date.month);
+      if (fixInDifferentMonth) {
+        await _billService.recalculateMonth(uid, fix.date, fix.tariffType);
+      }
+
+      // Local state can no longer be cheaply patched given possible
+      // cross-month effects — reload from source of truth.
+      final freshBill = await _loadBill(bill.id);
+      if (freshBill != null) {
+        state = state.copyWith(bill: freshBill, isPaid: freshBill.isPaid);
+        await _loadReadings(freshBill);
+      } else {
+        state = state.copyWith(
+          readings: const [],
+          billDeleted: true,
+        );
+      }
 
       return true;
-    } on FirebaseException catch (_) {
-      state = previousState;
-      return false;
+    } on FirebaseException catch (e, st) {
+      if (!committed) {
+        state = previousState;
+        return false;
+      }
+
+      AppLogger.error('Failed to refresh bill after deleting reading', e, st);
+      state = state.copyWith(
+        errorMessage: 'Reading deleted, but failed to refresh the bill.',
+      );
+      return true;
     }
   }
 }

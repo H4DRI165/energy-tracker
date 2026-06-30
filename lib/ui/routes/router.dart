@@ -1,7 +1,8 @@
 import 'dart:async';
 
 import 'package:energy_tracker/app.dart';
-import 'package:energy_tracker/services/services.dart';
+import 'package:energy_tracker/services/app_user_notifier.dart';
+import 'package:energy_tracker/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 

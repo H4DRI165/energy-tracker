@@ -10,7 +10,6 @@ class AddReadingPageState {
     this.lastReadingDate,
     this.nextReading,
     this.nextReadingDate,
-    this.nextReadingId,
     this.currentReading = 0,
     this.selectedDate,
     this.notes = '',
@@ -24,7 +23,6 @@ class AddReadingPageState {
   final DateTime? lastReadingDate;
   final double? nextReading;
   final DateTime? nextReadingDate;
-  final String? nextReadingId;
   final double currentReading;
   final DateTime? selectedDate;
   final String notes;
@@ -74,7 +72,6 @@ class AddReadingPageState {
     Object? lastReadingDate = _unset,
     Object? nextReading = _unset,
     Object? nextReadingDate = _unset,
-    Object? nextReadingId = _unset,
     double? currentReading,
     DateTime? selectedDate,
     String? notes,
@@ -94,9 +91,6 @@ class AddReadingPageState {
       nextReadingDate: identical(nextReadingDate, _unset)
           ? this.nextReadingDate
           : nextReadingDate as DateTime?,
-      nextReadingId: identical(nextReadingId, _unset)
-          ? this.nextReadingId
-          : nextReadingId as String?,
       currentReading: currentReading ?? this.currentReading,
       selectedDate: selectedDate ?? this.selectedDate,
       notes: notes ?? this.notes,
