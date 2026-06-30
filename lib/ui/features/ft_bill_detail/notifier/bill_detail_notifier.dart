@@ -1,10 +1,11 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:energy_tracker/constants/tariff_rates.dart';
 import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 import 'package:energy_tracker/models/bill_record.dart';
 import 'package:energy_tracker/models/reading_record.dart';
+import 'package:energy_tracker/services/bill_recalculation_service.dart';
+import 'package:energy_tracker/services/reading_chain_service.dart';
 import 'package:energy_tracker/ui/components/logger.dart';
 import 'package:energy_tracker/ui/features/ft_bill_detail/notifier/bill_detail_state.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -20,6 +21,10 @@ final NotifierProvider<BillDetailNotifier, BillDetailPageState>
 class BillDetailNotifier extends Notifier<BillDetailPageState> {
   FirebaseAuth get _auth => FirebaseAuth.instance;
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;
+  late final ReadingChainService _chainService =
+      ReadingChainService(_firestore);
+  late final BillRecalculationService _billService =
+      BillRecalculationService(_firestore);
 
   @override
   BillDetailPageState build() {
@@ -177,68 +182,15 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
 
     final previousState = state;
 
-    final sortedBefore = [...state.readings]
-      ..sort((a, b) => a.date.compareTo(b.date));
-    final deletedIndex = sortedBefore.indexWhere((r) => r.id == reading.id);
-    final remaining = sortedBefore.where((r) => r.id != reading.id).toList();
-
-    // Determine if the deleted reading's next-neighbour needs its kwh
-    // recomputed against its new previous reading.
-    ReadingRecord? fixedNext;
-    final hadNext = deletedIndex >= 0 && deletedIndex < sortedBefore.length - 1;
-    if (hadNext) {
-      final next = sortedBefore[deletedIndex + 1];
-      final hadPrevious = deletedIndex > 0;
-
-      final double newKwh;
-      if (!hadPrevious) {
-        // The deleted reading had no previous reading — it WAS the baseline.
-        // Its next-neighbors now becomes the new baseline, not a delta
-        // against an assumed-zero meter value.
-        newKwh = 0;
-      } else {
-        final newPreviousValue = sortedBefore[deletedIndex - 1].reading;
-        newKwh = (next.reading - newPreviousValue)
-            .clamp(0, double.infinity)
-            .toDouble();
-      }
-
-      final tariffType = next.tariffType;
-      fixedNext = ReadingRecord(
-        id: next.id,
-        reading: next.reading,
-        kwh: newKwh,
-        date: next.date,
-        notes: next.notes,
-        estimatedBill: next.estimatedBill,
-        tier: TariffRates.getTier(newKwh, tariffType),
-        tariffType: tariffType,
-      );
-    }
-
-    final finalReadingsAscending = remaining
-        .map((r) => fixedNext != null && r.id == fixedNext.id ? fixedNext : r)
-        .toList();
-
-    final totalKwh =
-        finalReadingsAscending.fold<double>(0, (total, r) => total + r.kwh);
-    final remainingTariffType = finalReadingsAscending.isEmpty
-        ? bill.tariffType
-        : finalReadingsAscending.last.tariffType;
-
-    final finalReadingsDescending = [...finalReadingsAscending]
-      ..sort((a, b) => b.date.compareTo(a.date));
-
+    // update widget tree update on Dismissible's
     state = state.copyWith(
-      readings: finalReadingsDescending,
-      bill: state.bill!.copyWith(
-        kwh: totalKwh,
-        amount: TariffRates.calculate(totalKwh, remainingTariffType),
-        tariffType: remainingTariffType,
-      ),
+      readings: state.readings.where((r) => r.id != reading.id).toList(),
     );
 
     try {
+      final previous = await _chainService.findPrevious(uid, reading.date);
+      final next = await _chainService.findNext(uid, reading.date);
+
       final batch = _firestore.batch()
         ..delete(
           _firestore
@@ -248,35 +200,37 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
               .doc(reading.id),
         );
 
-      if (fixedNext != null) {
-        batch.update(
-          _firestore
-              .collection('users')
-              .doc(uid)
-              .collection('readings')
-              .doc(fixedNext.id),
-          {'kwh': fixedNext.kwh, 'tier': fixedNext.tier},
-        );
-      }
-
-      final billRef = _firestore
-          .collection('users')
-          .doc(uid)
-          .collection('bills')
-          .doc(bill.id);
-
-      if (finalReadingsAscending.isEmpty) {
-        batch.delete(billRef);
-      } else {
-        batch.update(billRef, {
-          'kwh': totalKwh,
-          'amount': TariffRates.calculate(totalKwh, remainingTariffType),
-          'tier': TariffRates.getTier(totalKwh, remainingTariffType),
-          'tariffType': remainingTariffType.value,
-        });
+      ChainFixResult? fix;
+      if (next != null) {
+        // If there's no previous reading, the deleted reading WAS the
+        // baseline — next becomes the new baseline (kwh: 0).
+        fix = _chainService.computeFix(next, previous?.reading);
+        _chainService.applyFix(batch, uid, fix);
       }
 
       await batch.commit();
+
+      await _billService.recalculateMonth(uid, reading.date, bill.tariffType);
+
+      final fixInDifferentMonth = fix != null &&
+          (fix.date.year != reading.date.year ||
+              fix.date.month != reading.date.month);
+      if (fixInDifferentMonth) {
+        await _billService.recalculateMonth(uid, fix.date, fix.tariffType);
+      }
+
+      // Local state can no longer be cheaply patched given possible
+      // cross-month effects — reload from source of truth.
+      final freshBill = await _loadBill(bill.id);
+      if (freshBill != null) {
+        state = state.copyWith(bill: freshBill, isPaid: freshBill.isPaid);
+        await _loadReadings(freshBill);
+      } else {
+        state = state.copyWith(
+          readings: state.readings.where((r) => r.id != reading.id).toList(),
+        );
+      }
+
       return true;
     } on FirebaseException catch (_) {
       state = previousState;

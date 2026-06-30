@@ -1,11 +1,12 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:energy_tracker/constants/tariff_rates.dart';
 import 'package:energy_tracker/extensions/date_time_extension.dart';
 import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 import 'package:energy_tracker/models/reading_record.dart';
+import 'package:energy_tracker/services/bill_recalculation_service.dart';
 import 'package:energy_tracker/services/notifiers/user_profile_notifier.dart';
+import 'package:energy_tracker/services/reading_chain_service.dart';
 import 'package:energy_tracker/ui/features/ft_add_meter_reading/notifier/add_meter_reading_state.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,6 +20,10 @@ final NotifierProvider<AddReadingNotifier, AddReadingPageState>
 class AddReadingNotifier extends Notifier<AddReadingPageState> {
   FirebaseAuth get _auth => FirebaseAuth.instance;
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;
+  late final ReadingChainService _chainService =
+      ReadingChainService(_firestore);
+  late final BillRecalculationService _billService =
+      BillRecalculationService(_firestore);
   int _loadRequestId = 0;
   DateTime? _editingDate;
 
@@ -118,7 +123,6 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
         lastReadingDate: before?.date,
         nextReading: next?.reading,
         nextReadingDate: next?.date,
-        nextReadingId: next?.id,
         readingError: _validateReading(
           reading: state.currentReading,
           lastReading: before?.reading ?? 0,
@@ -188,7 +192,6 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
       isLoadingLastReading: true,
       nextReading: null,
       nextReadingDate: null,
-      nextReadingId: null,
     );
     unawaited(Future.microtask(() => _loadSurroundingReadings(date)));
   }
@@ -196,9 +199,6 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
   void setNotes(String value) {
     state = state.copyWith(notes: value);
   }
-
-  String _monthKey(DateTime date) =>
-      '${date.year}-${date.month.toString().padLeft(2, '0')}';
 
   Future<bool> saveReading() async {
     if (!state.canSave) return false;
@@ -233,8 +233,21 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      await _fixUpNextReading(uid, date);
-      await _recalculateMonthBill(uid, date, tariffType);
+      final next = await _chainService.findNext(uid, date);
+      if (next != null) {
+        final fix = _chainService.computeFix(next, state.currentReading);
+        final batch = _firestore.batch();
+        _chainService.applyFix(batch, uid, fix);
+        await batch.commit();
+
+        final sameMonth =
+            fix.date.year == date.year && fix.date.month == date.month;
+        if (!sameMonth) {
+          await _billService.recalculateMonth(uid, fix.date, fix.tariffType);
+        }
+      }
+
+      await _billService.recalculateMonth(uid, date, tariffType);
 
       state = state.copyWith(isSaving: false);
       return true;
@@ -284,90 +297,6 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
     return null;
   }
 
-  Future<void> _recalculateMonthBill(
-    String uid,
-    DateTime date,
-    TariffType tariffType,
-  ) async {
-    final key = _monthKey(date);
-    final start = DateTime(date.year, date.month);
-    final end = DateTime(date.year, date.month + 1);
-
-    final readingsSnap = await _firestore
-        .collection('users')
-        .doc(uid)
-        .collection('readings')
-        .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(start))
-        .where('date', isLessThan: Timestamp.fromDate(end))
-        .get();
-
-    final billRef =
-        _firestore.collection('users').doc(uid).collection('bills').doc(key);
-
-    if (readingsSnap.docs.isEmpty) {
-      await billRef.delete();
-      return;
-    }
-
-    final totalKwh = readingsSnap.docs.fold<double>(
-      0,
-      (total, doc) => total + ((doc.data()['kwh'] as num?)?.toDouble() ?? 0),
-    );
-
-    await billRef.set(
-      {
-        'kwh': totalKwh,
-        'amount': TariffRates.calculate(totalKwh, tariffType),
-        'tier': TariffRates.getTier(totalKwh, tariffType),
-        'tariffType': tariffType.value,
-        'date': Timestamp.fromDate(start),
-      },
-      SetOptions(merge: true),
-    );
-  }
-
-  /// If a reading exists immediately after [insertedDate] (the value is
-  /// already cached as `state.nextReadingId` from `_loadSurroundingReadings`),
-  /// its stored kWh was computed against its old "previous" reading — which
-  /// is no longer accurate now that this reading sits between them. Recompute
-  /// and persist that reading's kwh/tier, and recalculate its bill month too
-  /// if it falls outside the month we already just recalculated.
-  Future<void> _fixUpNextReading(String uid, DateTime insertedDate) async {
-    final nextId = state.nextReadingId;
-    if (nextId == null) return;
-
-    final nextRef = _firestore
-        .collection('users')
-        .doc(uid)
-        .collection('readings')
-        .doc(nextId);
-
-    final nextSnap = await nextRef.get();
-    if (!nextSnap.exists) return;
-
-    final nextData = nextSnap.data()!;
-    final nextReadingValue = (nextData['reading'] as num?)?.toDouble() ?? 0;
-    final nextDate = (nextData['date'] as Timestamp).toDate();
-    final nextTariffType = TariffTypeX.fromValue(
-      nextData['tariffType'] as String? ?? TariffType.domestic.value,
-    );
-
-    final newKwh =
-        (nextReadingValue - state.currentReading).clamp(0, double.infinity);
-    final newTier = TariffRates.getTier(newKwh.toDouble(), nextTariffType);
-
-    await nextRef.update({
-      'kwh': newKwh,
-      'tier': newTier,
-    });
-
-    final sameMonth = nextDate.year == insertedDate.year &&
-        nextDate.month == insertedDate.month;
-    if (!sameMonth) {
-      await _recalculateMonthBill(uid, nextDate, nextTariffType);
-    }
-  }
-
   Future<bool> updateReading(ReadingRecord reading) async {
     if (!state.canSave) return false;
 
@@ -395,8 +324,21 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
         'tier': state.currentTier(reading.tariffType),
       });
 
-      await _recalculateMonthBill(uid, date, reading.tariffType);
-      await _fixUpNextReading(uid, date);
+      final next = await _chainService.findNext(uid, date);
+      if (next != null) {
+        final fix = _chainService.computeFix(next, state.currentReading);
+        final batch = _firestore.batch();
+        _chainService.applyFix(batch, uid, fix);
+        await batch.commit();
+
+        final sameMonth =
+            fix.date.year == date.year && fix.date.month == date.month;
+        if (!sameMonth) {
+          await _billService.recalculateMonth(uid, fix.date, fix.tariffType);
+        }
+      }
+
+      await _billService.recalculateMonth(uid, date, reading.tariffType);
 
       state = state.copyWith(isSaving: false);
       return true;
