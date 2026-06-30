@@ -95,9 +95,16 @@ class ReadingChainService {
   /// for [previousValue] if [next] has become the new baseline (i.e.
   /// there is no reading before it at all).
   ChainFixResult computeFix(AdjacentReading next, double? previousValue) {
-    final newKwh = previousValue == null
-        ? 0.0
-        : (next.reading - previousValue).clamp(0, double.infinity).toDouble();
+    final double newKwh;
+    if (previousValue == null) {
+      newKwh = 0.0;
+    } else {
+      final delta = next.reading - previousValue;
+      if (delta < 0) {
+        throw StateError('Next reading cannot be lower than previous reading');
+      }
+      newKwh = delta;
+    }
     final newTier = TariffRates.getTier(newKwh, next.tariffType);
 
     return ChainFixResult(

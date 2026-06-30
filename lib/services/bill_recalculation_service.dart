@@ -11,12 +11,11 @@ class BillRecalculationService {
       '${date.year}-${date.month.toString().padLeft(2, '0')}';
 
   /// Recomputes and writes the bill document for [date]'s month, summing
-  /// whatever readings currently exist in Firestore for that month.
-  /// Deletes the bill doc entirely if no readings remain.
+  /// whatever readings currently exist in Firestore for that month
   Future<void> recalculateMonth(
     String uid,
     DateTime date,
-    TariffType tariffType,
+    TariffType fallbackTariffType,
   ) async {
     final key = monthKey(date);
     final start = DateTime(date.year, date.month);
@@ -28,6 +27,7 @@ class BillRecalculationService {
         .collection('readings')
         .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(start))
         .where('date', isLessThan: Timestamp.fromDate(end))
+        .orderBy('date')
         .get();
 
     final billRef =
@@ -42,6 +42,21 @@ class BillRecalculationService {
       0,
       (total, doc) => total + ((doc.data()['kwh'] as num?)?.toDouble() ?? 0),
     );
+
+    // Derive the tariff from the readings, not the caller. Most-recent
+    // reading wins, matching the convention used elsewhere (dashboard,
+    // usage page, deleteReading's neighbors resolution).
+    final tariffValues = readingsSnap.docs
+        .map((doc) => doc.data()['tariffType'] as String?)
+        .where((v) => v != null)
+        .toSet();
+
+    final tariffType = tariffValues.isEmpty
+        ? fallbackTariffType
+        : TariffTypeX.fromValue(
+            readingsSnap.docs.last.data()['tariffType'] as String? ??
+                fallbackTariffType.value,
+          );
 
     await billRef.set(
       {

@@ -187,6 +187,7 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
       readings: state.readings.where((r) => r.id != reading.id).toList(),
     );
 
+    var committed = false;
     try {
       final previous = await _chainService.findPrevious(uid, reading.date);
       final next = await _chainService.findNext(uid, reading.date);
@@ -209,6 +210,7 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
       }
 
       await batch.commit();
+      committed = true;
 
       await _billService.recalculateMonth(uid, reading.date, bill.tariffType);
 
@@ -227,14 +229,23 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
         await _loadReadings(freshBill);
       } else {
         state = state.copyWith(
-          readings: state.readings.where((r) => r.id != reading.id).toList(),
+          readings: const [],
+          billDeleted: true,
         );
       }
 
       return true;
-    } on FirebaseException catch (_) {
-      state = previousState;
-      return false;
+    } on FirebaseException catch (e, st) {
+      if (!committed) {
+        state = previousState;
+        return false;
+      }
+
+      AppLogger.error('Failed to refresh bill after deleting reading', e, st);
+      state = state.copyWith(
+        errorMessage: 'Reading deleted, but failed to refresh the bill.',
+      );
+      return true;
     }
   }
 }

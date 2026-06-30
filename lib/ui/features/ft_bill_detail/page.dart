@@ -34,6 +34,17 @@ class _BillDetailPageState extends ConsumerState<BillDetailPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(billDetailProvider);
 
+    ref.listen(billDetailProvider, (previous, next) {
+      if (next.billDeleted && context.mounted) {
+        context.pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('This month has no remaining readings.'),
+          ),
+        );
+      }
+    });
+
     if (state.bill == null) {
       return const SizedBox.shrink();
     }

@@ -213,10 +213,10 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
 
     state = state.copyWith(isSaving: true, errorMessage: null);
 
-    try {
-      final date = state.selectedDate ?? DateTime.now();
-      final tariffType = ref.read(tariffTypeProvider);
+    final date = state.selectedDate ?? DateTime.now();
+    final tariffType = ref.read(tariffTypeProvider);
 
+    try {
       final conflict = await _checkTariffConflict(uid, date, tariffType);
       if (conflict != null) {
         state = state.copyWith(isSaving: false, errorMessage: conflict);

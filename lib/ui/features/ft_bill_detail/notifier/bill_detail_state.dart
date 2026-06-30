@@ -8,6 +8,7 @@ class BillDetailPageState {
     this.isPaid = false,
     this.bill,
     this.readings = const [],
+    this.billDeleted = false,
     this.errorMessage,
   });
 
@@ -16,6 +17,7 @@ class BillDetailPageState {
   final bool isPaid;
   final BillRecord? bill;
   final List<ReadingRecord> readings;
+  final bool billDeleted;
   final String? errorMessage;
 
   BillDetailPageState copyWith({
@@ -24,6 +26,7 @@ class BillDetailPageState {
     bool? isPaid,
     BillRecord? bill,
     List<ReadingRecord>? readings,
+    bool? billDeleted,
     String? errorMessage,
   }) {
     return BillDetailPageState(
@@ -32,6 +35,7 @@ class BillDetailPageState {
       isPaid: isPaid ?? this.isPaid,
       bill: bill ?? this.bill,
       readings: readings ?? this.readings,
+      billDeleted: billDeleted ?? this.billDeleted,
       errorMessage: errorMessage ?? this.errorMessage,
     );
   }
