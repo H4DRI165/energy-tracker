@@ -510,13 +510,23 @@ class _DomesticInfo extends StatelessWidget {
           crossAxisSpacing: 8.w,
           mainAxisSpacing: 8.h,
           childAspectRatio: 2.4,
-          children: const [
+          children: [
             _ComponentCard(
-                label: 'Energy (≤1500 kWh)', value: '27.03', unit: 'sen/kWh'),
+              label: 'Energy (≤1500 kWh)',
+              value: TariffRates.generationLowLabel,
+            ),
             _ComponentCard(
-                label: 'Energy (>1500 kWh)', value: '37.03', unit: 'sen/kWh'),
-            _ComponentCard(label: 'Capacity', value: '4.55', unit: 'sen/kWh'),
-            _ComponentCard(label: 'Network', value: '12.85', unit: 'sen/kWh'),
+              label: 'Energy (>1500 kWh)',
+              value: TariffRates.generationHighLabel,
+            ),
+            _ComponentCard(
+              label: 'Capacity',
+              value: TariffRates.capacityLabel,
+            ),
+            _ComponentCard(
+              label: 'Network',
+              value: TariffRates.networkLabel,
+            ),
           ],
         ),
         SizedBox(height: 8.h),
@@ -540,23 +550,12 @@ class _DomesticInfo extends StatelessWidget {
                     style:
                         AppTextStyles.caption.copyWith(color: AppColors.text3),
                   ),
+                  Text(
+                    TariffRates.retailLabel,
+                    style: AppTextStyles.bodyMd
+                        .copyWith(fontWeight: FontWeight.w600),
+                  ),
                 ],
-              ),
-              RichText(
-                text: TextSpan(
-                  children: [
-                    TextSpan(
-                      text: 'RM10',
-                      style: AppTextStyles.bodyMd
-                          .copyWith(fontWeight: FontWeight.w600),
-                    ),
-                    TextSpan(
-                      text: '/month',
-                      style: AppTextStyles.caption
-                          .copyWith(color: AppColors.text3),
-                    ),
-                  ],
-                ),
               ),
             ],
           ),
@@ -589,13 +588,13 @@ class _DomesticInfo extends StatelessWidget {
                 ),
               ),
               const Divider(height: 1, color: AppColors.border),
-              _EeiBandRow('1–200 kWh', '25.0 sen', AppColors.accent),
-              _EeiBandRow('201–300 kWh', '22.5–24.5 sen', AppColors.accent),
-              _EeiBandRow('301–500 kWh', '12.0–20.0 sen', AppColors.warn),
-              _EeiBandRow('501–700 kWh', '5.5–9.5 sen', AppColors.warn),
-              _EeiBandRow('701–1000 kWh', '0.25–4.5 sen', AppColors.danger),
-              _EeiBandRow('1001+ kWh', 'No rebate', AppColors.danger,
-                  isLast: true),
+              for (final group in TariffRates.eeiBandGroups)
+                _EeiBandRow(
+                  group.range,
+                  group.rebateRange,
+                  group.isHighUsage ? AppColors.danger : AppColors.accent,
+                  isLast: group == TariffRates.eeiBandGroups.last,
+                ),
             ],
           ),
         ),
@@ -606,7 +605,7 @@ class _DomesticInfo extends StatelessWidget {
             Expanded(
               child: _LevyCard(
                 title: 'KWTBB',
-                rate: '1.6%',
+                rate: TariffRates.kwtbbLabel,
                 description:
                     'On Energy + Cap + Net − EEI.\nApplies above 300 kWh.',
               ),
@@ -615,7 +614,7 @@ class _DomesticInfo extends StatelessWidget {
             Expanded(
               child: _LevyCard(
                 title: 'SST',
-                rate: '8%',
+                rate: TariffRates.sstLabel,
                 description:
                     'On net charge for the portion above 600 kWh only.',
               ),
@@ -626,8 +625,11 @@ class _DomesticInfo extends StatelessWidget {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.info_outline_rounded,
-                size: 12.r, color: AppColors.text3),
+            Icon(
+              Icons.info_outline_rounded,
+              size: 12.r,
+              color: AppColors.text3,
+            ),
             SizedBox(width: 4.w),
             Expanded(
               child: Text(
@@ -647,12 +649,10 @@ class _ComponentCard extends StatelessWidget {
   const _ComponentCard({
     required this.label,
     required this.value,
-    required this.unit,
   });
 
   final String label;
   final String value;
-  final String unit;
 
   @override
   Widget build(BuildContext context) {
@@ -667,23 +667,14 @@ class _ComponentCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(label,
-              style: AppTextStyles.caption.copyWith(color: AppColors.text3)),
+          Text(
+            label,
+            style: AppTextStyles.caption.copyWith(color: AppColors.text3),
+          ),
           SizedBox(height: 2.h),
-          RichText(
-            text: TextSpan(
-              children: [
-                TextSpan(
-                  text: value,
-                  style: AppTextStyles.bodyMd
-                      .copyWith(fontWeight: FontWeight.w600),
-                ),
-                TextSpan(
-                  text: ' $unit',
-                  style: AppTextStyles.caption.copyWith(color: AppColors.text3),
-                ),
-              ],
-            ),
+          Text(
+            value,
+            style: AppTextStyles.bodyMd.copyWith(fontWeight: FontWeight.w600),
           ),
         ],
       ),

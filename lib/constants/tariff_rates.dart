@@ -74,6 +74,66 @@ class TariffRates {
   // flat across the whole month — the split is a display/SST-computation
   // device only.
 
+  static String get generationLowLabel =>
+      '${(domesticGenerationLow * 100).toStringAsFixed(2)} sen/kWh';
+
+  static String get generationHighLabel =>
+      '${(domesticGenerationHigh * 100).toStringAsFixed(2)} sen/kWh';
+
+  static String get capacityLabel =>
+      '${(domesticCapacityRate * 100).toStringAsFixed(2)} sen/kWh';
+
+  static String get networkLabel =>
+      '${(domesticNetworkRate * 100).toStringAsFixed(2)} sen/kWh';
+
+  static String get retailLabel =>
+      'RM${domesticRetailCharge.toStringAsFixed(0)}/month';
+
+  static String get kwtbbLabel =>
+      '${(domesticKwtbbRate * 100).toStringAsFixed(1)}%';
+
+  static String get sstLabel =>
+      '${(domesticSstRate * 100).toStringAsFixed(0)}%';
+
+  /// EEI band range label for the info card grouped display.
+  /// Groups adjacent bands with the same colour into human-readable ranges.
+  static List<({String range, String rebateRange, bool isHighUsage})>
+      get eeiBandGroups => [
+            (
+              range: '1–200 kWh',
+              rebateRange: _senLabel(_eeiBands[0].rebateSen),
+              isHighUsage: false
+            ),
+            (
+              range: '201–300 kWh',
+              rebateRange: '${_senLabel(_eeiBands[2].rebateSen)}–'
+                  '${_senLabel(_eeiBands[1].rebateSen)}',
+              isHighUsage: false
+            ),
+            (
+              range: '301–500 kWh',
+              rebateRange: '${_senLabel(_eeiBands[6].rebateSen)}–'
+                  '${_senLabel(_eeiBands[3].rebateSen)}',
+              isHighUsage: false
+            ),
+            (
+              range: '501–700 kWh',
+              rebateRange: '${_senLabel(_eeiBands[11].rebateSen)}–'
+                  '${_senLabel(_eeiBands[7].rebateSen)}',
+              isHighUsage: true
+            ),
+            (
+              range: '701–1000 kWh',
+              rebateRange: '${_senLabel(_eeiBands[16].rebateSen)}–'
+                  '${_senLabel(_eeiBands[12].rebateSen)}',
+              isHighUsage: true
+            ),
+            (range: '1001+ kWh', rebateRange: 'No rebate', isHighUsage: true),
+          ];
+
+  static String _senLabel(double sen) =>
+      '${sen.toStringAsFixed(sen.truncateToDouble() == sen ? 0 : 1)} sen';
+
   // --- Generation (Energy) -------------------------------------------------
   /// Applied to ALL kWh when total ≤1500 kWh. CONFIRMED.
   static const double domesticGenerationLow = 0.2703;
@@ -115,25 +175,25 @@ class TariffRates {
   /// Bands marked SOURCED come from a secondary source (malaysia4u.com) and
   /// have not been independently verified. Spot-check against a real bill
   /// at that usage level if billing precision is critical.
+  /// source: https://www.mytnb.com.my/tariff/index.html?v=1.1.60#calculator
   static const List<({int maxKwh, double rebateSen})> _eeiBands = [
     (maxKwh: 200, rebateSen: 25.0), // CONFIRMED
-    (maxKwh: 250, rebateSen: 24.5), // SOURCED
+    (maxKwh: 250, rebateSen: 24.5), // CONFIRMED
     (maxKwh: 300, rebateSen: 22.5), // CONFIRMED
-    (maxKwh: 350, rebateSen: 20.0), // SOURCED
-    (maxKwh: 400, rebateSen: 17.5), // SOURCED
-    (maxKwh: 450, rebateSen: 15.0), // SOURCED
+    (maxKwh: 350, rebateSen: 21.0), // CONFIRMED
+    (maxKwh: 400, rebateSen: 17.0), // CONFIRMED
+    (maxKwh: 450, rebateSen: 14.5), // CONFIRMED
     (maxKwh: 500, rebateSen: 12.0), // CONFIRMED
-    (maxKwh: 550, rebateSen: 9.5), // SOURCED
-    (maxKwh: 600, rebateSen: 7.5), // SOURCED
-    (maxKwh: 650, rebateSen: 6.5), // SOURCED
-    (maxKwh: 700, rebateSen: 5.5), // SOURCED
+    (maxKwh: 550, rebateSen: 10.5), // CONFIRMED
+    (maxKwh: 600, rebateSen: 9.0), // CONFIRMED
+    (maxKwh: 650, rebateSen: 7.5), // CONFIRMED
+    (maxKwh: 700, rebateSen: 5.5), // CONFIRMED
     (maxKwh: 750, rebateSen: 4.5), // CONFIRMED
-    (maxKwh: 800, rebateSen: 3.5), // SOURCED
-    (maxKwh: 850, rebateSen: 2.5), // SOURCED
+    (maxKwh: 800, rebateSen: 4.0), // CONFIRMED
+    (maxKwh: 850, rebateSen: 2.5), // CONFIRMED
     (maxKwh: 900, rebateSen: 1.0), // CONFIRMED
-    (maxKwh: 950, rebateSen: 0.5), // SOURCED
-    (maxKwh: 1000, rebateSen: 0.25), // SOURCED
-    // Above 1000 kWh: EEI = 0. CONFIRMED (1100 kWh and 1600 kWh bills).
+    (maxKwh: 950, rebateSen: 0.5), // CONFIRMED
+    (maxKwh: 1000, rebateSen: 0.5), // CONFIRMED
   ];
 
   static double _eeiSenPerKwh(double kwh) {
@@ -143,10 +203,6 @@ class TariffRates {
     }
     return 0;
   }
-
-  // =========================================================================
-  // Domestic — public API
-  // =========================================================================
 
   /// Full domestic bill total. [afaSenPerKwh] defaults to 0 (exempt ≤600
   /// kWh; pass the current published rate for >600 kWh for accuracy).
@@ -360,10 +416,6 @@ class TariffRates {
       description: 'Very high usage — no EEI rebate',
     );
   }
-
-  // =========================================================================
-  // Shared dispatch
-  // =========================================================================
 
   static double calculate(double kwh, TariffType tariffType) {
     return switch (tariffType) {
