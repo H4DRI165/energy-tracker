@@ -117,8 +117,14 @@ class _BodyContent extends ConsumerWidget {
             ),
             SizedBox(height: 14.h),
             TariffTierBreakdown(
-              tiers: state.tierBreakdown,
+              domesticItems: state.currentTariffType == TariffType.domestic
+                  ? state.domesticChargeBreakdown
+                  : null,
+              commercialTiers: state.currentTariffType == TariffType.commercial
+                  ? state.commercialTierBreakdown
+                  : null,
               monthLabel: state.currentMonthLabel,
+              tariffType: state.currentTariffType,
             ),
             SizedBox(height: 14.h),
             BillHistoryList(bills: state.billHistory),

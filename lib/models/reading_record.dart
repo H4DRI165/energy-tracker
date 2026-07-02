@@ -1,4 +1,5 @@
 import 'package:energy_tracker/constants/constants.dart';
+import 'package:energy_tracker/extensions/date_time_extension.dart';
 import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 
 class ReadingRecord {
@@ -22,23 +23,13 @@ class ReadingRecord {
   final int tier;
   final TariffType tariffType;
 
-  String get formattedDate {
-    final months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return '${months[date.month - 1]} ${date.day}, ${date.year}';
-  }
+  String get formattedDate => date.fullDateLabel;
 
-  String get tierLabel => TariffRates.getTierPriceKwhLabel(tier, tariffType);
+  String get tierLabel {
+    if (tariffType == TariffType.domestic) {
+      final band = TariffRates.getEeiBand(kwh);
+      return band.number == 0 ? 'No rebate' : band.label;
+    }
+    return TariffRates.getTierPriceKwhLabel(tier, tariffType);
+  }
 }

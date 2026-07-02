@@ -1,3 +1,4 @@
+import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 import 'package:energy_tracker/theme/theme.dart';
 import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_state.dart';
 import 'package:flutter/material.dart';
@@ -35,11 +36,17 @@ class StatCardsRow extends StatelessWidget {
         SizedBox(width: 10.w),
         Expanded(
           child: _StatCard(
-            label: 'Tariff Tier',
-            value: 'Tier ${state.currentTier}',
+            label: state.tariffType == TariffType.domestic
+                ? 'EEI Band'
+                : 'Tariff Tier',
+            value: state.tariffType == TariffType.domestic
+                ? 'Band ${state.currentEeiBand.number == 0 ? '—' : state.currentEeiBand.number}'
+                : 'Tier ${state.currentEeiBand.number}',
             unit: '',
             valueColor: state.tierColor,
-            badge: state.tierRange,
+            badge: state.tariffType == TariffType.domestic
+                ? state.currentEeiBand.description
+                : state.tierRange,
             badgeColor: state.tierColor,
             badgeBg: state.tierColor.withValues(alpha: 0.12),
             compact: compact,

@@ -40,11 +40,24 @@ class AddReadingPageState {
   double estimatedBill(TariffType tariffType) =>
       TariffRates.calculate(usageKwh, tariffType);
 
-  int currentTier(TariffType tariffType) =>
-      TariffRates.getTier(usageKwh, tariffType);
+  // For domestic, returns the EEI band number rather than the old usage tier.
+// For commercial, still returns the 2-tier int (unchanged tariff structure).
+  int currentTier(TariffType tariffType) => tariffType == TariffType.domestic
+      ? TariffRates.getEeiBand(usageKwh).number
+      : TariffRates.getTier(usageKwh, TariffType.commercial);
 
-  String tierLabel(TariffType tariffType) =>
-      TariffRates.getTierPriceKwhLabel(currentTier(tariffType), tariffType);
+  EeiBand get currentEeiBand => TariffRates.getEeiBand(usageKwh);
+
+  String tierLabel(TariffType tariffType) {
+    if (tariffType == TariffType.domestic) {
+      final band = TariffRates.getEeiBand(usageKwh);
+      return band.number == 0 ? 'No rebate' : band.label;
+    }
+    return TariffRates.getTierPriceKwhLabel(
+      TariffRates.getTier(usageKwh, TariffType.commercial),
+      TariffType.commercial,
+    );
+  }
 
   bool get hasUsage => usageKwh > 0;
 

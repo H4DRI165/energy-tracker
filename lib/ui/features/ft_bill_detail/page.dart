@@ -160,7 +160,12 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
   Widget build(BuildContext context) {
     final state = ref.watch(billDetailProvider);
     final bill = state.bill!;
-    final tierBreakdown = TariffRates.breakdownFor(bill.kwh, bill.tariffType);
+    final domesticItems = bill.tariffType == TariffType.domestic
+        ? TariffRates.domesticBreakdown(bill.kwh)
+        : null;
+    final commercialTiers = bill.tariffType == TariffType.commercial
+        ? TariffRates.breakdownFor(bill.kwh, TariffType.commercial)
+        : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -176,8 +181,10 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
           },
         ),
         SizedBox(height: 16.h),
-        _TierBreakdownCard(
-          tiers: tierBreakdown,
+        _BillChargeBreakdown(
+          domesticItems: domesticItems,
+          commercialTiers: commercialTiers,
+          tariffType: bill.tariffType,
           totalKwh: bill.kwh,
         ),
         SizedBox(height: 16.h),
@@ -359,14 +366,22 @@ class _PaidToggleCard extends StatelessWidget {
   }
 }
 
-class _TierBreakdownCard extends StatelessWidget {
-  const _TierBreakdownCard({
-    required this.tiers,
+class _BillChargeBreakdown extends StatelessWidget {
+  const _BillChargeBreakdown({
+    required this.tariffType,
     required this.totalKwh,
+    this.domesticItems,
+    this.commercialTiers,
   });
 
-  final List<TierBreakdown> tiers;
+  final TariffType tariffType;
   final double totalKwh;
+  final List<ChargeLineItem>? domesticItems;
+  final List<TierBreakdown>? commercialTiers;
+
+  bool get isEmpty => tariffType == TariffType.domestic
+      ? (domesticItems?.isEmpty ?? true)
+      : (commercialTiers?.isEmpty ?? true);
 
   @override
   Widget build(BuildContext context) {
@@ -381,43 +396,70 @@ class _TierBreakdownCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Tariff Tier Breakdown',
+            'Bill Breakdown',
             style: AppTextStyles.bodyMd.copyWith(fontWeight: FontWeight.w700),
           ),
           SizedBox(height: 14.h),
-          ...tiers.map(
-            (tier) => Padding(
-              padding: EdgeInsets.only(bottom: 12.h),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(tier.label, style: AppTextStyles.caption),
-                      Text(
-                        'RM ${tier.amount.toStringAsFixed(2)}',
-                        style: AppTextStyles.bodySm.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: tier.color,
+          if (isEmpty)
+            Text('No data available.', style: AppTextStyles.bodySm)
+          else if (tariffType == TariffType.domestic)
+            ...domesticItems!.map((item) => DomesticLineItem(item: item))
+          else
+            ...commercialTiers!.map(
+              (tier) => Padding(
+                padding: EdgeInsets.only(bottom: 12.h),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(tier.label, style: AppTextStyles.caption),
+                        Text(
+                          'RM ${tier.amount.toStringAsFixed(2)}',
+                          style: AppTextStyles.bodySm.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: tier.color,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 6.h),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(3.r),
-                    child: LinearProgressIndicator(
-                      value: tier.fillPercent,
-                      minHeight: 6.h,
-                      backgroundColor: AppColors.surface3,
-                      valueColor: AlwaysStoppedAnimation<Color>(tier.color),
+                      ],
                     ),
-                  ),
-                ],
+                    SizedBox(height: 6.h),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(3.r),
+                      child: LinearProgressIndicator(
+                        value: tier.fillPercent,
+                        minHeight: 6.h,
+                        backgroundColor: AppColors.surface3,
+                        valueColor: AlwaysStoppedAnimation<Color>(tier.color),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
+          if (tariffType == TariffType.domestic && !isEmpty) ...[
+            Divider(height: 16.h, color: AppColors.border),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.info_outline_rounded,
+                  size: 11.r,
+                  color: AppColors.text3,
+                ),
+                SizedBox(width: 4.w),
+                Expanded(
+                  child: Text(
+                    'Excludes AFA — a monthly fuel adjustment published '
+                    'by TNB. Currently 0–2.59 sen/kWh depending on usage.',
+                    style:
+                        AppTextStyles.caption.copyWith(color: AppColors.text3),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );

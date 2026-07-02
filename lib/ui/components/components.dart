@@ -4,6 +4,7 @@ export 'chart.dart';
 export 'coming_soon.dart';
 export 'dialog.dart';
 export 'divider.dart';
+export 'domestic_line_item.dart';
 export 'errors.dart';
 export 'icons.dart';
 export 'logger.dart';
