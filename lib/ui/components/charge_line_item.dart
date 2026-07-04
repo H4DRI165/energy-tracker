@@ -2,8 +2,8 @@ import 'package:energy_tracker/app.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-class DomesticLineItem extends StatelessWidget {
-  const DomesticLineItem({
+class ChargeLineItemRow extends StatelessWidget {
+  const ChargeLineItemRow({
     required this.item,
     super.key,
   });
