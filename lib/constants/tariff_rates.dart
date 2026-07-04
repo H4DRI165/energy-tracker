@@ -43,24 +43,6 @@ class EeiBand {
   final String description; // e.g. "Moderate usage — good rebate"
 }
 
-class TierBreakdown {
-  const TierBreakdown({
-    required this.label,
-    required this.kwh,
-    required this.rate,
-    required this.amount,
-    required this.color,
-    required this.fillPercent,
-  });
-
-  final String label;
-  final double kwh;
-  final double rate;
-  final double amount;
-  final Color color;
-  final double fillPercent;
-}
-
 class TariffRates {
   // =========================================================================
   // Domestic — post-1 July 2025 TNB restructuring
@@ -417,35 +399,83 @@ class TariffRates {
     );
   }
 
-  static double calculate(double kwh, TariffType tariffType) {
+  static double calculate(
+    double kwh,
+    TariffType tariffType, {
+    double afaSenPerKwh = 0,
+  }) {
     return switch (tariffType) {
-      TariffType.domestic => calculateDomestic(kwh),
-      TariffType.commercial => calculateCommercial(kwh),
+      TariffType.domestic => calculateDomestic(kwh, afaSenPerKwh: afaSenPerKwh),
+      TariffType.commercial =>
+        calculateCommercial(kwh, afaSenPerKwh: afaSenPerKwh),
+    };
+  }
+
+  static List<ChargeLineItem> breakdownFor(
+    double kwh,
+    TariffType tariffType, {
+    double afaSenPerKwh = 0,
+  }) {
+    return switch (tariffType) {
+      TariffType.domestic => domesticBreakdown(kwh, afaSenPerKwh: afaSenPerKwh),
+      TariffType.commercial =>
+        commercialBreakdown(kwh, afaSenPerKwh: afaSenPerKwh),
     };
   }
 
   static double minChargeFor(TariffType tariffType) => switch (tariffType) {
-        TariffType.domestic => 0, // no flat minimum in the new structure
-        TariffType.commercial => commercialMinCharge,
+        TariffType.domestic => 0,
+        TariffType.commercial => 0,
       };
 
   // =========================================================================
   // Commercial LV (Tariff B) — UNCHANGED, old 2-tier structure
   // =========================================================================
-  //
-  // Not yet researched against TNB's current non-domestic tariff schedule.
-  // Likely restructured post-July 2025 (voltage-based rather than the old
-  // Tariff B block model) — separate research item.
+  // Single flat generation rate — no crossover at 1500 kWh unlike domestic.
+  // CONFIRMED: 27.03 sen applies at 100, 200, ..., 1200, 1600 kWh.
+  static const double commercialGenerationRate = 0.2703;
 
-  static const double commercialTier1 = 0.435;
-  static const double commercialTier2 = 0.509;
-  static const double commercialMinCharge = 7.20;
+  static const double commercialCapacityRate = 0.0883; // CONFIRMED
+  static const double commercialNetworkRate = 0.1482; // CONFIRMED
+  static const double commercialRetailCharge =
+      20; // CONFIRMED — always applied, no threshold
+  static const double commercialAfaDefault = 0; // monthly, excluded by default
+  static const double commercialKwtbbRate =
+      0.016; // CONFIRMED — no exemption threshold
 
-  static double calculateCommercial(double kwh) {
+  static String get commercialCapacityLabel =>
+      '${(commercialCapacityRate * 100).toStringAsFixed(2)} sen/kWh';
+
+  static String get commercialNetworkLabel =>
+      '${(commercialNetworkRate * 100).toStringAsFixed(2)} sen/kWh';
+
+  static String get commercialRetailLabel =>
+      'RM${commercialRetailCharge.toStringAsFixed(0)}/month';
+
+  // EEI: 11.0 sen/kWh for ≤200 kWh, 0 above. CONFIRMED.
+  static double _commercialEeiSenPerKwh(double kwh) => kwh <= 200 ? 11.0 : 0.0;
+
+// SST: not applicable for Non-Domestic LV General.
+// CONFIRMED absent across full 100–1600 kWh range (all consumption
+// in Non-Applicable column with zero in Applicable column at all levels).
+
+  static double calculateCommercial(
+    double kwh, {
+    double afaSenPerKwh = commercialAfaDefault,
+  }) {
     if (kwh <= 0) return 0;
-    var bill = kwh.clamp(0.0, 200.0) * commercialTier1;
-    if (kwh > 200) bill += (kwh - 200) * commercialTier2;
-    return bill < commercialMinCharge ? commercialMinCharge : bill;
+
+    final energy = kwh * commercialGenerationRate;
+    final afa = kwh * (afaSenPerKwh / 100);
+    final capacity = kwh * commercialCapacityRate;
+    final network = kwh * commercialNetworkRate;
+    final eei = kwh * (_commercialEeiSenPerKwh(kwh) / 100);
+
+    final net =
+        energy + afa + capacity + network + commercialRetailCharge - eei;
+    final kwtbb = (energy + capacity + network - eei) * commercialKwtbbRate;
+
+    return net + kwtbb;
   }
 
   // Commercial still uses the old tier helpers since that tariff is unchanged.
@@ -502,9 +532,7 @@ class TariffRates {
 
   static String getTierPrice(int tier, TariffType tariffType) {
     if (tariffType == TariffType.commercial) {
-      return tier == 1
-          ? '${(commercialTier1 * 100).toStringAsFixed(1)} sen'
-          : '${(commercialTier2 * 100).toStringAsFixed(1)} sen';
+      return tier == 1 ? '11.0 sen EEI rebate' : 'No rebate';
     }
     if (tier == 0 || tier > _eeiBands.length) return '0 sen';
     return '${_eeiBands[tier - 1].rebateSen.toStringAsFixed(1)} sen rebate';
@@ -512,9 +540,8 @@ class TariffRates {
 
   static String tierBadgeLabel(int tier, TariffType tariffType) {
     if (tariffType == TariffType.commercial) {
-      return tier == 1 ? 'Tier 1 — Low usage ✓' : 'Tier 2 — High usage';
+      return tier == 1 ? 'EEI applies · ≤200 kWh' : 'No EEI rebate · >200 kWh';
     }
-    // Domestic: prefer getEeiBand(kwh).label in new code.
     if (tier == 0) return 'No rebate — very high usage';
     if (tier <= 3) return 'Band $tier — Low usage ✓';
     if (tier <= 6) return 'Band $tier — Moderate usage';
@@ -529,41 +556,63 @@ class TariffRates {
   static String getTierPriceKwhLabel(int tier, TariffType tariffType) =>
       'Band $tier — ${getTierPrice(tier, tariffType)}/kWh';
 
-  // Commercial breakdown — unchanged.
-  static List<TierBreakdown> breakdownFor(double kwh, TariffType tariffType) {
-    if (tariffType == TariffType.domestic) {
-      // Domestic no longer uses TierBreakdown — use domesticBreakdown()
-      // for ChargeLineItem list, or getEeiBand() for the band badge.
-      // This path should not be reached in migrated code.
-      assert(
-        false,
-        'breakdownFor() called for domestic — use domesticBreakdown() instead',
-      );
-      return [];
-    }
-    return _commercialBreakdown(kwh);
-  }
-
-  static List<TierBreakdown> _commercialBreakdown(double kwh) {
+  static List<ChargeLineItem> commercialBreakdown(
+    double kwh, {
+    double afaSenPerKwh = commercialAfaDefault,
+  }) {
     if (kwh <= 0) return [];
+
+    final energy = kwh * commercialGenerationRate;
+    final afa = kwh * (afaSenPerKwh / 100);
+    final capacity = kwh * commercialCapacityRate;
+    final network = kwh * commercialNetworkRate;
+    final eei = kwh * (_commercialEeiSenPerKwh(kwh) / 100);
+    final kwtbb = (energy + capacity + network - eei) * commercialKwtbbRate;
+
     return [
-      TierBreakdown(
-        label: getTierRangePriceLabel(1, TariffType.commercial),
-        kwh: kwh.clamp(0.0, 200.0),
-        rate: commercialTier1,
-        amount: kwh.clamp(0.0, 200.0) * commercialTier1,
-        color: getTierColor(1, TariffType.commercial),
-        fillPercent: (kwh.clamp(0.0, 200.0) / 200).clamp(0.0, 1.0),
+      ChargeLineItem(
+        label: 'Energy',
+        rateLabel:
+            '${(commercialGenerationRate * 100).toStringAsFixed(2)} sen/kWh',
+        amount: energy,
       ),
-      if (kwh > 200)
-        TierBreakdown(
-          label: getTierRangePriceLabel(2, TariffType.commercial),
-          kwh: kwh - 200,
-          rate: commercialTier2,
-          amount: (kwh - 200) * commercialTier2,
-          color: getTierColor(2, TariffType.commercial),
-          fillPercent: ((kwh - 200) / 300).clamp(0.0, 1.0),
+      if (afaSenPerKwh > 0)
+        ChargeLineItem(
+          label: 'AFA',
+          rateLabel: '${afaSenPerKwh.toStringAsFixed(2)} sen/kWh',
+          amount: afa,
         ),
+      ChargeLineItem(
+        label: 'Capacity',
+        rateLabel:
+            '${(commercialCapacityRate * 100).toStringAsFixed(2)} sen/kWh',
+        amount: capacity,
+      ),
+      ChargeLineItem(
+        label: 'Network',
+        rateLabel:
+            '${(commercialNetworkRate * 100).toStringAsFixed(2)} sen/kWh',
+        amount: network,
+      ),
+      ChargeLineItem(
+        label: 'Retail',
+        rateLabel: 'RM${commercialRetailCharge.toStringAsFixed(0)}/month',
+        amount: commercialRetailCharge,
+      ),
+      if (eei > 0)
+        ChargeLineItem(
+          label: 'Energy Efficiency Incentive',
+          rateLabel:
+              '-${_commercialEeiSenPerKwh(kwh).toStringAsFixed(1)} sen/kWh',
+          amount: -eei,
+          isRebate: true,
+        ),
+      ChargeLineItem(
+        label: 'KWTBB',
+        rateLabel: '${(commercialKwtbbRate * 100).toStringAsFixed(1)}%',
+        amount: kwtbb,
+        isLevy: true,
+      ),
     ];
   }
 }
