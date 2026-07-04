@@ -255,10 +255,21 @@ class _BodyContent extends StatelessWidget {
                 SizedBox(height: 14.h),
                 StatCardsRow(state: state),
                 SizedBox(height: 14.h),
-                if (!state.isNearBudget && !state.isOverBudget) ...[
-                  WeeklyChart(weeklyUsage: state.weeklyUsage),
-                  SizedBox(height: 14.h),
-                ],
+                UsageBarChartCard(
+                  title: '7-Day Usage',
+                  subtitle: 'kWh/day',
+                  chartHeight: 80, // compact for dashboard
+                  entries: state.weeklyUsage
+                      .map(
+                        (day) => BarChartEntry(
+                          label: day.label,
+                          kwh: day.kwh,
+                          isHighlighted: day.isToday,
+                        ),
+                      )
+                      .toList(),
+                ),
+                SizedBox(height: 14.h),
                 if (state.isNearBudget || state.isOverBudget) ...[
                   const SavingTipsCard(),
                   SizedBox(height: 14.h),
