@@ -14,9 +14,9 @@ class DashboardPage extends ConsumerWidget {
     final state = ref.watch(dashboardProvider);
     final notifier = ref.read(dashboardProvider.notifier);
 
-    return Scaffold(
-      backgroundColor: AppColors.bg,
-      body: SafeArea(
+    return ColoredBox(
+      color: AppColors.bg,
+      child: SafeArea(
         child: RefreshIndicator(
           color: AppColors.accent,
           backgroundColor: AppColors.surface2,
@@ -75,7 +75,6 @@ class DashboardPage extends ConsumerWidget {
           ),
         ),
       ),
-      bottomNavigationBar: const AppBottomNav(currentIndex: 0),
     );
   }
 }

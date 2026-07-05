@@ -6,10 +6,12 @@ import 'package:go_router/go_router.dart';
 class AppBottomNav extends StatelessWidget {
   const AppBottomNav({
     required this.currentIndex,
+    required this.onTap,
     super.key,
   });
 
   final int currentIndex;
+  final ValueChanged<int> onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -30,14 +32,14 @@ class AppBottomNav extends StatelessWidget {
                 label: 'Home',
                 index: 0,
                 currentIndex: currentIndex,
-                route: AppRoutes.dashboard,
+                onTap: onTap,
               ),
               _NavItem(
                 icon: Icons.bar_chart_rounded,
                 label: 'Usage',
                 index: 1,
                 currentIndex: currentIndex,
-                route: AppRoutes.usage,
+                onTap: onTap,
               ),
               _NavFab(),
               _NavItem(
@@ -45,14 +47,14 @@ class AppBottomNav extends StatelessWidget {
                 label: 'Devices',
                 index: 2,
                 currentIndex: currentIndex,
-                route: AppRoutes.devices,
+                onTap: onTap,
               ),
               _NavItem(
                 icon: Icons.settings_rounded,
                 label: 'Settings',
                 index: 3,
                 currentIndex: currentIndex,
-                route: AppRoutes.settings,
+                onTap: onTap,
               ),
             ],
           ),
@@ -68,22 +70,20 @@ class _NavItem extends StatelessWidget {
     required this.label,
     required this.index,
     required this.currentIndex,
-    required this.route,
+    required this.onTap,
   });
 
   final IconData icon;
   final String label;
   final int index;
   final int currentIndex;
-  final String route;
+  final ValueChanged<int> onTap;
 
   @override
   Widget build(BuildContext context) {
     final isActive = index == currentIndex;
     return GestureDetector(
-      onTap: () {
-        if (!isActive) context.go(route);
-      },
+      onTap: () => onTap(index),
       behavior: HitTestBehavior.opaque,
       child: ConstrainedBox(
         constraints: const BoxConstraints(minWidth: 48, minHeight: 48),

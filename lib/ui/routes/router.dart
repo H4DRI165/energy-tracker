@@ -7,8 +7,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 final _authService = AuthService();
+final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
 final GoRouter appRouter = GoRouter(
+  navigatorKey: _rootNavigatorKey,
   initialLocation: AppRoutes.splash,
   refreshListenable: Listenable.merge([
     GoRouterRefreshStream(_authService.authStateChanges),
@@ -98,26 +100,12 @@ final GoRouter appRouter = GoRouter(
       ),
     ),
 
-    // ----------------------------FEATURES ROUTES------------------------------
+    // ----------------------------FEATURES ROUTES (non-tab)--------------------
     GoRoute(
       path: AppRoutes.onboarding,
       name: 'onboarding',
       pageBuilder: (context, state) => const NoTransitionPage(
         child: OnboardingPage(),
-      ),
-    ),
-    GoRoute(
-      path: AppRoutes.dashboard,
-      name: 'dashboard',
-      pageBuilder: (context, state) => const NoTransitionPage(
-        child: DashboardPage(),
-      ),
-    ),
-    GoRoute(
-      path: AppRoutes.settings,
-      name: 'settings',
-      pageBuilder: (context, state) => const NoTransitionPage(
-        child: SettingsPage(),
       ),
     ),
     GoRoute(
@@ -149,13 +137,6 @@ final GoRouter appRouter = GoRouter(
       ),
     ),
     GoRoute(
-      path: AppRoutes.usage,
-      name: 'usage',
-      pageBuilder: (context, state) => const NoTransitionPage(
-        child: UsagePage(),
-      ),
-    ),
-    GoRoute(
       path: AppRoutes.addReading,
       builder: (context, state) {
         final extra = state.extra;
@@ -180,13 +161,6 @@ final GoRouter appRouter = GoRouter(
         }
         return BillDetailPage(bill: extra);
       },
-    ),
-    GoRoute(
-      path: AppRoutes.devices,
-      name: 'devices',
-      pageBuilder: (context, state) => const NoTransitionPage(
-        child: DevicesPage(),
-      ),
     ),
     GoRoute(
       path: AppRoutes.addAppliance,
@@ -240,6 +214,64 @@ final GoRouter appRouter = GoRouter(
           ),
         ),
       ),
+    ),
+
+    // --------------------------------TAB SHELL (bottom nav)--------------------
+    StatefulShellRoute.indexedStack(
+      builder: (context, state, navigationShell) {
+        return Scaffold(
+          body: navigationShell,
+          bottomNavigationBar: AppBottomNav(
+            currentIndex: navigationShell.currentIndex,
+            onTap: (index) => navigationShell.goBranch(
+              index,
+              initialLocation: index == navigationShell.currentIndex,
+            ),
+          ),
+        );
+      },
+      branches: [
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: AppRoutes.dashboard,
+              name: 'dashboard',
+              pageBuilder: (context, state) =>
+                  const NoTransitionPage(child: DashboardPage()),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: AppRoutes.usage,
+              name: 'usage',
+              pageBuilder: (context, state) =>
+                  const NoTransitionPage(child: UsagePage()),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: AppRoutes.devices,
+              name: 'devices',
+              pageBuilder: (context, state) =>
+                  const NoTransitionPage(child: DevicesPage()),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: AppRoutes.settings,
+              name: 'settings',
+              pageBuilder: (context, state) =>
+                  const NoTransitionPage(child: SettingsPage()),
+            ),
+          ],
+        ),
+      ],
     ),
   ],
 );
