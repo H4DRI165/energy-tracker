@@ -1,4 +1,5 @@
 import 'package:energy_tracker/app.dart';
+import 'package:energy_tracker/services/notifiers/user_profile_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_devices/pg_add_appliance/notifier/notifier.dart';
 import 'package:energy_tracker/ui/features/ft_devices/pg_devices/notifier/devices_notifier.dart';
 import 'package:flutter/material.dart';
@@ -147,6 +148,8 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
 
   @override
   Widget build(BuildContext context) {
+    final tariffType = ref.watch(tariffTypeProvider);
+
     return Expanded(
       child: SingleChildScrollView(
         padding: EdgeInsets.symmetric(
@@ -193,7 +196,10 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
                   ref.read(addApplianceProvider.notifier).decrementHours(),
             ),
             SizedBox(height: 16.h),
-            _MonthlyEstimateCard(state: widget.state),
+            _MonthlyEstimateCard(
+              state: widget.state,
+              tariffType: tariffType,
+            ),
             SizedBox(height: 24.h),
             if (widget.state.errorMessage != null) ...[
               Container(
@@ -452,9 +458,13 @@ class _HoursStepper extends StatelessWidget {
 }
 
 class _MonthlyEstimateCard extends StatelessWidget {
-  const _MonthlyEstimateCard({required this.state});
+  const _MonthlyEstimateCard({
+    required this.state,
+    required this.tariffType,
+  });
 
   final AddAppliancePageState state;
+  final TariffType tariffType;
 
   @override
   Widget build(BuildContext context) {
@@ -488,36 +498,91 @@ class _MonthlyEstimateCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Energy/month', style: AppTextStyles.caption),
-                    SizedBox(height: 4.h),
-                    Text(
-                      '${state.monthlyKwh.toStringAsFixed(0)} kWh',
-                      style: AppTextStyles.titleMd,
-                    ),
-                  ],
+                child: _EstimateStat(
+                  label: 'Energy/month',
+                  value: '${state.monthlyKwh.toStringAsFixed(1)} kWh',
                 ),
               ),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Cost/month', style: AppTextStyles.caption),
-                    SizedBox(height: 4.h),
-                    Text(
-                      'RM ${state.monthlyCost.toStringAsFixed(2)}',
-                      style: AppTextStyles.titleMd
-                          .copyWith(color: AppColors.accent),
-                    ),
-                  ],
+                child: _EstimateStat(
+                  label: 'Cost/month',
+                  value:
+                      'RM ${state.monthlyCost(tariffType).toStringAsFixed(2)}',
+                  valueColor: AppColors.accent,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 10.h),
+          Row(
+            children: [
+              Expanded(
+                child: _EstimateStat(
+                  label: 'Energy/day',
+                  value: '${state.dailyKwh.toStringAsFixed(3)} kWh',
+                ),
+              ),
+              Expanded(
+                child: _EstimateStat(
+                  label: 'Cost/day',
+                  value: 'RM ${state.dailyCost(tariffType).toStringAsFixed(3)}',
+                  valueColor: AppColors.accent,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 10.h),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                Icons.info_outline_rounded,
+                size: 11.r,
+                color: AppColors.text3,
+              ),
+              SizedBox(width: 4.w),
+              Expanded(
+                child: Text(
+                  'Based on flat energy, capacity & network rates '
+                  '(${(TariffRates.marginalRatePerKwh(tariffType) * 100).toStringAsFixed(2)} sen/kWh). '
+                  'Excludes EEI rebate, KWTBB & SST — these depend '
+                  'on your total household usage.',
+                  style: AppTextStyles.caption.copyWith(color: AppColors.text3),
                 ),
               ),
             ],
           ),
         ],
       ),
+    );
+  }
+}
+
+class _EstimateStat extends StatelessWidget {
+  const _EstimateStat({
+    required this.label,
+    required this.value,
+    this.valueColor,
+  });
+
+  final String label;
+  final String value;
+  final Color? valueColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: AppTextStyles.caption),
+        SizedBox(height: 4.h),
+        Text(
+          value,
+          style: AppTextStyles.titleMd.copyWith(
+            color: valueColor,
+          ),
+        ),
+      ],
     );
   }
 }

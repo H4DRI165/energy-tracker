@@ -118,12 +118,14 @@ class _BodyContent extends ConsumerWidget {
               title: 'kWh Usage',
               subtitle: 'kWh',
               entries: state.chartData
-                  .map((month) => BarChartEntry(
-                        label: month.month,
-                        kwh: month.kwh,
-                        isHighlighted: month.year == DateTime.now().year &&
-                            month.month == _currentMonthAbbr(),
-                      ))
+                  .map(
+                    (month) => BarChartEntry(
+                      label: month.month,
+                      kwh: month.kwh,
+                      isHighlighted: month.year == DateTime.now().year &&
+                          month.month == _currentMonthAbbr(),
+                    ),
+                  )
                   .toList(),
             ),
             SizedBox(height: 14.h),

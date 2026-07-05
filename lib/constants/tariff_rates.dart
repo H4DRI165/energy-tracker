@@ -44,6 +44,23 @@ class EeiBand {
 }
 
 class TariffRates {
+  /// Marginal cost rate per kWh — the flat components only.
+  /// Used for per-appliance cost estimates, where EEI/KWTBB/SST
+  /// depend on total household consumption and can't be attributed
+  /// to a single appliance in isolation.
+  static double marginalRatePerKwh(TariffType tariffType) {
+    return switch (tariffType) {
+      TariffType.domestic =>
+        domesticGenerationLow + domesticCapacityRate + domesticNetworkRate,
+      TariffType.commercial => commercialGenerationRate +
+          commercialCapacityRate +
+          commercialNetworkRate,
+    };
+  }
+
+  static double marginalCost(double kwh, TariffType tariffType) =>
+      kwh * marginalRatePerKwh(tariffType);
+
   // =========================================================================
   // Domestic — post-1 July 2025 TNB restructuring
   // =========================================================================

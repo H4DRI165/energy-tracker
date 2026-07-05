@@ -1,3 +1,4 @@
+import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 import 'package:energy_tracker/models/appliance.dart';
 
 class DevicesPageState {
@@ -15,8 +16,8 @@ class DevicesPageState {
   double get totalMonthlyKwh =>
       appliances.fold(0, (sum, a) => sum + a.monthlyKwh);
 
-  double get totalMonthlyCost =>
-      appliances.fold(0, (sum, a) => sum + a.monthlyCost);
+  double totalMonthlyCost(TariffType tariffType) =>
+      appliances.fold(0, (sum, a) => sum + a.monthlyCost(tariffType));
 
   DevicesPageState copyWith({
     bool? isLoading,
