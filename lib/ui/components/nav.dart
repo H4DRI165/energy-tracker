@@ -100,6 +100,8 @@ class _NavItem extends StatelessWidget {
               SizedBox(height: 3.h),
               Text(
                 label,
+                maxLines: 1,
+                softWrap: false,
                 style: AppTextStyles.navLabel.copyWith(
                   color: isActive ? AppColors.accent : AppColors.text3,
                 ),

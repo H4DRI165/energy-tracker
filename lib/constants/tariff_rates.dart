@@ -41,6 +41,15 @@ class EeiBand {
   final Color color; // green → amber → red as rebate shrinks
   final String label; // e.g. "Band 5 · 12.0 sen rebate"
   final String description; // e.g. "Moderate usage — good rebate"
+
+  static const none = EeiBand(
+    number: 0,
+    kwhRange: '0 kWh',
+    rebateSenPerKwh: 0,
+    color: AppColors.text3,
+    label: 'No usage',
+    description: 'No usage recorded',
+  );
 }
 
 class TariffRates {
@@ -342,14 +351,7 @@ class TariffRates {
   /// used by badge/summary displays (Direction C).
   static EeiBand getEeiBand(double kwh) {
     if (kwh <= 0) {
-      return const EeiBand(
-        number: 0,
-        kwhRange: '0 kWh',
-        rebateSenPerKwh: 0,
-        color: AppColors.text3,
-        label: 'No usage',
-        description: 'No usage recorded',
-      );
+      return EeiBand.none;
     }
 
     if (kwh > 1000) {
