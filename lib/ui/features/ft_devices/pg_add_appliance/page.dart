@@ -545,8 +545,9 @@ class _MonthlyEstimateCard extends StatelessWidget {
                 child: Text(
                   'Based on flat energy, capacity & network rates '
                   '(${(TariffRates.marginalRatePerKwh(tariffType) * 100).toStringAsFixed(2)} sen/kWh). '
-                  'Excludes EEI rebate, KWTBB & SST — these depend '
-                  'on your total household usage.',
+                  '${tariffType == TariffType.domestic ? 'Excludes EEI rebate, '
+                      'KWTBB & SST' : 'Excludes KWTBB & SST'} — these depend '
+                  'on your total ${tariffType == TariffType.domestic ? 'household' : 'business'} usage.',
                   style: AppTextStyles.caption.copyWith(color: AppColors.text3),
                 ),
               ),

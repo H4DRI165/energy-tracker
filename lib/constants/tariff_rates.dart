@@ -61,6 +61,25 @@ class TariffRates {
   static double marginalCost(double kwh, TariffType tariffType) =>
       kwh * marginalRatePerKwh(tariffType);
 
+  /// Reference kWh used to scale the appliance summary ring chart.
+  /// Domestic: 1000 kWh — the point where EEI rebate disappears,
+  /// a meaningful "high usage" threshold for residential users.
+  /// Commercial: 500 kWh — a practical midpoint for small business
+  /// LV usage; no equivalent EEI threshold exists for commercial.
+  static const double domesticRingReferenceKwh = 1000;
+  static const double commercialRingReferenceKwh = 500;
+
+  static double ringReferenceKwh(TariffType tariffType) =>
+      tariffType == TariffType.domestic
+          ? domesticRingReferenceKwh
+          : commercialRingReferenceKwh;
+
+  /// Whether AFA applies for a given tariff type and monthly kWh.
+  /// Commercial: always applies regardless of usage.
+  /// Domestic: exempt at or below 600 kWh.
+  static bool afaApplies(TariffType tariffType, double kwh) =>
+      tariffType == TariffType.commercial || kwh > 600;
+
   // =========================================================================
   // Domestic — post-1 July 2025 TNB restructuring
   // =========================================================================
@@ -117,14 +136,14 @@ class TariffRates {
             ),
             (
               range: '501–700 kWh',
-              rebateRange: '${_senLabel(_eeiBands[11].rebateSen)}–'
+              rebateRange: '${_senLabel(_eeiBands[10].rebateSen)}–'
                   '${_senLabel(_eeiBands[7].rebateSen)}',
               isHighUsage: true
             ),
             (
               range: '701–1000 kWh',
               rebateRange: '${_senLabel(_eeiBands[16].rebateSen)}–'
-                  '${_senLabel(_eeiBands[12].rebateSen)}',
+                  '${_senLabel(_eeiBands[11].rebateSen)}',
               isHighUsage: true
             ),
             (range: '1001+ kWh', rebateRange: 'No rebate', isHighUsage: true),
@@ -206,57 +225,70 @@ class TariffRates {
   /// Full domestic bill total. [afaSenPerKwh] defaults to 0 (exempt ≤600
   /// kWh; pass the current published rate for >600 kWh for accuracy).
   /// Displays a disclaimer wherever this is called without a real AFA rate.
+  // Private record holding all intermediate domestic charge values.
+  // Single source of truth — calculateDomestic and domesticBreakdown
+  // both derive from this, guaranteeing the total always equals the
+  // sum of the line items.
+  static ({
+    double gen,
+    double energy,
+    double afa,
+    double capacity,
+    double network,
+    double retail,
+    double eei,
+    double net,
+    double kwtbb,
+    double sst,
+    double total,
+  }) _domesticCharges(double kwh, {double afaSenPerKwh = domesticAfaDefault}) {
+    final gen = kwh > 1500 ? domesticGenerationHigh : domesticGenerationLow;
+    final energy = kwh * gen;
+    final afa = kwh > 600 ? kwh * (afaSenPerKwh / 100) : 0.0;
+    final capacity = kwh * domesticCapacityRate;
+    final network = kwh * domesticNetworkRate;
+    final retail = kwh > 600 ? domesticRetailCharge : 0.0;
+    final eei = kwh * (_eeiSenPerKwh(kwh) / 100);
+    final net = energy + afa + capacity + network + retail - eei;
+    final kwtbb = kwh > 300
+        ? (energy + capacity + network - eei) * domesticKwtbbRate
+        : 0.0;
+    final sst = kwh > 600 ? (net * ((kwh - 600) / kwh)) * domesticSstRate : 0.0;
+    return (
+      gen: gen,
+      energy: energy,
+      afa: afa,
+      capacity: capacity,
+      network: network,
+      retail: retail,
+      eei: eei,
+      net: net,
+      kwtbb: kwtbb,
+      sst: sst,
+      total: net + kwtbb + sst,
+    );
+  }
+
   static double calculateDomestic(
     double kwh, {
     double afaSenPerKwh = domesticAfaDefault,
   }) {
     if (kwh <= 0) return 0;
-
-    final gen = kwh > 1500 ? domesticGenerationHigh : domesticGenerationLow;
-    final energy = kwh * gen;
-    final afa = kwh > 600 ? kwh * (afaSenPerKwh / 100) : 0.0;
-    final capacity = kwh * domesticCapacityRate;
-    final network = kwh * domesticNetworkRate;
-    final retail = kwh > 600 ? domesticRetailCharge : 0.0;
-    final eei = kwh * (_eeiSenPerKwh(kwh) / 100);
-
-    final net = energy + afa + capacity + network + retail - eei;
-
-    final kwtbb = kwh > 300
-        ? (energy + capacity + network - eei) * domesticKwtbbRate
-        : 0.0;
-
-    final sst = kwh > 600 ? (net * ((kwh - 600) / kwh)) * domesticSstRate : 0.0;
-
-    return net + kwtbb + sst;
+    return _domesticCharges(kwh, afaSenPerKwh: afaSenPerKwh).total;
   }
 
-  /// Itemised breakdown matching TNB's own e-bill line items.
-  /// Used by bill detail and usage screens (Direction A).
   static List<ChargeLineItem> domesticBreakdown(
     double kwh, {
     double afaSenPerKwh = domesticAfaDefault,
   }) {
     if (kwh <= 0) return [];
-
-    final gen = kwh > 1500 ? domesticGenerationHigh : domesticGenerationLow;
-    final energy = kwh * gen;
-    final afa = kwh > 600 ? kwh * (afaSenPerKwh / 100) : 0.0;
-    final capacity = kwh * domesticCapacityRate;
-    final network = kwh * domesticNetworkRate;
-    final retail = kwh > 600 ? domesticRetailCharge : 0.0;
-    final eei = kwh * (_eeiSenPerKwh(kwh) / 100);
-    final net = energy + afa + capacity + network + retail - eei;
-    final kwtbb = kwh > 300
-        ? (energy + capacity + network - eei) * domesticKwtbbRate
-        : 0.0;
-    final sst = kwh > 600 ? (net * ((kwh - 600) / kwh)) * domesticSstRate : 0.0;
+    final c = _domesticCharges(kwh, afaSenPerKwh: afaSenPerKwh);
 
     return [
       ChargeLineItem(
         label: 'Energy',
-        rateLabel: '${(gen * 100).toStringAsFixed(2)} sen/kWh',
-        amount: energy,
+        rateLabel: '${(c.gen * 100).toStringAsFixed(2)} sen/kWh',
+        amount: c.energy,
       ),
       if (kwh > 600)
         ChargeLineItem(
@@ -264,43 +296,43 @@ class TariffRates {
           rateLabel: afaSenPerKwh == 0
               ? '0 sen/kWh (Jun 2026)'
               : '${afaSenPerKwh.toStringAsFixed(2)} sen/kWh',
-          amount: afa,
+          amount: c.afa,
         ),
       ChargeLineItem(
         label: 'Capacity',
         rateLabel: '${(domesticCapacityRate * 100).toStringAsFixed(2)} sen/kWh',
-        amount: capacity,
+        amount: c.capacity,
       ),
       ChargeLineItem(
         label: 'Network',
         rateLabel: '${(domesticNetworkRate * 100).toStringAsFixed(2)} sen/kWh',
-        amount: network,
+        amount: c.network,
       ),
       if (kwh > 600)
         ChargeLineItem(
           label: 'Retail',
-          rateLabel: 'RM10/month',
-          amount: retail,
+          rateLabel: 'RM${domesticRetailCharge.toStringAsFixed(0)}/month',
+          amount: c.retail,
         ),
-      if (eei > 0)
+      if (c.eei > 0)
         ChargeLineItem(
           label: 'Energy Efficiency Incentive',
           rateLabel: '-${_eeiSenPerKwh(kwh).toStringAsFixed(2)} sen/kWh',
-          amount: -eei,
+          amount: -c.eei,
           isRebate: true,
         ),
-      if (kwtbb > 0)
+      if (c.kwtbb > 0)
         ChargeLineItem(
           label: 'KWTBB',
-          rateLabel: '1.6%',
-          amount: kwtbb,
+          rateLabel: kwtbbLabel,
+          amount: c.kwtbb,
           isLevy: true,
         ),
-      if (sst > 0)
+      if (c.sst > 0)
         ChargeLineItem(
           label: 'Service Tax (SST)',
           rateLabel: '8% on usage above 600 kWh',
-          amount: sst,
+          amount: c.sst,
           isLevy: true,
         ),
     ];
@@ -314,7 +346,7 @@ class TariffRates {
         number: 0,
         kwhRange: '0 kWh',
         rebateSenPerKwh: 0,
-        color: AppColors.accent,
+        color: AppColors.text3,
         label: 'No usage',
         description: 'No usage recorded',
       );
@@ -470,29 +502,110 @@ class TariffRates {
       'RM${commercialRetailCharge.toStringAsFixed(0)}/month';
 
   // EEI: 11.0 sen/kWh for ≤200 kWh, 0 above. CONFIRMED.
-  static double _commercialEeiSenPerKwh(double kwh) => kwh <= 200 ? 11.0 : 0.0;
+  static const double commercialEeiRateSenPerKwh = 11;
 
-// SST: not applicable for Non-Domestic LV General.
-// CONFIRMED absent across full 100–1600 kWh range (all consumption
-// in Non-Applicable column with zero in Applicable column at all levels).
+  static String get commercialEeiRateLabel =>
+      '$commercialEeiRateSenPerKwh sen/kWh';
+
+  static double _commercialEeiSenPerKwh(double kwh) =>
+      kwh <= 200 ? commercialEeiRateSenPerKwh : 0.0;
+
+  // SST: not applicable for Non-Domestic LV General.
+  // CONFIRMED absent across full 100–1600 kWh range (all consumption
+  // in Non-Applicable column with zero in Applicable column at all levels).
+  static ({
+    double energy,
+    double afa,
+    double capacity,
+    double network,
+    double eei,
+    double net,
+    double kwtbb,
+    double total,
+  }) _commercialCharges(
+    double kwh, {
+    double afaSenPerKwh = commercialAfaDefault,
+  }) {
+    final energy = kwh * commercialGenerationRate;
+    final afa = kwh * (afaSenPerKwh / 100);
+    final capacity = kwh * commercialCapacityRate;
+    final network = kwh * commercialNetworkRate;
+    final eei = kwh * (_commercialEeiSenPerKwh(kwh) / 100);
+    final net =
+        energy + afa + capacity + network + commercialRetailCharge - eei;
+    final kwtbb = (energy + capacity + network - eei) * commercialKwtbbRate;
+    return (
+      energy: energy,
+      afa: afa,
+      capacity: capacity,
+      network: network,
+      eei: eei,
+      net: net,
+      kwtbb: kwtbb,
+      total: net + kwtbb,
+    );
+  }
 
   static double calculateCommercial(
     double kwh, {
     double afaSenPerKwh = commercialAfaDefault,
   }) {
     if (kwh <= 0) return 0;
+    return _commercialCharges(kwh, afaSenPerKwh: afaSenPerKwh).total;
+  }
 
-    final energy = kwh * commercialGenerationRate;
-    final afa = kwh * (afaSenPerKwh / 100);
-    final capacity = kwh * commercialCapacityRate;
-    final network = kwh * commercialNetworkRate;
-    final eei = kwh * (_commercialEeiSenPerKwh(kwh) / 100);
+  static List<ChargeLineItem> commercialBreakdown(
+    double kwh, {
+    double afaSenPerKwh = commercialAfaDefault,
+  }) {
+    if (kwh <= 0) return [];
+    final c = _commercialCharges(kwh, afaSenPerKwh: afaSenPerKwh);
 
-    final net =
-        energy + afa + capacity + network + commercialRetailCharge - eei;
-    final kwtbb = (energy + capacity + network - eei) * commercialKwtbbRate;
-
-    return net + kwtbb;
+    return [
+      ChargeLineItem(
+        label: 'Energy',
+        rateLabel:
+            '${(commercialGenerationRate * 100).toStringAsFixed(2)} sen/kWh',
+        amount: c.energy,
+      ),
+      if (afaSenPerKwh > 0)
+        ChargeLineItem(
+          label: 'AFA',
+          rateLabel: '${afaSenPerKwh.toStringAsFixed(2)} sen/kWh',
+          amount: c.afa,
+        ),
+      ChargeLineItem(
+        label: 'Capacity',
+        rateLabel:
+            '${(commercialCapacityRate * 100).toStringAsFixed(2)} sen/kWh',
+        amount: c.capacity,
+      ),
+      ChargeLineItem(
+        label: 'Network',
+        rateLabel:
+            '${(commercialNetworkRate * 100).toStringAsFixed(2)} sen/kWh',
+        amount: c.network,
+      ),
+      ChargeLineItem(
+        label: 'Retail',
+        rateLabel: commercialRetailLabel,
+        amount: commercialRetailCharge,
+      ),
+      if (c.eei > 0)
+        ChargeLineItem(
+          label: 'Energy Efficiency Incentive',
+          rateLabel:
+              '-${_commercialEeiSenPerKwh(kwh).toStringAsFixed(1)} sen/kWh',
+          amount: -c.eei,
+          isRebate: true,
+        ),
+      ChargeLineItem(
+        label: 'KWTBB',
+        rateLabel: kwtbbLabel,
+        amount: c.kwtbb,
+        isLevy: true,
+      ),
+    ];
   }
 
   // Commercial still uses the old tier helpers since that tariff is unchanged.
@@ -572,64 +685,4 @@ class TariffRates {
 
   static String getTierPriceKwhLabel(int tier, TariffType tariffType) =>
       'Band $tier — ${getTierPrice(tier, tariffType)}/kWh';
-
-  static List<ChargeLineItem> commercialBreakdown(
-    double kwh, {
-    double afaSenPerKwh = commercialAfaDefault,
-  }) {
-    if (kwh <= 0) return [];
-
-    final energy = kwh * commercialGenerationRate;
-    final afa = kwh * (afaSenPerKwh / 100);
-    final capacity = kwh * commercialCapacityRate;
-    final network = kwh * commercialNetworkRate;
-    final eei = kwh * (_commercialEeiSenPerKwh(kwh) / 100);
-    final kwtbb = (energy + capacity + network - eei) * commercialKwtbbRate;
-
-    return [
-      ChargeLineItem(
-        label: 'Energy',
-        rateLabel:
-            '${(commercialGenerationRate * 100).toStringAsFixed(2)} sen/kWh',
-        amount: energy,
-      ),
-      if (afaSenPerKwh > 0)
-        ChargeLineItem(
-          label: 'AFA',
-          rateLabel: '${afaSenPerKwh.toStringAsFixed(2)} sen/kWh',
-          amount: afa,
-        ),
-      ChargeLineItem(
-        label: 'Capacity',
-        rateLabel:
-            '${(commercialCapacityRate * 100).toStringAsFixed(2)} sen/kWh',
-        amount: capacity,
-      ),
-      ChargeLineItem(
-        label: 'Network',
-        rateLabel:
-            '${(commercialNetworkRate * 100).toStringAsFixed(2)} sen/kWh',
-        amount: network,
-      ),
-      ChargeLineItem(
-        label: 'Retail',
-        rateLabel: 'RM${commercialRetailCharge.toStringAsFixed(0)}/month',
-        amount: commercialRetailCharge,
-      ),
-      if (eei > 0)
-        ChargeLineItem(
-          label: 'Energy Efficiency Incentive',
-          rateLabel:
-              '-${_commercialEeiSenPerKwh(kwh).toStringAsFixed(1)} sen/kWh',
-          amount: -eei,
-          isRebate: true,
-        ),
-      ChargeLineItem(
-        label: 'KWTBB',
-        rateLabel: '${(commercialKwtbbRate * 100).toStringAsFixed(1)}%',
-        amount: kwtbb,
-        isLevy: true,
-      ),
-    ];
-  }
 }

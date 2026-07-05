@@ -164,10 +164,10 @@ class DashboardPageState {
   }
 
   DashboardPageState merge(DashboardPageState other) {
-    // EeiBand has no clean "default/sentinel" value to compare against,
-    // so we check number != 0 (0 means "no usage / not set") as the proxy.
-    // See note on merge()'s sentinel pattern in code comments.
-    final otherBandIsSet = other.currentEeiBand.number != 0;
+    // Gate EeiBand on kwhUsed rather than band.number, since number==0
+    // is legitimately returned for >1000 kWh usage ("no rebate" band)
+    // and would be incorrectly treated as "not set" by the old check.
+    final otherHasUsageData = other.kwhUsed != 0;
 
     return copyWith(
       userName: other.userName.isNotEmpty ? other.userName : null,
@@ -175,7 +175,7 @@ class DashboardPageState {
       monthLabel: other.monthLabel.isNotEmpty ? other.monthLabel : null,
       kwhUsed: other.kwhUsed != 0 ? other.kwhUsed : null,
       estimatedBill: other.estimatedBill != 0 ? other.estimatedBill : null,
-      currentEeiBand: otherBandIsSet ? other.currentEeiBand : null,
+      currentEeiBand: otherHasUsageData ? other.currentEeiBand : null,
       tariffType:
           other.tariffType != TariffType.domestic ? other.tariffType : null,
       dailyAvg: other.dailyAvg != 0 ? other.dailyAvg : null,

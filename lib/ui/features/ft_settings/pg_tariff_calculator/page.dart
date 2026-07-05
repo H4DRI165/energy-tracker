@@ -41,17 +41,19 @@ class _TariffCalculatorPageState extends ConsumerState<TariffCalculatorPage> {
 
     final total = TariffRates.calculate(kwh, tariffType);
 
-    // Badge — EEI band for domestic, old tier for commercial.
-    final eeiBand =
-        tariffType == TariffType.domestic ? TariffRates.getEeiBand(kwh) : null;
-    final commercialTier = tariffType == TariffType.commercial
-        ? TariffRates.getTier(kwh, TariffType.commercial)
-        : 0;
-    final badgeLabel = tariffType == TariffType.domestic
-        ? (eeiBand!.number == 0 ? 'No usage' : eeiBand.label)
+    final isDomestic = tariffType == TariffType.domestic;
+    final eeiBand = isDomestic ? TariffRates.getEeiBand(kwh) : null;
+    final commercialTier =
+        !isDomestic ? TariffRates.getTier(kwh, TariffType.commercial) : 0;
+
+    final isNoUsage = isDomestic && eeiBand!.number == 0;
+
+    final badgeLabel = isDomestic
+        ? (isNoUsage ? 'No usage' : eeiBand?.label)
         : TariffRates.tierBadgeLabel(commercialTier, TariffType.commercial);
-    final badgeColor = tariffType == TariffType.domestic
-        ? (eeiBand!.number == 0 ? AppColors.text3 : eeiBand.color)
+
+    final badgeColor = isDomestic
+        ? (isNoUsage ? AppColors.text3 : eeiBand?.color)
         : TariffRates.getTierColor(commercialTier, TariffType.commercial);
 
     return Scaffold(
@@ -90,8 +92,8 @@ class _TariffCalculatorPageState extends ConsumerState<TariffCalculatorPage> {
                       minCharge: tariffType == TariffType.commercial
                           ? TariffRates.minChargeFor(TariffType.commercial)
                           : 0,
-                      badgeLabel: badgeLabel,
-                      badgeColor: badgeColor,
+                      badgeLabel: badgeLabel!,
+                      badgeColor: badgeColor!,
                     ),
                     SizedBox(height: 16.h),
                     _InfoCard(tariffType: tariffType),
@@ -275,10 +277,7 @@ class _BreakdownSection extends StatelessWidget {
   final double kwh;
   final TariffType tariffType;
 
-  bool get _showAfaDisclaimer {
-    if (tariffType == TariffType.commercial) return true;
-    return kwh > 600;
-  }
+  bool get _showAfaDisclaimer => TariffRates.afaApplies(tariffType, kwh);
 
   @override
   Widget build(BuildContext context) {
@@ -300,7 +299,7 @@ class _BreakdownSection extends StatelessWidget {
                 Icon(
                   Icons.info_outline_rounded,
                   size: 11.r,
-                  color: AppColors.text3,
+                  color: AppColors.warn,
                 ),
                 SizedBox(width: 4.w),
                 Expanded(
@@ -313,7 +312,7 @@ class _BreakdownSection extends StatelessWidget {
                             'published by TNB. Applies only above 600 kWh '
                             'for domestic.',
                     style:
-                        AppTextStyles.caption.copyWith(color: AppColors.text3),
+                        AppTextStyles.caption.copyWith(color: AppColors.warn),
                   ),
                 ),
               ],
@@ -554,14 +553,14 @@ class _DomesticInfo extends StatelessWidget {
             Icon(
               Icons.info_outline_rounded,
               size: 12.r,
-              color: AppColors.text3,
+              color: AppColors.warn,
             ),
             SizedBox(width: 4.w),
             Expanded(
               child: Text(
                 'AFA excluded — a monthly fuel adjustment published '
                 'by TNB. Applies only above 600 kWh.',
-                style: AppTextStyles.caption.copyWith(color: AppColors.text3),
+                style: AppTextStyles.caption.copyWith(color: AppColors.warn),
               ),
             ),
           ],
@@ -769,9 +768,10 @@ class _CommercialInfo extends StatelessWidget {
                 ],
               ),
               Text(
-                '11.0 sen/kWh',
-                style:
-                    AppTextStyles.bodyMd.copyWith(fontWeight: FontWeight.w600),
+                TariffRates.commercialEeiRateLabel,
+                style: AppTextStyles.bodyMd.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ],
           ),
@@ -804,7 +804,7 @@ class _CommercialInfo extends StatelessWidget {
             Icon(
               Icons.info_outline_rounded,
               size: 12.r,
-              color: AppColors.text3,
+              color: AppColors.warn,
             ),
             SizedBox(width: 4.w),
             Expanded(
@@ -812,7 +812,7 @@ class _CommercialInfo extends StatelessWidget {
                 'AFA excluded — published monthly by TNB. '
                 'No generation rate crossover at 1500 kWh '
                 '(unlike domestic).',
-                style: AppTextStyles.caption.copyWith(color: AppColors.text3),
+                style: AppTextStyles.caption.copyWith(color: AppColors.warn),
               ),
             ),
           ],

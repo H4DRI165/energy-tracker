@@ -43,15 +43,14 @@ class AddReadingPageState {
   // For domestic, returns the EEI band number rather than the old usage tier.
 // For commercial, still returns the 2-tier int (unchanged tariff structure).
   int currentTier(TariffType tariffType) => tariffType == TariffType.domestic
-      ? TariffRates.getEeiBand(usageKwh).number
+      ? currentEeiBand.number
       : TariffRates.getTier(usageKwh, TariffType.commercial);
 
   EeiBand get currentEeiBand => TariffRates.getEeiBand(usageKwh);
 
   String tierLabel(TariffType tariffType) {
     if (tariffType == TariffType.domestic) {
-      final band = TariffRates.getEeiBand(usageKwh);
-      return band.number == 0 ? 'No rebate' : band.label;
+      return TariffRates.getEeiBand(usageKwh).label;
     }
     return TariffRates.getTierPriceKwhLabel(
       TariffRates.getTier(usageKwh, TariffType.commercial),

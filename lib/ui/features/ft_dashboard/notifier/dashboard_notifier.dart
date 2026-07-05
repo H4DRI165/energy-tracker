@@ -128,26 +128,19 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState> {
       final bill = TariffRates.calculate(kwhUsed, tariffType);
       final eeiBand = tariffType == TariffType.domestic
           ? TariffRates.getEeiBand(kwhUsed)
-          : EeiBand(
-              number: TariffRates.getTier(kwhUsed, TariffType.commercial),
-              kwhRange: TariffRates.getTierKwhRange(
-                TariffRates.getTier(kwhUsed, TariffType.commercial),
-                TariffType.commercial,
-              ),
-              rebateSenPerKwh: 0,
-              color: TariffRates.getTierColor(
-                TariffRates.getTier(kwhUsed, TariffType.commercial),
-                TariffType.commercial,
-              ),
-              label: TariffRates.tierBadgeLabel(
-                TariffRates.getTier(kwhUsed, TariffType.commercial),
-                TariffType.commercial,
-              ),
-              description: TariffRates.tierBadgeLabel(
-                TariffRates.getTier(kwhUsed, TariffType.commercial),
-                TariffType.commercial,
-              ),
-            );
+          : (() {
+              final tier = TariffRates.getTier(kwhUsed, TariffType.commercial);
+              return EeiBand(
+                number: tier,
+                kwhRange:
+                    TariffRates.getTierKwhRange(tier, TariffType.commercial),
+                rebateSenPerKwh: 0,
+                color: TariffRates.getTierColor(tier, TariffType.commercial),
+                label: TariffRates.tierBadgeLabel(tier, TariffType.commercial),
+                description:
+                    TariffRates.tierBadgeLabel(tier, TariffType.commercial),
+              );
+            })();
 
       final daysElapsed = now.day;
       final dailyAvg = daysElapsed > 0 ? kwhUsed / daysElapsed : 0.0;

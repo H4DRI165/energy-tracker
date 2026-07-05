@@ -7,14 +7,12 @@ class BillBreakdownCard extends StatelessWidget {
     required this.items,
     required this.emptyLabel,
     this.padding,
-    this.disclaimerColor,
     super.key,
   });
 
   final List<ChargeLineItem> items;
   final String emptyLabel;
   final EdgeInsetsGeometry? padding;
-  final Color? disclaimerColor;
 
   @override
   Widget build(BuildContext context) {

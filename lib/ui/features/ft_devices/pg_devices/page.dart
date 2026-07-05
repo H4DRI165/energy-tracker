@@ -211,7 +211,7 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final kwhRef = tariffType == TariffType.domestic ? 1000.0 : 500.0;
+    final kwhRef = TariffRates.ringReferenceKwh(tariffType);
 
     return Container(
       padding: EdgeInsets.all(18.r),

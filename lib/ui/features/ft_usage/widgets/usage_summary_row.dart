@@ -1,3 +1,4 @@
+import 'package:energy_tracker/constants/tariff_rates.dart';
 import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 import 'package:energy_tracker/theme/theme.dart';
 import 'package:flutter/material.dart';
@@ -17,9 +18,7 @@ class UsageSummaryRow extends StatelessWidget {
   final String monthLabel;
   final TariffType tariffType;
 
-  // Domestic AFA is 0 for ≤600 kWh — estimate is accurate at low usage.
-  // Commercial AFA always applies — estimate is always understated.
-  bool get _billExcludesAfa => tariffType == TariffType.commercial || kwh > 600;
+  bool get _billExcludesAfa => TariffRates.afaApplies(tariffType, kwh);
 
   @override
   Widget build(BuildContext context) {

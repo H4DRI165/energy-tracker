@@ -628,22 +628,19 @@ class _BandBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     if (tariffType == TariffType.domestic) {
       final band = TariffRates.getEeiBand(usageKwh);
-      final color = band.number == 0 ? AppColors.text3 : band.color;
-      final label = band.number == 0 ? 'No usage' : band.label;
       return Container(
         padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.12),
+          color: band.color.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(20.r),
         ),
         child: Text(
-          label,
-          style: AppTextStyles.tag.copyWith(color: color),
+          band.label,
+          style: AppTextStyles.tag.copyWith(color: band.color),
         ),
       );
     }
 
-    // Commercial — old tier badge unchanged.
     final tier = TariffRates.getTier(usageKwh, TariffType.commercial);
     final color = TariffRates.getTierColor(tier, TariffType.commercial);
     return Container(
