@@ -1,6 +1,13 @@
+import 'dart:async';
+
 import 'package:energy_tracker/app.dart';
+import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_notifier.dart';
+import 'package:energy_tracker/ui/features/ft_usage/notifier/usage_notifier.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:intl/intl.dart';
 
 class BarChartEntry {
   const BarChartEntry({
@@ -14,7 +21,66 @@ class BarChartEntry {
   final bool isHighlighted;
 }
 
-class UsageBarChartCard extends StatelessWidget {
+class WeeklyUsageChartCard extends ConsumerWidget {
+  const WeeklyUsageChartCard({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final weeklyUsage = ref.watch(
+      dashboardProvider.select(
+        (asyncState) => asyncState.value?.weeklyUsage ?? const [],
+      ),
+    );
+
+    return UsageBarChartCard(
+      title: '7-Day Usage',
+      subtitle: 'kWh/day',
+      chartHeight: 80,
+      entries: weeklyUsage
+          .map(
+            (day) => BarChartEntry(
+              label: day.label,
+              kwh: day.kwh,
+              isHighlighted: day.isToday,
+            ),
+          )
+          .toList(),
+    );
+  }
+}
+
+class MonthlyUsageChartCard extends ConsumerWidget {
+  const MonthlyUsageChartCard({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final chartData = ref.watch(
+      usageProvider.select(
+        (asyncState) => asyncState.value?.chartData ?? const [],
+      ),
+    );
+
+    final currentMonthAbbr = DateFormat('MMM').format(DateTime.now());
+    final currentYear = DateTime.now().year;
+
+    return UsageBarChartCard(
+      title: 'kWh Usage',
+      subtitle: 'kWh',
+      entries: chartData
+          .map(
+            (month) => BarChartEntry(
+              label: month.month,
+              kwh: month.kwh,
+              isHighlighted:
+                  month.year == currentYear && month.month == currentMonthAbbr,
+            ),
+          )
+          .toList(),
+    );
+  }
+}
+
+class UsageBarChartCard extends StatefulWidget {
   const UsageBarChartCard({
     required this.title,
     required this.subtitle,
@@ -26,18 +92,52 @@ class UsageBarChartCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final List<BarChartEntry> entries;
-
-  /// Override for compact usage
   final double chartHeight;
 
+  @override
+  State<UsageBarChartCard> createState() => _UsageBarChartCardState();
+}
+
+class _UsageBarChartCardState extends State<UsageBarChartCard>
+    with SingleTickerProviderStateMixin {
   static const double _valueLabelHeight = 16;
+
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    unawaited(_controller.forward());
+  }
+
+  @override
+  void didUpdateWidget(covariant UsageBarChartCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!listEquals(
+      oldWidget.entries.map((e) => e.kwh).toList(),
+      widget.entries.map((e) => e.kwh).toList(),
+    )) {
+      unawaited(_controller.forward(from: 0));
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final entries = widget.entries;
     final maxKwh = entries.isEmpty
         ? 1.0
         : entries.map((e) => e.kwh).reduce((a, b) => a > b ? a : b);
-    final maxBarHeight = chartHeight.h - _valueLabelHeight.h - 3.h;
+    final maxBarHeight = widget.chartHeight.h - _valueLabelHeight.h - 3.h;
 
     return Container(
       padding: EdgeInsets.all(AppDimensions.cardPaddingSm),
@@ -53,7 +153,7 @@ class UsageBarChartCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                title,
+                widget.title,
                 style:
                     AppTextStyles.bodyMd.copyWith(fontWeight: FontWeight.w700),
               ),
@@ -68,7 +168,7 @@ class UsageBarChartCard extends StatelessWidget {
                     ),
                   ),
                   SizedBox(width: 4.w),
-                  Text(subtitle, style: AppTextStyles.caption),
+                  Text(widget.subtitle, style: AppTextStyles.caption),
                 ],
               ),
             ],
@@ -78,37 +178,45 @@ class UsageBarChartCard extends StatelessWidget {
             Center(
               child: Padding(
                 padding: EdgeInsets.symmetric(vertical: 20.h),
-                child: Text(
-                  'No readings yet',
-                  style: AppTextStyles.bodySm,
-                ),
+                child: Text('No readings yet', style: AppTextStyles.bodySm),
               ),
             )
           else ...[
-            SizedBox(
-              height: chartHeight.h,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: entries.map((entry) {
-                  final heightFraction = maxKwh > 0
-                      ? (entry.kwh <= 0
-                          ? 0.0
-                          : (entry.kwh / maxKwh).clamp(0.05, 1.0))
-                      : 0.0;
+            RepaintBoundary(
+              child: SizedBox(
+                height: widget.chartHeight.h,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: List.generate(entries.length, (i) {
+                    final entry = entries[i];
+                    final heightFraction = maxKwh > 0
+                        ? (entry.kwh <= 0
+                            ? 0.0
+                            : (entry.kwh / maxKwh).clamp(0.05, 1.0))
+                        : 0.0;
 
-                  return Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 4.w),
-                      child: _SlimBar(
-                        heightFraction: heightFraction,
-                        isHighlighted: entry.isHighlighted,
-                        kwh: entry.kwh,
-                        maxBarHeight: maxBarHeight,
-                        valueLabelHeight: _valueLabelHeight.h,
+                    final start = (i / entries.length) * 0.3;
+                    final animation = CurvedAnimation(
+                      parent: _controller,
+                      curve: Interval(start, 1, curve: Curves.easeOutQuart),
+                    );
+
+                    return Expanded(
+                      key: ValueKey(entry.label),
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 4.w),
+                        child: _SlimBar(
+                          animation: animation,
+                          heightFraction: heightFraction,
+                          isHighlighted: entry.isHighlighted,
+                          kwh: entry.kwh,
+                          maxBarHeight: maxBarHeight,
+                          valueLabelHeight: _valueLabelHeight.h,
+                        ),
                       ),
-                    ),
-                  );
-                }).toList(),
+                    );
+                  }),
+                ),
               ),
             ),
             SizedBox(height: 6.h),
@@ -140,6 +248,7 @@ class UsageBarChartCard extends StatelessWidget {
 
 class _SlimBar extends StatelessWidget {
   const _SlimBar({
+    required this.animation,
     required this.heightFraction,
     required this.isHighlighted,
     required this.kwh,
@@ -147,6 +256,7 @@ class _SlimBar extends StatelessWidget {
     required this.valueLabelHeight,
   });
 
+  final Animation<double> animation;
   final double heightFraction;
   final bool isHighlighted;
   final double kwh;
@@ -177,20 +287,20 @@ class _SlimBar extends StatelessWidget {
               : const SizedBox.shrink(),
         ),
         SizedBox(height: 3.h),
-        TweenAnimationBuilder<double>(
-          tween: Tween(begin: 0, end: heightFraction),
-          duration: const Duration(milliseconds: 700),
-          curve: Curves.easeOutQuart,
-          builder: (context, value, _) {
+        AnimatedBuilder(
+          animation: animation,
+          builder: (context, _) {
+            final value = (animation.value * heightFraction).clamp(0.0, 1.0);
             return SizedBox(
               height: maxBarHeight * value,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: isHighlighted
-                      ? AppColors.accent
-                      : AppColors.accent.withValues(alpha: 0.12),
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(4),
+              child: RepaintBoundary(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: isHighlighted
+                        ? AppColors.accent
+                        : AppColors.accent.withValues(alpha: 0.12),
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(4)),
                   ),
                 ),
               ),

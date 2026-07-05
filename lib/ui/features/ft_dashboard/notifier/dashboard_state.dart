@@ -1,10 +1,12 @@
 import 'package:energy_tracker/constants/tariff_rates.dart';
 import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 import 'package:energy_tracker/theme/app_colors.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 enum BudgetStatus { normal, warning, exceeded }
 
+@immutable
 class DailyUsage {
   const DailyUsage({
     required this.label,
@@ -15,8 +17,21 @@ class DailyUsage {
   final String label;
   final double kwh;
   final bool isToday;
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is DailyUsage &&
+        other.label == label &&
+        other.kwh == kwh &&
+        other.isToday == isToday;
+  }
+
+  @override
+  int get hashCode => Object.hash(label, kwh, isToday);
 }
 
+@immutable
 class DashboardPageState {
   const DashboardPageState({
     this.userName = '',
@@ -180,4 +195,42 @@ class DashboardPageState {
       errorMessage: other.errorMessage ?? errorMessage,
     );
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is DashboardPageState &&
+        other.userName == userName &&
+        other.monthLabel == monthLabel &&
+        other.estimatedBill == estimatedBill &&
+        other.kwhUsed == kwhUsed &&
+        other.monthlyBudget == monthlyBudget &&
+        other.dailyAvg == dailyAvg &&
+        other.currentEeiBand == currentEeiBand &&
+        other.tariffType == tariffType &&
+        other.daysLeft == daysLeft &&
+        other.percentageVsLastMonth == percentageVsLastMonth &&
+        other.projectedBill == projectedBill &&
+        listEquals(other.weeklyUsage, weeklyUsage) &&
+        other.hasUnreadNotifications == hasUnreadNotifications &&
+        other.errorMessage == errorMessage;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+        userName,
+        monthLabel,
+        estimatedBill,
+        kwhUsed,
+        monthlyBudget,
+        dailyAvg,
+        currentEeiBand,
+        tariffType,
+        daysLeft,
+        percentageVsLastMonth,
+        projectedBill,
+        Object.hashAll(weeklyUsage),
+        hasUnreadNotifications,
+        errorMessage,
+      );
 }

@@ -1,28 +1,26 @@
+import 'dart:async';
+
 import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 import 'package:energy_tracker/services/notifiers/user_profile_notifier.dart';
 import 'package:energy_tracker/theme/theme.dart';
-import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_state.dart';
+import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-class BillSummaryCard extends ConsumerStatefulWidget {
-  const BillSummaryCard({
-    required this.state,
-    super.key,
-  });
-
-  final DashboardPageState state;
+class BillSummaryCard extends ConsumerWidget {
+  const BillSummaryCard({super.key});
 
   @override
-  ConsumerState<BillSummaryCard> createState() => _BillSummaryCardState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(
+      dashboardProvider.select((s) => s.value),
+    );
+    if (state == null) return const SizedBox.shrink();
 
-class _BillSummaryCardState extends ConsumerState<BillSummaryCard> {
-  @override
-  Widget build(BuildContext context) {
-    final isAlert = widget.state.isNearBudget || widget.state.isOverBudget;
-    final billColor = widget.state.billColor;
+    final tariffType = ref.watch(tariffTypeProvider);
+    final isAlert = state.isNearBudget || state.isOverBudget;
+    final billColor = state.billColor;
 
     return Container(
       padding: EdgeInsets.all(20.r),
@@ -75,7 +73,7 @@ class _BillSummaryCardState extends ConsumerState<BillSummaryCard> {
                         Row(
                           children: [
                             Text(
-                              widget.state.monthLabel.toUpperCase(),
+                              state.monthLabel.toUpperCase(),
                               style: AppTextStyles.overline.copyWith(
                                 color: billColor,
                                 letterSpacing: 2,
@@ -96,7 +94,7 @@ class _BillSummaryCardState extends ConsumerState<BillSummaryCard> {
                                 ),
                               ),
                               child: Text(
-                                widget.state.tariffType.shortLabel,
+                                state.tariffType.shortLabel,
                                 style: AppTextStyles.caption.copyWith(
                                   color: AppColors.text2,
                                   fontSize: 9.sp,
@@ -106,11 +104,10 @@ class _BillSummaryCardState extends ConsumerState<BillSummaryCard> {
                             ),
                           ],
                         ),
-                        if (widget.state.tariffType !=
-                            ref.watch(tariffTypeProvider)) ...[
+                        if (state.tariffType != tariffType) ...[
                           SizedBox(height: 4.h),
                           Text(
-                            'Showing ${widget.state.tariffType.shortLabel} '
+                            'Showing ${state.tariffType.shortLabel} '
                             "rates — matches this month's readings",
                             style: AppTextStyles.caption
                                 .copyWith(color: AppColors.text3),
@@ -118,18 +115,15 @@ class _BillSummaryCardState extends ConsumerState<BillSummaryCard> {
                         ],
                         SizedBox(height: 4.h),
                         Text(
-                          'RM ${widget.state.estimatedBill.toStringAsFixed(2)}',
+                          'RM ${state.estimatedBill.toStringAsFixed(2)}',
                           style: AppTextStyles.displayLg,
                         ),
                         SizedBox(height: 4.h),
                         Text(
-                          isAlert && widget.state.projectedBill != null
-                              ? '${widget.state.kwhUsed.toStringAsFixed(0)} kWh · '
-                                  'Projected: RM '
-                                  '${widget.state.projectedBill!.toStringAsFixed(0)}'
-                              : 'Estimated bill · '
-                                  '${widget.state.kwhUsed.toStringAsFixed(0)} '
-                                  'kWh used',
+                          isAlert && state.projectedBill != null
+                              ? '${state.kwhUsed.toStringAsFixed(0)} kWh · '
+                                  'Projected: RM ${state.projectedBill!.toStringAsFixed(0)}'
+                              : 'Estimated bill · ${state.kwhUsed.toStringAsFixed(0)} kWh used',
                           style: AppTextStyles.bodyMd.copyWith(
                             color: AppColors.text2,
                           ),
@@ -137,18 +131,13 @@ class _BillSummaryCardState extends ConsumerState<BillSummaryCard> {
                       ],
                     ),
                   ),
-                  if (widget.state.percentageVsLastMonth != 0)
+                  if (state.percentageVsLastMonth != 0)
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        _ChangeBadge(
-                          percent: widget.state.percentageVsLastMonth,
-                        ),
+                        _ChangeBadge(percent: state.percentageVsLastMonth),
                         SizedBox(height: 6.h),
-                        Text(
-                          'vs last month',
-                          style: AppTextStyles.caption,
-                        ),
+                        Text('vs last month', style: AppTextStyles.caption),
                       ],
                     ),
                 ],
@@ -157,13 +146,10 @@ class _BillSummaryCardState extends ConsumerState<BillSummaryCard> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                  Text('Budget used', style: AppTextStyles.bodySm),
                   Text(
-                    'Budget used',
-                    style: AppTextStyles.bodySm,
-                  ),
-                  Text(
-                    'RM ${widget.state.estimatedBill.toStringAsFixed(0)} '
-                    '/ RM ${widget.state.monthlyBudget.toStringAsFixed(0)}',
+                    'RM ${state.estimatedBill.toStringAsFixed(0)} '
+                    '/ RM ${state.monthlyBudget.toStringAsFixed(0)}',
                     style: AppTextStyles.bodySm.copyWith(
                       fontWeight: FontWeight.w600,
                       color: isAlert ? AppColors.warn : AppColors.text,
@@ -172,27 +158,13 @@ class _BillSummaryCardState extends ConsumerState<BillSummaryCard> {
                 ],
               ),
               SizedBox(height: 6.h),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: TweenAnimationBuilder<double>(
-                  tween: Tween(begin: 0, end: widget.state.budgetUsedPercent),
-                  duration: const Duration(milliseconds: 800),
-                  curve: Curves.easeOut,
-                  builder: (context, value, _) {
-                    return LinearProgressIndicator(
-                      value: value,
-                      minHeight: 8,
-                      backgroundColor: AppColors.surface3,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        isAlert ? AppColors.warn : AppColors.accent,
-                      ),
-                    );
-                  },
-                ),
+              _AnimatedBudgetProgress(
+                value: state.budgetUsedPercent,
+                isAlert: isAlert,
               ),
               SizedBox(height: 6.h),
               Text(
-                widget.state.budgetStatusLabel,
+                state.budgetStatusLabel,
                 style: AppTextStyles.caption.copyWith(color: billColor),
               ),
             ],
@@ -226,6 +198,74 @@ class _ChangeBadge extends StatelessWidget {
       child: Text(
         label,
         style: AppTextStyles.tag.copyWith(color: color),
+      ),
+    );
+  }
+}
+
+class _AnimatedBudgetProgress extends StatefulWidget {
+  const _AnimatedBudgetProgress({
+    required this.value,
+    required this.isAlert,
+  });
+
+  final double value;
+  final bool isAlert;
+
+  @override
+  State<_AnimatedBudgetProgress> createState() =>
+      _AnimatedBudgetProgressState();
+}
+
+class _AnimatedBudgetProgressState extends State<_AnimatedBudgetProgress>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _animation = CurvedAnimation(parent: _controller, curve: Curves.easeOut)
+        .drive(Tween(begin: 0, end: widget.value));
+    unawaited(_controller.forward());
+  }
+
+  @override
+  void didUpdateWidget(covariant _AnimatedBudgetProgress oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.value != widget.value) {
+      _animation = CurvedAnimation(parent: _controller, curve: Curves.easeOut)
+          .drive(Tween(begin: _animation.value, end: widget.value));
+      unawaited(_controller.forward(from: 0));
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(4),
+      child: AnimatedBuilder(
+        animation: _animation,
+        builder: (context, _) {
+          return LinearProgressIndicator(
+            value: _animation.value,
+            minHeight: 8,
+            backgroundColor: AppColors.surface3,
+            valueColor: AlwaysStoppedAnimation<Color>(
+              widget.isAlert ? AppColors.warn : AppColors.accent,
+            ),
+          );
+        },
       ),
     );
   }

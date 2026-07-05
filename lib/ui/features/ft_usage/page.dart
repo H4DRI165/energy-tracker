@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
 class UsagePage extends ConsumerWidget {
   const UsagePage({super.key});
@@ -84,8 +83,6 @@ class _BodyContent extends ConsumerWidget {
   const _BodyContent({required this.state});
   final UsageState state;
 
-  String _currentMonthAbbr() => DateFormat('MMM').format(DateTime.now());
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return RefreshIndicator(
@@ -114,20 +111,7 @@ class _BodyContent extends ConsumerWidget {
               tariffType: state.currentTariffType,
             ),
             SizedBox(height: 14.h),
-            UsageBarChartCard(
-              title: 'kWh Usage',
-              subtitle: 'kWh',
-              entries: state.chartData
-                  .map(
-                    (month) => BarChartEntry(
-                      label: month.month,
-                      kwh: month.kwh,
-                      isHighlighted: month.year == DateTime.now().year &&
-                          month.month == _currentMonthAbbr(),
-                    ),
-                  )
-                  .toList(),
-            ),
+            const MonthlyUsageChartCard(),
             SizedBox(height: 14.h),
             BillBreakdownCard(
               items: state.chargeBreakdown,
