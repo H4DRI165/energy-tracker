@@ -1,3 +1,4 @@
+import 'package:energy_tracker/constants/tariff_rates.dart';
 import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 import 'package:energy_tracker/theme/theme.dart';
 import 'package:flutter/material.dart';
@@ -16,6 +17,8 @@ class UsageSummaryRow extends StatelessWidget {
   final double bill;
   final String monthLabel;
   final TariffType tariffType;
+
+  bool get _billExcludesAfa => TariffRates.afaApplies(tariffType, kwh);
 
   @override
   Widget build(BuildContext context) {
@@ -61,11 +64,10 @@ class UsageSummaryRow extends StatelessWidget {
             ),
             SizedBox(width: 10.w),
             Expanded(
-              child: _SummaryStat(
-                label: 'Est. Bill',
-                value: 'RM ${bill.toStringAsFixed(2)}',
-                unit: monthLabel,
-                color: AppColors.accent,
+              child: _BillStat(
+                bill: bill,
+                monthLabel: monthLabel,
+                excludesAfa: _billExcludesAfa,
               ),
             ),
           ],
@@ -111,6 +113,64 @@ class _SummaryStat extends StatelessWidget {
             unit,
             style: AppTextStyles.caption.copyWith(
               color: AppColors.text3,
+              fontSize: 10.sp,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BillStat extends StatelessWidget {
+  const _BillStat({
+    required this.bill,
+    required this.monthLabel,
+    required this.excludesAfa,
+  });
+
+  final double bill;
+  final String monthLabel;
+  final bool excludesAfa;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(AppDimensions.cardPaddingSm),
+      decoration: BoxDecoration(
+        color: AppColors.surface2,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text('Est. Bill', style: AppTextStyles.caption),
+              if (excludesAfa) ...[
+                SizedBox(width: 4.w),
+                Tooltip(
+                  message: 'AFA not included — published monthly by TNB.',
+                  child: Icon(
+                    Icons.info_outline_rounded,
+                    size: 11.r,
+                    color: AppColors.warn,
+                  ),
+                ),
+              ],
+            ],
+          ),
+          SizedBox(height: 4.h),
+          Text(
+            'RM ${bill.toStringAsFixed(2)}',
+            style: AppTextStyles.statMd.copyWith(color: AppColors.accent),
+          ),
+          SizedBox(height: 2.h),
+          Text(
+            excludesAfa ? 'excl. AFA · $monthLabel' : monthLabel,
+            style: AppTextStyles.caption.copyWith(
+              color: excludesAfa ? AppColors.warn : AppColors.text3,
               fontSize: 10.sp,
             ),
           ),

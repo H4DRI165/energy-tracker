@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:energy_tracker/app.dart';
+import 'package:energy_tracker/services/notifiers/user_profile_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_devices/pg_devices/notifier/notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -69,13 +70,15 @@ class _Header extends ConsumerWidget {
   }
 }
 
-class _BodyContent extends StatelessWidget {
+class _BodyContent extends ConsumerWidget {
   const _BodyContent({required this.state});
 
   final DevicesPageState state;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tariffType = ref.watch(tariffTypeProvider);
+
     return RefreshIndicator(
       color: AppColors.accent,
       backgroundColor: AppColors.surface2,
@@ -91,7 +94,7 @@ class _BodyContent extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _SummaryCard(state: state),
+            _SummaryCard(state: state, tariffType: tariffType),
             SizedBox(height: 16.h),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -125,6 +128,7 @@ class _BodyContent extends StatelessWidget {
                 child: _ApplianceCard(
                   appliance: appliance,
                   totalKwh: state.totalMonthlyKwh,
+                  tariffType: tariffType,
                 ),
               ),
             ),
@@ -197,12 +201,18 @@ class _EmptyDevicesView extends StatelessWidget {
 }
 
 class _SummaryCard extends StatelessWidget {
-  const _SummaryCard({required this.state});
+  const _SummaryCard({
+    required this.state,
+    required this.tariffType,
+  });
 
   final DevicesPageState state;
+  final TariffType tariffType;
 
   @override
   Widget build(BuildContext context) {
+    final kwhRef = TariffRates.ringReferenceKwh(tariffType);
+
     return Container(
       padding: EdgeInsets.all(18.r),
       decoration: BoxDecoration(
@@ -227,7 +237,7 @@ class _SummaryCard extends StatelessWidget {
                 CustomPaint(
                   size: Size(80.r, 80.r),
                   painter: _RingPainter(
-                    fraction: (state.totalMonthlyKwh / 600).clamp(0.0, 1.0),
+                    fraction: (state.totalMonthlyKwh / kwhRef).clamp(0.0, 1.0),
                   ),
                 ),
                 Center(
@@ -259,7 +269,7 @@ class _SummaryCard extends StatelessWidget {
                 Text('Total Monthly Cost', style: AppTextStyles.caption),
                 SizedBox(height: 4.h),
                 Text(
-                  'RM ${state.totalMonthlyCost.toStringAsFixed(2)}',
+                  'RM ${state.totalMonthlyCost(tariffType).toStringAsFixed(2)}',
                   style: AppTextStyles.titleMd,
                 ),
                 SizedBox(height: 4.h),
@@ -322,10 +332,12 @@ class _ApplianceCard extends ConsumerWidget {
   const _ApplianceCard({
     required this.appliance,
     required this.totalKwh,
+    required this.tariffType,
   });
 
   final Appliance appliance;
   final double totalKwh;
+  final TariffType tariffType;
 
   Color get _accentColor {
     switch (appliance.category) {
@@ -433,7 +445,7 @@ class _ApplianceCard extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        'RM ${appliance.monthlyCost.toStringAsFixed(2)}',
+                        'RM ${appliance.monthlyCost(tariffType).toStringAsFixed(2)}',
                         style: AppTextStyles.bodyMd.copyWith(
                           fontWeight: FontWeight.w700,
                           color: _accentColor,

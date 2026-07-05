@@ -160,7 +160,6 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
   Widget build(BuildContext context) {
     final state = ref.watch(billDetailProvider);
     final bill = state.bill!;
-    final tierBreakdown = TariffRates.breakdownFor(bill.kwh, bill.tariffType);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -176,9 +175,10 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
           },
         ),
         SizedBox(height: 16.h),
-        _TierBreakdownCard(
-          tiers: tierBreakdown,
-          totalKwh: bill.kwh,
+        BillBreakdownCard(
+          items: TariffRates.breakdownFor(bill.kwh, bill.tariffType),
+          emptyLabel: 'No data available.',
+          padding: EdgeInsets.all(16.r),
         ),
         SizedBox(height: 16.h),
         _ReadingsSection(
@@ -359,71 +359,6 @@ class _PaidToggleCard extends StatelessWidget {
   }
 }
 
-class _TierBreakdownCard extends StatelessWidget {
-  const _TierBreakdownCard({
-    required this.tiers,
-    required this.totalKwh,
-  });
-
-  final List<TierBreakdown> tiers;
-  final double totalKwh;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.all(16.r),
-      decoration: BoxDecoration(
-        color: AppColors.surface2,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Tariff Tier Breakdown',
-            style: AppTextStyles.bodyMd.copyWith(fontWeight: FontWeight.w700),
-          ),
-          SizedBox(height: 14.h),
-          ...tiers.map(
-            (tier) => Padding(
-              padding: EdgeInsets.only(bottom: 12.h),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(tier.label, style: AppTextStyles.caption),
-                      Text(
-                        'RM ${tier.amount.toStringAsFixed(2)}',
-                        style: AppTextStyles.bodySm.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: tier.color,
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 6.h),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(3.r),
-                    child: LinearProgressIndicator(
-                      value: tier.fillPercent,
-                      minHeight: 6.h,
-                      backgroundColor: AppColors.surface3,
-                      valueColor: AlwaysStoppedAnimation<Color>(tier.color),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _ReadingsSection extends ConsumerWidget {
   const _ReadingsSection({
     required this.readings,
@@ -588,8 +523,11 @@ class _ReadingsSection extends ConsumerWidget {
                                     ),
                                   ),
                                   Text(
-                                    '${r.kwh.toStringAsFixed(1)} kWh '
-                                    '· ${r.tierLabel}',
+                                    '${r.kwh.toStringAsFixed(1)} kWh ',
+                                    style: AppTextStyles.caption,
+                                  ),
+                                  Text(
+                                    r.tierLabel,
                                     style: AppTextStyles.caption,
                                   ),
                                   if (r.notes.isNotEmpty) ...[

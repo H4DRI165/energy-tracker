@@ -41,7 +41,7 @@ class UsageState {
   final TariffType currentTariffType;
   final String currentMonthLabel;
 
-  List<TierBreakdown> get tierBreakdown =>
+  List<ChargeLineItem> get chargeBreakdown =>
       TariffRates.breakdownFor(currentKwh, currentTariffType);
 
   List<MonthlyUsage> get chartData {

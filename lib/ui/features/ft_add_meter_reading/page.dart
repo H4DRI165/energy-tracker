@@ -593,17 +593,65 @@ class _AutoCalcCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Current tier',
+                tariffType == TariffType.domestic ? 'EEI band' : 'Current tier',
                 style: AppTextStyles.caption,
               ),
-              _TierBadge(
-                tierLabel: state.tierLabel(tariffType),
-                tier: state.currentTier(tariffType),
+              _BandBadge(
                 tariffType: tariffType,
+                usageKwh: state.usageKwh,
               ),
             ],
           ),
+          if (tariffType == TariffType.domestic && state.usageKwh > 0) ...[
+            SizedBox(height: 6.h),
+            Text(
+              state.currentEeiBand.description,
+              style: AppTextStyles.caption.copyWith(color: AppColors.text3),
+            ),
+          ],
         ],
+      ),
+    );
+  }
+}
+
+class _BandBadge extends StatelessWidget {
+  const _BandBadge({
+    required this.tariffType,
+    required this.usageKwh,
+  });
+
+  final TariffType tariffType;
+  final double usageKwh;
+
+  @override
+  Widget build(BuildContext context) {
+    if (tariffType == TariffType.domestic) {
+      final band = TariffRates.getEeiBand(usageKwh);
+      return Container(
+        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+        decoration: BoxDecoration(
+          color: band.color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(20.r),
+        ),
+        child: Text(
+          band.label,
+          style: AppTextStyles.tag.copyWith(color: band.color),
+        ),
+      );
+    }
+
+    final tier = TariffRates.getTier(usageKwh, TariffType.commercial);
+    final color = TariffRates.getTierColor(tier, TariffType.commercial);
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20.r),
+      ),
+      child: Text(
+        TariffRates.tierBadgeLabel(tier, TariffType.commercial),
+        style: AppTextStyles.tag.copyWith(color: color),
       ),
     );
   }
@@ -637,35 +685,6 @@ class _CalcRow extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _TierBadge extends StatelessWidget {
-  const _TierBadge({
-    required this.tierLabel,
-    required this.tier,
-    required this.tariffType,
-  });
-
-  final String tierLabel;
-  final int tier;
-  final TariffType tariffType;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
-      decoration: BoxDecoration(
-        color:
-            TariffRates.getTierColor(tier, tariffType).withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(20.r),
-      ),
-      child: Text(
-        tierLabel,
-        style: AppTextStyles.tag
-            .copyWith(color: TariffRates.getTierColor(tier, tariffType)),
-      ),
     );
   }
 }

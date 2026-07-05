@@ -25,7 +25,7 @@ class DashboardPageState {
     this.kwhUsed = 0,
     this.monthlyBudget = 150,
     this.dailyAvg = 0,
-    this.currentTier = 1,
+    this.currentEeiBand = EeiBand.none,
     this.tariffType = TariffType.domestic,
     this.daysLeft = 0,
     this.percentageVsLastMonth = 0,
@@ -41,7 +41,7 @@ class DashboardPageState {
   final double kwhUsed;
   final double monthlyBudget;
   final double dailyAvg;
-  final int currentTier;
+  final EeiBand currentEeiBand;
   final TariffType tariffType;
   final int daysLeft;
   final double percentageVsLastMonth;
@@ -87,8 +87,24 @@ class DashboardPageState {
     }
   }
 
-  Color get tierColor => TariffRates.getTierColor(currentTier, tariffType);
-  String get tierRange => TariffRates.getTierKwhRange(currentTier, tariffType);
+  Color get tierColor => tariffType == TariffType.domestic
+      ? currentEeiBand.color
+      : TariffRates.getTierColor(currentEeiBand.number, TariffType.commercial);
+
+  String get tierRange => tariffType == TariffType.domestic
+      ? currentEeiBand.kwhRange
+      : TariffRates.getTierKwhRange(
+          currentEeiBand.number,
+          TariffType.commercial,
+        );
+
+  // New — used by StatCardsRow badge.
+  String get tierBadgeLabel => tariffType == TariffType.domestic
+      ? currentEeiBand.label
+      : TariffRates.tierBadgeLabel(
+          currentEeiBand.number,
+          TariffType.commercial,
+        );
 
   String get greetingEmoji {
     switch (budgetStatus) {
@@ -107,7 +123,7 @@ class DashboardPageState {
     double? kwhUsed,
     double? monthlyBudget,
     double? dailyAvg,
-    int? currentTier,
+    EeiBand? currentEeiBand,
     TariffType? tariffType,
     int? daysLeft,
     double? percentageVsLastMonth,
@@ -123,7 +139,7 @@ class DashboardPageState {
       kwhUsed: kwhUsed ?? this.kwhUsed,
       monthlyBudget: monthlyBudget ?? this.monthlyBudget,
       dailyAvg: dailyAvg ?? this.dailyAvg,
-      currentTier: currentTier ?? this.currentTier,
+      currentEeiBand: currentEeiBand ?? this.currentEeiBand,
       tariffType: tariffType ?? this.tariffType,
       daysLeft: daysLeft ?? this.daysLeft,
       percentageVsLastMonth:
@@ -141,13 +157,18 @@ class DashboardPageState {
   }
 
   DashboardPageState merge(DashboardPageState other) {
+    // Gate EeiBand on kwhUsed rather than band.number, since number==0
+    // is legitimately returned for >1000 kWh usage ("no rebate" band)
+    // and would be incorrectly treated as "not set" by the old check.
+    final otherHasUsageData = other.kwhUsed != 0;
+
     return copyWith(
       userName: other.userName.isNotEmpty ? other.userName : null,
       monthlyBudget: other.monthlyBudget != 150 ? other.monthlyBudget : null,
       monthLabel: other.monthLabel.isNotEmpty ? other.monthLabel : null,
       kwhUsed: other.kwhUsed != 0 ? other.kwhUsed : null,
       estimatedBill: other.estimatedBill != 0 ? other.estimatedBill : null,
-      currentTier: other.currentTier != 1 ? other.currentTier : null,
+      currentEeiBand: otherHasUsageData ? other.currentEeiBand : null,
       tariffType:
           other.tariffType != TariffType.domestic ? other.tariffType : null,
       dailyAvg: other.dailyAvg != 0 ? other.dailyAvg : null,
