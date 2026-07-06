@@ -30,19 +30,30 @@ jobs:
           channel: stable
           cache: true
 
-      # Cache BEFORE pub get
+      # Only cache the global pub cache. Caching .dart_tool/build isn't
+      # worth it here since the runner is a fresh VM every run anyway.
       - name: Cache pub dependencies
         uses: actions/cache@v4
         with:
-          path: |
-            ~/.pub-cache
-            .dart_tool
+          path: ~/.pub-cache
           key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
           restore-keys: |
             ${{ runner.os }}-pub-
 
-      - name: Clean Flutter build
-        run: flutter clean
+      # --- Recreate gitignored config files that the build needs ---
+
+      - name: Write google-services.json
+        run: echo "${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}" | base64 -d > android/app/google-services.json
+
+      - name: Write firebase_options.dart
+        run: echo "${{ secrets.FIREBASE_OPTIONS_DART_BASE64 }}" | base64 -d > lib/firebase_options.dart
+
+      # NOTE: no .env step — add one back (with an ENV_FILE_BASE64 secret)
+      # only if you start using flutter_dotenv in code.
+      # NOTE: no keystore/signing step — app will be debug-signed for now.
+      # Add release signing later once you have a production keystore.
+
+      # --- Build ---
 
       - name: Get dependencies
         run: flutter pub get
