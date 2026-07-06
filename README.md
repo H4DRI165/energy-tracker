@@ -1,46 +1,102 @@
-# ⚡  Energy Tracker
+# Energy Tracker
 
-A Flutter mobile app for tracking TNB (Tenaga Nasional Berhad) electricity usage, estimating bills, and managing monthly energy budgets.
+A Flutter mobile app for Malaysian TNB (Tenaga Nasional Berhad) customers to track electricity usage, estimate bills, and manage monthly energy budgets. Supports both residential (Tariff A) and commercial LV (Tariff B) accounts.
 
-## Features
+---
 
-- **Dashboard** — Real-time bill estimates, budget progress, and 7-day usage chart
-- **Budget Alerts** — Push notifications at 80% and 100% of monthly target
-- **Meter Reading Logs** — Manual entry with auto-calculated kWh and estimated cost
-- **Bill Scanner** — OCR via ML Kit to scan TNB bills and auto-populate data
-- **Appliance Tracker** — Per-device kWh and RM cost breakdown
-- **Tariff Calculator** — Live TNB domestic tiered tariff breakdown (Tier 1–3)
-- **Usage Analytics** — Monthly/yearly charts and bill history
-- **Onboarding** — Tariff type selection and monthly budget setup
+## 📦 Live APK (Download & Test)
 
-## Tech Stack
+Latest build is automatically generated via GitHub Actions:
+
+👉 View latest release: https://github.com/H4DRI165/energy-tracker/releases/latest
+
+Built for portfolio demonstration — install and test without any setup required.
+
+---
+
+## 🚀 Features
+
+- **Dashboard** — Bill estimates, EEI band indicator, budget progress, and usage chart
+- **Meter Reading Logs** — Manual entry with auto-calculated kWh and cost tracking
+- **Tariff Calculator** — Live bill breakdown for domestic and commercial LV tariffs
+- **Usage Analytics** — Monthly/yearly charts and history tracking
+- **Onboarding** — Tariff type selection and budget setup
+
+---
+
+## 🧰 Tech Stack
 
 | Layer | Technology |
-|---|---|
+|------|------------|
 | Framework | Flutter |
 | State Management | Riverpod |
 | Auth | Firebase Authentication |
 | Database | Cloud Firestore |
-| OCR | Google ML Kit |
-| Notifications | Firebase Cloud Messaging (FCM) |
+| Analytics | Firebase Analytics |
+| Crash Reporting | Firebase Crashlytics |
+| Storage | Firebase Storage |
 
-## TNB Domestic Tariff (Tariff A)
+---
 
-| Tier | Range | Rate |
-|---|---|---|
-| Tier 1 | 1 – 200 kWh | 21.8 sen/kWh |
-| Tier 2 | 201 – 300 kWh | 33.4 sen/kWh |
-| Tier 3 | 301 – 600 kWh | 51.6 sen/kWh |
+## 🧾 TNB Tariff Implementation
 
-## Getting Started
+### Domestic — Tariff A (post-1 July 2025)
+
+Validated against multiple real TNB e-bill samples across different usage ranges.
+
+| Component | Rate | Condition |
+|----------|------|----------|
+| Energy | 27.03 sen/kWh | ≤ 1500 kWh |
+| Energy | 37.03 sen/kWh | > 1500 kWh |
+| Capacity | 4.55 sen/kWh | Always |
+| Network | 12.85 sen/kWh | Always |
+| Retail | RM 10/month | > 600 kWh |
+| EEI Rebate | 0.25–25.0 sen/kWh | ≤ 1000 kWh |
+| KWTBB | 1.6% of Energy + Cap + Net − EEI | > 300 kWh |
+| SST | 8% on net charge above 600 kWh | > 600 kWh |
+
+---
+
+### Commercial LV — Non-Domestic General (post-1 July 2025)
+
+Validated against multiple real TNB e-bill samples.
+
+| Component | Rate | Condition |
+|----------|------|----------|
+| Energy | 27.03 sen/kWh | Flat |
+| Capacity | 8.83 sen/kWh | Always |
+| Network | 14.82 sen/kWh | Always |
+| Retail | RM 20/month | Always |
+| EEI Rebate | 11.0 sen/kWh | ≤ 200 kWh |
+| KWTBB | 1.6% of Energy + Cap + Net − EEI | Always |
+| SST | Not applicable | — |
+
+---
+
+> AFA (Automatic Fuel Adjustment) is excluded from estimates by default as it is updated monthly by TNB.
+
+---
+
+## 📊 Data Integrity
+
+- Meter readings store tariff type at creation time to preserve historical accuracy
+- Conflict protection prevents mixed-tariff readings within the same billing cycle
+- Chain-recompute logic ensures correct kWh deltas after edits or deletions
+- Firestore batch writes ensure atomic updates between readings and bills
+
+---
+
+## 📦 CI/CD Pipeline
+
+- GitHub Actions automatically builds APK on every push to `main`
+- Release APK is published under GitHub Releases
+- No manual build required
+
+---
+
+## 🛠️ Getting Started (Dev)
 
 ```bash
 flutter pub get
 flutter run
 ```
-
-> Add your `google-services.json` (Android) and `GoogleService-Info.plist` (iOS) from the Firebase console before running.
-
-## Project Status
-
-MVP UI complete — see `/mockup/energy-tracker-mockup.html` for full screen designs.
