@@ -28,10 +28,11 @@ class UsagePage extends ConsumerWidget {
                   onRetry: () => ref.read(usageProvider.notifier).refresh(),
                   message: 'Failed to load usage data',
                 ),
-                data: (state) => state.monthlyData.every((m) => m.kwh == 0) &&
+                data: (state) =>
+                    state.monthlyData.every((m) => m.kwh == 0) &&
                         state.billHistory.isEmpty
                     ? _EmptyUsageView()
-                    : _BodyContent(state: state),
+                    : const _BodyContent(),
               ),
             ),
           ],
@@ -79,15 +80,18 @@ class _Header extends StatelessWidget {
 }
 
 class _BodyContent extends ConsumerWidget {
-  const _BodyContent({required this.state});
-  final UsageState state;
-
+  const _BodyContent();
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(usageProvider).value;
+    final notifier = ref.read(usageProvider.notifier);
+
+    if (state == null) return const SizedBox.shrink();
+
     return RefreshIndicator(
       color: AppColors.accent,
       backgroundColor: AppColors.surface2,
-      onRefresh: () => ref.read(usageProvider.notifier).refresh(),
+      onRefresh: notifier.refresh,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.symmetric(
@@ -99,8 +103,7 @@ class _BodyContent extends ConsumerWidget {
           children: [
             UsageFilterTabs(
               selected: state.filter,
-              onChanged: (filter) =>
-                  ref.read(usageProvider.notifier).setFilter(filter),
+              onChanged: notifier.setFilter,
             ),
             SizedBox(height: 16.h),
             UsageSummaryRow(

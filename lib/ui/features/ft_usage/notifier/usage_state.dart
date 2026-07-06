@@ -1,9 +1,11 @@
 import 'package:energy_tracker/constants/tariff_rates.dart';
 import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 import 'package:energy_tracker/models/bill_record.dart';
+import 'package:flutter/foundation.dart';
 
 enum UsageFilter { monthly, yearly }
 
+@immutable
 class MonthlyUsage {
   const MonthlyUsage({
     required this.month,
@@ -20,8 +22,23 @@ class MonthlyUsage {
   final bool isPaid;
 
   String get monthYear => '$month $year';
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is MonthlyUsage &&
+        other.month == month &&
+        other.year == year &&
+        other.kwh == kwh &&
+        other.bill == bill &&
+        other.isPaid == isPaid;
+  }
+
+  @override
+  int get hashCode => Object.hash(month, year, kwh, bill, isPaid);
 }
 
+@immutable
 class UsageState {
   const UsageState({
     this.filter = UsageFilter.monthly,
@@ -78,4 +95,28 @@ class UsageState {
       currentMonthLabel: currentMonthLabel ?? this.currentMonthLabel,
     );
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is UsageState &&
+        other.filter == filter &&
+        listEquals(other.monthlyData, monthlyData) &&
+        listEquals(other.billHistory, billHistory) &&
+        other.currentKwh == currentKwh &&
+        other.currentBill == currentBill &&
+        other.currentTariffType == currentTariffType &&
+        other.currentMonthLabel == currentMonthLabel;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+        filter,
+        Object.hashAll(monthlyData),
+        Object.hashAll(billHistory),
+        currentKwh,
+        currentBill,
+        currentTariffType,
+        currentMonthLabel,
+      );
 }

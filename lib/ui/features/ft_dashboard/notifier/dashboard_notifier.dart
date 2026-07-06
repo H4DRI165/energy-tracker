@@ -93,7 +93,7 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState> {
             .doc(uid)
             .collection('readings')
             .where('date',
-                isGreaterThanOrEqualTo: Timestamp.fromDate(earliestNeeded))
+                isGreaterThanOrEqualTo: Timestamp.fromDate(earliestNeeded),)
             .orderBy('date', descending: false)
             .get(),
         _firestore
@@ -101,7 +101,7 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState> {
             .doc(uid)
             .collection('readings')
             .where('date',
-                isGreaterThanOrEqualTo: Timestamp.fromDate(startOfLastMonth))
+                isGreaterThanOrEqualTo: Timestamp.fromDate(startOfLastMonth),)
             .where('date', isLessThan: Timestamp.fromDate(startOfMonth))
             .orderBy('date', descending: false)
             .get(),
