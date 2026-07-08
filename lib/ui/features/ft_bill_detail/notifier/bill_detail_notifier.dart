@@ -5,26 +5,27 @@ import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 import 'package:energy_tracker/models/bill_record.dart';
 import 'package:energy_tracker/models/reading_record.dart';
 import 'package:energy_tracker/services/bill_recalculation_service.dart';
+import 'package:energy_tracker/services/notifiers/auth_notifier.dart';
 import 'package:energy_tracker/services/reading_chain_service.dart';
 import 'package:energy_tracker/ui/components/logger.dart';
 import 'package:energy_tracker/ui/features/ft_bill_detail/notifier/bill_detail_state.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 final NotifierProvider<BillDetailNotifier, BillDetailPageState>
-    billDetailProvider =
+billDetailProvider =
     NotifierProvider.autoDispose<BillDetailNotifier, BillDetailPageState>(
-  BillDetailNotifier.new,
-);
+      BillDetailNotifier.new,
+    );
 
 class BillDetailNotifier extends Notifier<BillDetailPageState> {
-  FirebaseAuth get _auth => FirebaseAuth.instance;
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;
-  late final ReadingChainService _chainService =
-      ReadingChainService(_firestore);
-  late final BillRecalculationService _billService =
-      BillRecalculationService(_firestore);
+  late final ReadingChainService _chainService = ReadingChainService(
+    _firestore,
+  );
+  late final BillRecalculationService _billService = BillRecalculationService(
+    _firestore,
+  );
 
   @override
   BillDetailPageState build() {
@@ -55,10 +56,12 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
   }
 
   Future<void> _loadReadings(BillRecord bill) async {
-    final uid = _auth.currentUser?.uid;
+    final uid = ref.read(currentUidProvider).value;
     if (uid == null) {
-      state =
-          state.copyWith(isLoading: false, errorMessage: 'Session expired.');
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'Session expired.',
+      );
       return;
     }
 
@@ -106,7 +109,7 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
   }
 
   Future<BillRecord?> _loadBill(String billId) async {
-    final uid = _auth.currentUser?.uid;
+    final uid = ref.read(currentUidProvider).value;
     if (uid == null) return null;
 
     try {
@@ -123,8 +126,9 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
 
       return BillRecord(
         id: doc.id,
-        monthYear:
-            DateFormat('MMM yyyy').format((data['date'] as Timestamp).toDate()),
+        monthYear: DateFormat(
+          'MMM yyyy',
+        ).format((data['date'] as Timestamp).toDate()),
         kwh: (data['kwh'] as num).toDouble(),
         amount: (data['amount'] as num).toDouble(),
         isPaid: data['isPaid'] as bool? ?? false,
@@ -140,7 +144,7 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
   }
 
   Future<void> togglePaid(BillRecord bill) async {
-    final uid = _auth.currentUser?.uid;
+    final uid = ref.read(currentUidProvider).value;
     if (uid == null) return;
 
     state = state.copyWith(isUpdatingPaid: true);
@@ -177,7 +181,7 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
   }
 
   Future<bool> deleteReading(ReadingRecord reading, BillRecord bill) async {
-    final uid = _auth.currentUser?.uid;
+    final uid = ref.read(currentUidProvider).value;
     if (uid == null) return false;
 
     final previousState = state;
@@ -214,7 +218,8 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
 
       await _billService.recalculateMonth(uid, reading.date, bill.tariffType);
 
-      final fixInDifferentMonth = fix != null &&
+      final fixInDifferentMonth =
+          fix != null &&
           (fix.date.year != reading.date.year ||
               fix.date.month != reading.date.month);
       if (fixInDifferentMonth) {

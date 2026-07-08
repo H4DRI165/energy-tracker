@@ -5,25 +5,26 @@ import 'package:energy_tracker/extensions/date_time_extension.dart';
 import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 import 'package:energy_tracker/models/reading_record.dart';
 import 'package:energy_tracker/services/bill_recalculation_service.dart';
+import 'package:energy_tracker/services/notifiers/auth_notifier.dart';
 import 'package:energy_tracker/services/notifiers/user_profile_notifier.dart';
 import 'package:energy_tracker/services/reading_chain_service.dart';
 import 'package:energy_tracker/ui/features/ft_add_meter_reading/notifier/add_meter_reading_state.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final NotifierProvider<AddReadingNotifier, AddReadingPageState>
-    addReadingProvider =
+addReadingProvider =
     NotifierProvider.autoDispose<AddReadingNotifier, AddReadingPageState>(
-  AddReadingNotifier.new,
-);
+      AddReadingNotifier.new,
+    );
 
 class AddReadingNotifier extends Notifier<AddReadingPageState> {
-  FirebaseAuth get _auth => FirebaseAuth.instance;
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;
-  late final ReadingChainService _chainService =
-      ReadingChainService(_firestore);
-  late final BillRecalculationService _billService =
-      BillRecalculationService(_firestore);
+  late final ReadingChainService _chainService = ReadingChainService(
+    _firestore,
+  );
+  late final BillRecalculationService _billService = BillRecalculationService(
+    _firestore,
+  );
   int _loadRequestId = 0;
   DateTime? _editingDate;
 
@@ -50,7 +51,7 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
 
   Future<void> _loadSurroundingReadings(DateTime selectedDate) async {
     final requestId = ++_loadRequestId;
-    final uid = _auth.currentUser?.uid;
+    final uid = ref.read(currentUidProvider).value;
     if (uid == null) {
       if (requestId == _loadRequestId) {
         state = state.copyWith(isLoadingLastReading: false);
@@ -59,8 +60,10 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
     }
 
     try {
-      final readingsCol =
-          _firestore.collection('users').doc(uid).collection('readings');
+      final readingsCol = _firestore
+          .collection('users')
+          .doc(uid)
+          .collection('readings');
 
       Query<Map<String, dynamic>> beforeQuery;
       Query<Map<String, dynamic>> nextQuery;
@@ -78,7 +81,8 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
         );
       } else {
         final now = DateTime.now();
-        final isToday = selectedDate.year == now.year &&
+        final isToday =
+            selectedDate.year == now.year &&
             selectedDate.month == now.month &&
             selectedDate.day == now.day;
         final cutoff = isToday
@@ -97,20 +101,25 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
           selectedDate.day + 1,
         );
 
-        beforeQuery =
-            readingsCol.where('date', isLessThan: Timestamp.fromDate(cutoff));
+        beforeQuery = readingsCol.where(
+          'date',
+          isLessThan: Timestamp.fromDate(cutoff),
+        );
         nextQuery = readingsCol.where(
           'date',
           isGreaterThanOrEqualTo: Timestamp.fromDate(startOfNextDay),
         );
       }
 
-      final beforeSnap =
-          await beforeQuery.orderBy('date', descending: true).limit(1).get();
+      final beforeSnap = await beforeQuery
+          .orderBy('date', descending: true)
+          .limit(1)
+          .get();
       final nextSnap = await nextQuery.orderBy('date').limit(1).get();
 
-      final before =
-          beforeSnap.docs.isEmpty ? null : _parse(beforeSnap.docs.first);
+      final before = beforeSnap.docs.isEmpty
+          ? null
+          : _parse(beforeSnap.docs.first);
       final next = nextSnap.docs.isEmpty ? null : _parse(nextSnap.docs.first);
 
       if (requestId != _loadRequestId || state.selectedDate != selectedDate) {
@@ -202,8 +211,8 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
 
   Future<bool> saveReading() async {
     if (!state.canSave) return false;
+    final uid = ref.read(currentUidProvider).value;
 
-    final uid = _auth.currentUser?.uid;
     if (uid == null) {
       state = state.copyWith(
         errorMessage: 'Session expired. Please sign in again.',
@@ -300,7 +309,7 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
   Future<bool> updateReading(ReadingRecord reading) async {
     if (!state.canSave) return false;
 
-    final uid = _auth.currentUser?.uid;
+    final uid = ref.read(currentUidProvider).value;
     if (uid == null) {
       state = state.copyWith(errorMessage: 'Session expired.');
       return false;
@@ -318,11 +327,11 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
           .collection('readings')
           .doc(reading.id)
           .update({
-        'reading': state.currentReading,
-        'kwh': state.usageKwh,
-        'notes': state.notes.trim(),
-        'tier': state.currentTier(reading.tariffType),
-      });
+            'reading': state.currentReading,
+            'kwh': state.usageKwh,
+            'notes': state.notes.trim(),
+            'tier': state.currentTier(reading.tariffType),
+          });
 
       final next = await _chainService.findNext(uid, date);
       if (next != null) {

@@ -1,13 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/services/app_info.dart';
+import 'package:energy_tracker/services/notifiers/auth_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_settings/pg_settings/notifier/settings_state.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final settingsProvider =
     AsyncNotifierProvider<SettingsNotifier, SettingsPageState>(
-  SettingsNotifier.new,
-);
+      SettingsNotifier.new,
+    );
 
 final appVersionProvider = FutureProvider<String>((ref) async {
   final appInfo = await getAppInfo();
@@ -20,35 +21,37 @@ class SettingsNotifier extends AsyncNotifier<SettingsPageState> {
 
   @override
   Future<SettingsPageState> build() async {
-    return _fetchSettings();
+    final uid = ref.watch(currentUidProvider).value;
+    if (uid == null) return const SettingsPageState();
+
+    return _fetchSettings(uid);
   }
 
   Future<void> refresh() async {
+    final uid = ref.read(currentUidProvider).value;
+    if (uid == null) return;
+
     state = const AsyncLoading();
-    state = await AsyncValue.guard(_fetchSettings);
+    state = await AsyncValue.guard(() => _fetchSettings(uid));
   }
 
-  Future<SettingsPageState> _fetchSettings() async {
-    final user = _auth.currentUser;
-    if (user == null) return const SettingsPageState();
-
-    final uid = user.uid;
-
-    // Fallback to auth display name if Firestore is slow
-    final authName = user.displayName ?? '';
+  Future<SettingsPageState> _fetchSettings(String uid) async {
+    final authUser = _auth.currentUser;
+    final authName = authUser?.displayName ?? '';
+    final authEmail = authUser?.email ?? '';
 
     final doc = await _firestore.collection('users').doc(uid).get();
     if (!doc.exists) {
       return SettingsPageState(
         fullName: authName,
-        email: user.email ?? '',
+        email: authEmail,
       );
     }
 
     final data = doc.data()!;
     return SettingsPageState(
       fullName: data['fullName'] as String? ?? authName,
-      email: _auth.currentUser?.email ?? '',
+      email: authEmail,
       tnbAccountNo: data['tnbAccountNo'] as String? ?? '',
       tariffType: data['tariffType'] as String? ?? 'domestic',
       monthlyBudget: (data['monthlyBudget'] as num?)?.toDouble() ?? 150.0,
@@ -129,10 +132,9 @@ class SettingsNotifier extends AsyncNotifier<SettingsPageState> {
 
   Future<bool> _updateFirestore(Map<String, dynamic> data) async {
     try {
-      final uid = _auth.currentUser?.uid;
+      final uid = ref.read(currentUidProvider).value;
 
       if (uid == null) return false;
-
       await _firestore.collection('users').doc(uid).set(
         {
           ...data,

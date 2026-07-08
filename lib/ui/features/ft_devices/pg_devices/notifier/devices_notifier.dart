@@ -2,32 +2,31 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/models/appliance.dart';
+import 'package:energy_tracker/services/notifiers/auth_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_devices/pg_devices/notifier/devices_state.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final NotifierProvider<DevicesNotifier, DevicesPageState> devicesProvider =
     NotifierProvider.autoDispose<DevicesNotifier, DevicesPageState>(
-  DevicesNotifier.new,
-);
+      DevicesNotifier.new,
+    );
 
 class DevicesNotifier extends Notifier<DevicesPageState> {
-  FirebaseAuth get _auth => FirebaseAuth.instance;
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;
 
   @override
   DevicesPageState build() {
-    unawaited(Future.microtask(_loadAppliances));
+    final uid = ref.watch(currentUidProvider).value;
+
+    if (uid == null) {
+      return const DevicesPageState(isLoading: false);
+    }
+
+    unawaited(Future.microtask(() => _loadAppliances(uid)));
     return const DevicesPageState();
   }
 
-  Future<void> _loadAppliances() async {
-    final uid = _auth.currentUser?.uid;
-    if (uid == null) {
-      state = state.copyWith(isLoading: false);
-      return;
-    }
-
+  Future<void> _loadAppliances(String uid) async {
     try {
       final snap = await _firestore
           .collection('users')
@@ -50,12 +49,15 @@ class DevicesNotifier extends Notifier<DevicesPageState> {
   }
 
   Future<void> refresh() async {
+    final uid = ref.read(currentUidProvider).value;
+    if (uid == null) return;
+
     state = state.copyWith(isLoading: true);
-    await _loadAppliances();
+    await _loadAppliances(uid);
   }
 
   Future<bool> deleteAppliance(String id) async {
-    final uid = _auth.currentUser?.uid;
+    final uid = ref.read(currentUidProvider).value;
     if (uid == null) return false;
 
     try {

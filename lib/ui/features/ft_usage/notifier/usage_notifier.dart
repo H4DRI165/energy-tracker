@@ -2,40 +2,42 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/constants/tariff_rates.dart';
 import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 import 'package:energy_tracker/models/bill_record.dart';
+import 'package:energy_tracker/services/notifiers/auth_notifier.dart';
 import 'package:energy_tracker/services/notifiers/user_profile_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_usage/notifier/usage_state.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 final AsyncNotifierProvider<UsageNotifier, UsageState> usageProvider =
     AsyncNotifierProvider<UsageNotifier, UsageState>(
-  UsageNotifier.new,
-);
+      UsageNotifier.new,
+    );
 
 class UsageNotifier extends AsyncNotifier<UsageState> {
-  FirebaseAuth get _auth => FirebaseAuth.instance;
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;
 
   @override
   Future<UsageState> build() async {
+    final uid = ref.watch(currentUidProvider).value;
+    if (uid == null) return const UsageState();
+
     ref.watch(tariffTypeProvider);
-    return _fetchUsageData();
+    return _fetchUsageData(uid);
   }
 
   Future<void> refresh() async {
     final selectedFilter = state.asData?.value.filter ?? UsageFilter.monthly;
+    final uid = ref.read(currentUidProvider).value;
+    if (uid == null) return;
+
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      final fresh = await _fetchUsageData();
+      final fresh = await _fetchUsageData(uid);
       return fresh.copyWith(filter: selectedFilter);
     });
   }
 
-  Future<UsageState> _fetchUsageData() async {
-    final uid = _auth.currentUser?.uid;
-    if (uid == null) return const UsageState();
-
+  Future<UsageState> _fetchUsageData(String uid) async {
     final now = DateTime.now();
 
     try {
@@ -162,12 +164,11 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
           data['tariffType'] as String? ?? TariffType.domestic.value,
         ),
       );
-    }).toList()
-      ..sort((a, b) => b.date.compareTo(a.date));
+    }).toList()..sort((a, b) => b.date.compareTo(a.date));
   }
 
   Future<void> deleteMonth(BillRecord bill) async {
-    final uid = _auth.currentUser?.uid;
+    final uid = ref.read(currentUidProvider).value;
     if (uid == null) return;
 
     final startOfMonth = DateTime(bill.date.year, bill.date.month);
@@ -231,7 +232,7 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
     } on FirebaseException catch (_) {
       // Re-fetch on error
       state = const AsyncLoading();
-      state = await AsyncValue.guard(_fetchUsageData);
+      state = await AsyncValue.guard(() => _fetchUsageData(uid));
     }
   }
 }
