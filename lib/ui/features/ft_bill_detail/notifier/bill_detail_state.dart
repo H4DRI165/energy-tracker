@@ -19,24 +19,27 @@ class BillDetailPageState {
   final List<ReadingRecord> readings;
   final bool billDeleted;
   final String? errorMessage;
+  static const Object _unset = Object();
 
   BillDetailPageState copyWith({
     bool? isLoading,
     bool? isUpdatingPaid,
     bool? isPaid,
-    BillRecord? bill,
+    Object? bill = _unset,
     List<ReadingRecord>? readings,
     bool? billDeleted,
-    String? errorMessage,
+    Object? errorMessage = _unset,
   }) {
     return BillDetailPageState(
       isLoading: isLoading ?? this.isLoading,
       isUpdatingPaid: isUpdatingPaid ?? this.isUpdatingPaid,
       isPaid: isPaid ?? this.isPaid,
-      bill: bill ?? this.bill,
+      bill: identical(bill, _unset) ? this.bill : bill as BillRecord?,
       readings: readings ?? this.readings,
       billDeleted: billDeleted ?? this.billDeleted,
-      errorMessage: errorMessage ?? this.errorMessage,
+      errorMessage: identical(errorMessage, _unset)
+          ? this.errorMessage
+          : errorMessage as String?,
     );
   }
 }

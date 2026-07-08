@@ -61,27 +61,27 @@ class _BillDetailPageState extends ConsumerState<BillDetailPage> {
                       child: CircularProgressIndicator(color: AppColors.accent),
                     )
                   : state.errorMessage != null
-                      ? Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(16.r),
-                            child: Text(
-                              state.errorMessage!,
-                              style: AppTextStyles.bodyMd
-                                  .copyWith(color: AppColors.danger),
-                              textAlign: TextAlign.center,
-                            ),
+                  ? Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(16.r),
+                        child: Text(
+                          state.errorMessage!,
+                          style: AppTextStyles.bodyMd.copyWith(
+                            color: AppColors.danger,
                           ),
-                        )
-                      : SingleChildScrollView(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: AppDimensions.screenPaddingH,
-                            vertical: 8.h,
-                          ),
-                          child: _BodyContent(
-                            bill: state.bill!,
-                            onEditReading: _handleEditReading,
-                          ),
+                          textAlign: TextAlign.center,
                         ),
+                      ),
+                    )
+                  : SingleChildScrollView(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppDimensions.screenPaddingH,
+                        vertical: 8.h,
+                      ),
+                      child: _BodyContent(
+                        onEditReading: _handleEditReading,
+                      ),
+                    ),
             ),
           ],
         ),
@@ -142,38 +142,23 @@ class _Header extends StatelessWidget {
   }
 }
 
-class _BodyContent extends ConsumerStatefulWidget {
+class _BodyContent extends ConsumerWidget {
   const _BodyContent({
-    required this.bill,
     required this.onEditReading,
   });
 
-  final BillRecord bill;
   final Future<void> Function(ReadingRecord) onEditReading;
 
   @override
-  ConsumerState<_BodyContent> createState() => _BodyContentState();
-}
-
-class _BodyContentState extends ConsumerState<_BodyContent> {
-  @override
-  Widget build(BuildContext context) {
-    final state = ref.watch(billDetailProvider);
-    final bill = state.bill!;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final bill = ref.watch(billDetailProvider.select((s) => s.bill!));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _BillSummaryCard(bill: bill),
         SizedBox(height: 16.h),
-        _PaidToggleCard(
-          isPaid: state.isPaid,
-          isUpdating: state.isUpdatingPaid,
-          onToggle: () async {
-            await ref.read(billDetailProvider.notifier).togglePaid(state.bill!);
-            ref.invalidate(usageProvider);
-          },
-        ),
+        const _PaidToggleCard(),
         SizedBox(height: 16.h),
         BillBreakdownCard(
           items: TariffRates.breakdownFor(bill.kwh, bill.tariffType),
@@ -182,9 +167,8 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
         ),
         SizedBox(height: 16.h),
         _ReadingsSection(
-          readings: state.readings,
           bill: bill,
-          onEditReading: widget.onEditReading,
+          onEditReading: onEditReading,
         ),
         SizedBox(height: 24.h),
       ],
@@ -254,19 +238,17 @@ class _BillSummaryCard extends StatelessWidget {
   }
 }
 
-class _PaidToggleCard extends StatelessWidget {
-  const _PaidToggleCard({
-    required this.isPaid,
-    required this.isUpdating,
-    required this.onToggle,
-  });
-
-  final bool isPaid;
-  final bool isUpdating;
-  final VoidCallback onToggle;
+class _PaidToggleCard extends ConsumerWidget {
+  const _PaidToggleCard();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isPaid = ref.watch(billDetailProvider.select((s) => s.isPaid));
+    final isUpdating = ref.watch(
+      billDetailProvider.select((s) => s.isUpdatingPaid),
+    );
+    final bill = ref.watch(billDetailProvider.select((s) => s.bill!));
+
     final color = isPaid ? AppColors.accent : AppColors.warn;
     final bgColor = isPaid
         ? AppColors.accent.withValues(alpha: 0.06)
@@ -329,7 +311,10 @@ class _PaidToggleCard extends StatelessWidget {
             )
           else
             GestureDetector(
-              onTap: onToggle,
+              onTap: () async {
+                await ref.read(billDetailProvider.notifier).togglePaid(bill);
+                ref.invalidate(usageProvider);
+              },
               child: Container(
                 width: 44.r,
                 height: 24.r,
@@ -339,8 +324,9 @@ class _PaidToggleCard extends StatelessWidget {
                 ),
                 child: AnimatedAlign(
                   duration: const Duration(milliseconds: 200),
-                  alignment:
-                      isPaid ? Alignment.centerRight : Alignment.centerLeft,
+                  alignment: isPaid
+                      ? Alignment.centerRight
+                      : Alignment.centerLeft,
                   child: Container(
                     margin: EdgeInsets.all(3.r),
                     width: 18.r,
@@ -361,17 +347,17 @@ class _PaidToggleCard extends StatelessWidget {
 
 class _ReadingsSection extends ConsumerWidget {
   const _ReadingsSection({
-    required this.readings,
     required this.bill,
     required this.onEditReading,
   });
 
-  final List<ReadingRecord> readings;
   final BillRecord bill;
   final Future<void> Function(ReadingRecord) onEditReading;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(billDetailProvider);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -399,7 +385,7 @@ class _ReadingsSection extends ConsumerWidget {
           ],
         ),
         SizedBox(height: 10.h),
-        if (readings.isEmpty)
+        if (state.readings.isEmpty)
           Container(
             padding: EdgeInsets.all(16.r),
             decoration: BoxDecoration(
@@ -422,185 +408,207 @@ class _ReadingsSection extends ConsumerWidget {
               border: Border.all(color: AppColors.border),
             ),
             child: Column(
-              children: readings.asMap().entries.map((entry) {
-                final r = entry.value;
-                final isLast = entry.key == readings.length - 1;
-
-                return ClipRRect(
-                  borderRadius: BorderRadius.vertical(
-                    top: entry.key == 0
-                        ? Radius.circular(AppDimensions.radiusLg)
-                        : Radius.zero,
-                    bottom: isLast
-                        ? Radius.circular(AppDimensions.radiusLg)
-                        : Radius.zero,
-                  ),
-                  child: Dismissible(
-                    key: Key(r.id),
-                    direction: DismissDirection.endToStart,
-                    background: Container(
-                      alignment: Alignment.centerRight,
-                      padding: EdgeInsets.only(right: 20.w),
-                      color: AppColors.danger.withValues(alpha: 0.15),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.delete_outline_rounded,
-                            color: AppColors.danger,
-                            size: 22.r,
-                          ),
-                          SizedBox(height: 4.h),
-                          Text(
-                            'Delete',
-                            style: AppTextStyles.caption
-                                .copyWith(color: AppColors.danger),
-                          ),
-                        ],
-                      ),
-                    ),
-                    confirmDismiss: (_) => ConfirmDialog.show(
-                      context,
-                      title: 'Delete Reading?',
-                      message: 'Delete the reading on '
-                          '${r.formattedDate} (${r.kwh.toStringAsFixed(1)} '
-                          'kWh)?',
-                      confirmLabel: 'Delete',
-                      confirmColor: AppColors.danger,
-                      warning:
-                          'This will also remove the associated bill entry.',
-                    ),
-                    onDismissed: (_) async {
-                      final success = await ref
-                          .read(billDetailProvider.notifier)
-                          .deleteReading(r, bill);
-
-                      if (success) {
-                        ref
-                          ..invalidate(usageProvider)
-                          ..invalidate(dashboardProvider);
-                        await ref.read(usageProvider.future);
-                      }
-                    },
-                    child: GestureDetector(
-                      onTap: () => onEditReading(r),
-                      child: Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 14.w,
-                          vertical: 12.h,
-                        ),
-                        decoration: BoxDecoration(
-                          border: isLast
-                              ? null
-                              : const Border(
-                                  bottom: BorderSide(color: AppColors.border),
-                                ),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 36.r,
-                              height: 36.r,
-                              decoration: BoxDecoration(
-                                color: AppColors.accent.withValues(alpha: 0.08),
-                                borderRadius: BorderRadius.circular(10.r),
-                              ),
-                              child: Icon(
-                                Icons.bolt_rounded,
-                                color: AppColors.accent,
-                                size: 18.r,
-                              ),
-                            ),
-                            SizedBox(width: 12.w),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    r.formattedDate,
-                                    style: AppTextStyles.bodyMd.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  Text(
-                                    '${r.kwh.toStringAsFixed(1)} kWh ',
-                                    style: AppTextStyles.caption,
-                                  ),
-                                  Text(
-                                    r.tierLabel,
-                                    style: AppTextStyles.caption,
-                                  ),
-                                  if (r.notes.isNotEmpty) ...[
-                                    SizedBox(height: 2.h),
-                                    Text(
-                                      r.notes,
-                                      style: AppTextStyles.caption.copyWith(
-                                        color: AppColors.text3,
-                                        fontStyle: FontStyle.italic,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                  SizedBox(height: 4.h),
-                                  Container(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 6.w,
-                                      vertical: 1.h,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.surface3,
-                                      borderRadius: BorderRadius.circular(6.r),
-                                      border: Border.all(
-                                        color: AppColors.text3
-                                            .withValues(alpha: 0.3),
-                                      ),
-                                    ),
-                                    child: Text(
-                                      r.tariffType.label,
-                                      style: AppTextStyles.caption.copyWith(
-                                        color: AppColors.text2,
-                                        fontSize: 9.sp,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  '${r.reading.toStringAsFixed(0)} kWh',
-                                  style: AppTextStyles.bodySm.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.text2,
-                                  ),
-                                ),
-                                Text(
-                                  'meter read',
-                                  style: AppTextStyles.caption.copyWith(
-                                    fontSize: 10.sp,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            SizedBox(width: 8.w),
-                            Icon(
-                              Icons.chevron_left_rounded,
-                              size: 16.r,
-                              color: AppColors.text3,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
+              children: state.readings.asMap().entries.map((entry) {
+                return _ReadingRow(
+                  reading: entry.value,
+                  bill: bill,
+                  isFirst: entry.key == 0,
+                  isLast: entry.key == state.readings.length - 1,
+                  onEdit: onEditReading,
                 );
               }).toList(),
             ),
           ),
       ],
+    );
+  }
+}
+
+class _ReadingRow extends ConsumerWidget {
+  const _ReadingRow({
+    required this.reading,
+    required this.bill,
+    required this.isFirst,
+    required this.isLast,
+    required this.onEdit,
+  });
+
+  final ReadingRecord reading;
+  final BillRecord bill;
+  final bool isFirst;
+  final bool isLast;
+  final Future<void> Function(ReadingRecord) onEdit;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ClipRRect(
+      borderRadius: BorderRadius.vertical(
+        top: isFirst ? Radius.circular(AppDimensions.radiusLg) : Radius.zero,
+        bottom: isLast ? Radius.circular(AppDimensions.radiusLg) : Radius.zero,
+      ),
+      child: Dismissible(
+        key: Key(reading.id),
+        direction: DismissDirection.endToStart,
+        background: Container(
+          alignment: Alignment.centerRight,
+          padding: EdgeInsets.only(right: 20.w),
+          color: AppColors.danger.withValues(alpha: 0.15),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.delete_outline_rounded,
+                color: AppColors.danger,
+                size: 22.r,
+              ),
+              SizedBox(height: 4.h),
+              Text(
+                'Delete',
+                style: AppTextStyles.caption.copyWith(
+                  color: AppColors.danger,
+                ),
+              ),
+            ],
+          ),
+        ),
+        confirmDismiss: (_) => ConfirmDialog.show(
+          context,
+          title: 'Delete Reading?',
+          message:
+              'Delete the reading on '
+              '${reading.formattedDate} (${reading.kwh.toStringAsFixed(1)} '
+              'kWh)?',
+          confirmLabel: 'Delete',
+          confirmColor: AppColors.danger,
+          warning: 'This will also remove the associated bill entry.',
+        ),
+        onDismissed: (_) async {
+          final success = await ref
+              .read(billDetailProvider.notifier)
+              .deleteReading(reading, bill);
+
+          if (success) {
+            ref
+              ..invalidate(usageProvider)
+              ..invalidate(dashboardProvider);
+            await ref.read(usageProvider.future);
+          }
+        },
+        child: GestureDetector(
+          onTap: () => onEdit(reading),
+          child: Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: 14.w,
+              vertical: 12.h,
+            ),
+            decoration: BoxDecoration(
+              border: isLast
+                  ? null
+                  : const Border(
+                      bottom: BorderSide(color: AppColors.border),
+                    ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 36.r,
+                  height: 36.r,
+                  decoration: BoxDecoration(
+                    color: AppColors.accent.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(10.r),
+                  ),
+                  child: Icon(
+                    Icons.bolt_rounded,
+                    color: AppColors.accent,
+                    size: 18.r,
+                  ),
+                ),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        reading.formattedDate,
+                        style: AppTextStyles.bodyMd.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        '${reading.kwh.toStringAsFixed(1)} kWh ',
+                        style: AppTextStyles.caption,
+                      ),
+                      Text(
+                        reading.tierLabel,
+                        style: AppTextStyles.caption,
+                      ),
+                      if (reading.notes.isNotEmpty) ...[
+                        SizedBox(height: 2.h),
+                        Text(
+                          reading.notes,
+                          style: AppTextStyles.caption.copyWith(
+                            color: AppColors.text3,
+                            fontStyle: FontStyle.italic,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                      SizedBox(height: 4.h),
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 6.w,
+                          vertical: 1.h,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface3,
+                          borderRadius: BorderRadius.circular(6.r),
+                          border: Border.all(
+                            color: AppColors.text3.withValues(
+                              alpha: 0.3,
+                            ),
+                          ),
+                        ),
+                        child: Text(
+                          reading.tariffType.label,
+                          style: AppTextStyles.caption.copyWith(
+                            color: AppColors.text2,
+                            fontSize: 9.sp,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '${reading.reading.toStringAsFixed(0)} kWh',
+                      style: AppTextStyles.bodySm.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.text2,
+                      ),
+                    ),
+                    Text(
+                      'meter read',
+                      style: AppTextStyles.caption.copyWith(
+                        fontSize: 10.sp,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(width: 8.w),
+                Icon(
+                  Icons.chevron_left_rounded,
+                  size: 16.r,
+                  color: AppColors.text3,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
