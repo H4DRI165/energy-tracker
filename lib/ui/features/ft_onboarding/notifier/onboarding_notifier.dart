@@ -1,18 +1,17 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/extensions/tariff_type_extension.dart';
+import 'package:energy_tracker/services/notifiers/auth_notifier.dart';
 import 'package:energy_tracker/ui/components/logger.dart';
 import 'package:energy_tracker/ui/features/ft_onboarding/notifier/onboarding_state.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final NotifierProvider<OnboardingNotifier, OnboardingPageState>
-    onboardingProvider =
+onboardingProvider =
     NotifierProvider.autoDispose<OnboardingNotifier, OnboardingPageState>(
-  OnboardingNotifier.new,
-);
+      OnboardingNotifier.new,
+    );
 
 class OnboardingNotifier extends Notifier<OnboardingPageState> {
-  FirebaseAuth get _auth => FirebaseAuth.instance;
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;
 
   @override
@@ -43,7 +42,7 @@ class OnboardingNotifier extends Notifier<OnboardingPageState> {
   bool get canGoBack => state.currentStep > 0;
 
   Future<bool> completeOnboarding() async {
-    final uid = _auth.currentUser?.uid;
+    final uid = ref.read(currentUidProvider).value;
 
     if (uid == null) {
       state = state.copyWith(

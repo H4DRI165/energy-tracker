@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/constants/tariff_rates.dart';
 import 'package:energy_tracker/extensions/tariff_type_extension.dart';
+import 'package:energy_tracker/services/notifiers/auth_notifier.dart';
 import 'package:energy_tracker/services/notifiers/user_profile_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_state.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -10,8 +11,8 @@ import 'package:intl/intl.dart';
 
 final dashboardProvider =
     AsyncNotifierProvider<DashboardNotifier, DashboardPageState>(
-  DashboardNotifier.new,
-);
+      DashboardNotifier.new,
+    );
 
 class DashboardNotifier extends AsyncNotifier<DashboardPageState> {
   FirebaseAuth get _auth => FirebaseAuth.instance;
@@ -19,14 +20,15 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState> {
 
   @override
   Future<DashboardPageState> build() async {
-    final user = _auth.currentUser;
-    if (user == null) return const DashboardPageState();
+    final uid = ref.watch(currentUidProvider).value;
+    if (uid == null) return const DashboardPageState();
 
+    final authName = _auth.currentUser?.displayName ?? '';
     final tariffType = ref.watch(tariffTypeProvider);
 
     final results = await Future.wait([
-      _loadUserProfile(user),
-      _loadUsageData(user.uid, tariffType),
+      _loadUserProfile(uid, authName),
+      _loadUsageData(uid, tariffType),
     ]);
 
     return results[0].merge(results[1]);
@@ -37,19 +39,24 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState> {
     await future;
   }
 
-  Future<DashboardPageState> _loadUserProfile(User user) async {
+  Future<DashboardPageState> _loadUserProfile(
+    String uid,
+    String authName,
+  ) async {
     try {
-      final authName = user.displayName ?? '';
-      final authFirstName = authName.split(' ').first;
+      final authFirstName = authName.isNotEmpty
+          ? authName.split(' ').first
+          : '';
 
-      final doc = await _firestore.collection('users').doc(user.uid).get();
+      final doc = await _firestore.collection('users').doc(uid).get();
       if (!doc.exists) return DashboardPageState(userName: authFirstName);
 
       final data = doc.data()!;
       final rawName = data['fullName'];
       final fullName = rawName is String ? rawName : authName;
-      final firstName =
-          fullName.isNotEmpty ? fullName.split(' ').first : authFirstName;
+      final firstName = fullName.isNotEmpty
+          ? fullName.split(' ').first
+          : authFirstName;
       final rawBudget = data['monthlyBudget'];
       final budget = rawBudget is num ? rawBudget.toDouble() : 150.0;
 
@@ -59,9 +66,7 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState> {
         errorMessage: 'Failed to load profile: ${e.message}',
       );
     } on Object catch (_) {
-      return const DashboardPageState(
-        errorMessage: 'Failed to load profile.',
-      );
+      return const DashboardPageState(errorMessage: 'Failed to load profile.');
     }
   }
 
@@ -132,13 +137,17 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState> {
               final tier = TariffRates.getTier(kwhUsed, TariffType.commercial);
               return EeiBand(
                 number: tier,
-                kwhRange:
-                    TariffRates.getTierKwhRange(tier, TariffType.commercial),
+                kwhRange: TariffRates.getTierKwhRange(
+                  tier,
+                  TariffType.commercial,
+                ),
                 rebateSenPerKwh: 0,
                 color: TariffRates.getTierColor(tier, TariffType.commercial),
                 label: TariffRates.tierBadgeLabel(tier, TariffType.commercial),
-                description:
-                    TariffRates.tierBadgeLabel(tier, TariffType.commercial),
+                description: TariffRates.tierBadgeLabel(
+                  tier,
+                  TariffType.commercial,
+                ),
               );
             })();
 
@@ -217,8 +226,8 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState> {
 
       final kwh = match != null
           ? ((match.data()! as Map<String, dynamic>)['kwh'] as num?)
-                  ?.toDouble() ??
-              0.0
+                    ?.toDouble() ??
+                0.0
           : 0.0;
 
       result.add(DailyUsage(label: label, kwh: kwh, isToday: i == 0));

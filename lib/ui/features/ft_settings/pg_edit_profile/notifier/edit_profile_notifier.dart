@@ -1,16 +1,19 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:energy_tracker/services/notifiers/auth_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_settings/pg_edit_profile/notifier/edit_profile_state.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final AsyncNotifierProvider<EditProfileNotifier, EditProfilePageState>
-    editProfileProvider = AsyncNotifierProvider.autoDispose<EditProfileNotifier,
-        EditProfilePageState>(
-  EditProfileNotifier.new,
-);
+editProfileProvider =
+    AsyncNotifierProvider.autoDispose<
+      EditProfileNotifier,
+      EditProfilePageState
+    >(
+      EditProfileNotifier.new,
+    );
 
 class EditProfileNotifier extends AsyncNotifier<EditProfilePageState> {
-  FirebaseAuth get _auth => FirebaseAuth.instance;
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;
 
   String _originalFullName = '';
@@ -18,11 +21,12 @@ class EditProfileNotifier extends AsyncNotifier<EditProfilePageState> {
 
   @override
   Future<EditProfilePageState> build() async {
-    final user = _auth.currentUser;
-    if (user == null) return const EditProfilePageState(isLoading: false);
+    final uid = ref.watch(currentUidProvider).value;
+    if (uid == null) return const EditProfilePageState(isLoading: false);
 
-    final uid = user.uid;
-    final authName = user.displayName ?? '';
+    final authUser = FirebaseAuth.instance.currentUser;
+    final authName = authUser?.displayName ?? '';
+    final email = authUser?.email ?? '';
 
     final doc = await _firestore.collection('users').doc(uid).get();
     if (!doc.exists) {
@@ -30,7 +34,7 @@ class EditProfileNotifier extends AsyncNotifier<EditProfilePageState> {
       return EditProfilePageState(
         isLoading: false,
         fullName: authName,
-        email: user.email ?? '',
+        email: email,
       );
     }
 
@@ -44,7 +48,7 @@ class EditProfileNotifier extends AsyncNotifier<EditProfilePageState> {
     return EditProfilePageState(
       isLoading: false,
       fullName: fullName,
-      email: user.email ?? '',
+      email: email,
       tnbAccountNo: tnbAccountNo,
     );
   }
@@ -55,7 +59,8 @@ class EditProfileNotifier extends AsyncNotifier<EditProfilePageState> {
         fullName: value,
         fullNameError: null,
         successMessage: null,
-        hasChanges: value.trim() != _originalFullName ||
+        hasChanges:
+            value.trim() != _originalFullName ||
             s.tnbAccountNo.trim() != _originalTnbAccountNo,
       ),
     );
@@ -67,7 +72,8 @@ class EditProfileNotifier extends AsyncNotifier<EditProfilePageState> {
         tnbAccountNo: value,
         tnbAccountError: null,
         successMessage: null,
-        hasChanges: s.fullName.trim() != _originalFullName ||
+        hasChanges:
+            s.fullName.trim() != _originalFullName ||
             value.trim() != _originalTnbAccountNo,
       ),
     );
@@ -122,7 +128,7 @@ class EditProfileNotifier extends AsyncNotifier<EditProfilePageState> {
     state = state.whenData((s) => s.copyWith(isSaving: true));
 
     try {
-      final user = _auth.currentUser;
+      final user = FirebaseAuth.instance.currentUser;
       if (user == null) throw Exception('Session expired.');
 
       await _firestore.collection('users').doc(user.uid).set(

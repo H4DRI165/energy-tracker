@@ -8,8 +8,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final NotifierProvider<RegisterNotifier, RegisterPageState> registerProvider =
     NotifierProvider.autoDispose<RegisterNotifier, RegisterPageState>(
-  RegisterNotifier.new,
-);
+      RegisterNotifier.new,
+    );
 
 class RegisterNotifier extends Notifier<RegisterPageState> {
   FirebaseAuth get _auth => FirebaseAuth.instance;
