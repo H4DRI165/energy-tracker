@@ -111,11 +111,12 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
         );
       }
 
-      final beforeSnap = await beforeQuery
-          .orderBy('date', descending: true)
-          .limit(1)
-          .get();
-      final nextSnap = await nextQuery.orderBy('date').limit(1).get();
+      final results = await Future.wait([
+        beforeQuery.orderBy('date', descending: true).limit(1).get(),
+        nextQuery.orderBy('date').limit(1).get(),
+      ]);
+      final beforeSnap = results[0];
+      final nextSnap = results[1];
 
       final before = beforeSnap.docs.isEmpty
           ? null
@@ -209,69 +210,6 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
     state = state.copyWith(notes: value);
   }
 
-  Future<bool> saveReading() async {
-    if (!state.canSave) return false;
-    final uid = ref.read(currentUidProvider).value;
-
-    if (uid == null) {
-      state = state.copyWith(
-        errorMessage: 'Session expired. Please sign in again.',
-      );
-      return false;
-    }
-
-    state = state.copyWith(isSaving: true, errorMessage: null);
-
-    final date = state.selectedDate ?? DateTime.now();
-    final tariffType = ref.read(tariffTypeProvider);
-
-    try {
-      final conflict = await _checkTariffConflict(uid, date, tariffType);
-      if (conflict != null) {
-        state = state.copyWith(isSaving: false, errorMessage: conflict);
-        return false;
-      }
-
-      await _firestore.collection('users').doc(uid).collection('readings').add({
-        'reading': state.currentReading,
-        'kwh': state.usageKwh,
-        'date': Timestamp.fromDate(date),
-        'notes': state.notes.trim(),
-        'tier': state.currentTier(tariffType),
-        'tariffType': tariffType.value,
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-
-      final next = await _chainService.findNext(uid, date);
-      if (next != null) {
-        final fix = _chainService.computeFix(next, state.currentReading);
-        final batch = _firestore.batch();
-        _chainService.applyFix(batch, uid, fix);
-        await batch.commit();
-
-        final sameMonth =
-            fix.date.year == date.year && fix.date.month == date.month;
-        if (!sameMonth) {
-          await _billService.recalculateMonth(uid, fix.date, fix.tariffType);
-        }
-      }
-
-      await _billService.recalculateMonth(uid, date, tariffType);
-
-      state = state.copyWith(isSaving: false);
-      return true;
-    } on FirebaseException catch (e) {
-      state = state.copyWith(isSaving: false, errorMessage: _mapError(e.code));
-      return false;
-    } on Exception catch (_) {
-      state = state.copyWith(
-        isSaving: false,
-        errorMessage: 'Failed to save reading. Please try again.',
-      );
-      return false;
-    }
-  }
-
   Future<String?> _checkTariffConflict(
     String uid,
     DateTime date,
@@ -306,6 +244,77 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
     return null;
   }
 
+  Future<bool> _applyChainFixAndRecalculate(
+    String uid,
+    DateTime date,
+    TariffType tariffType,
+  ) async {
+    final next = await _chainService.findNext(uid, date);
+    if (next != null) {
+      final fix = _chainService.computeFix(next, state.currentReading);
+      final batch = _firestore.batch();
+      _chainService.applyFix(batch, uid, fix);
+      await batch.commit();
+
+      final sameMonth =
+          fix.date.year == date.year && fix.date.month == date.month;
+      if (!sameMonth) {
+        await _billService.recalculateMonth(uid, fix.date, fix.tariffType);
+      }
+    }
+    await _billService.recalculateMonth(uid, date, tariffType);
+    return true;
+  }
+
+  Future<bool> saveReading() async {
+    if (!state.canSave) return false;
+    final uid = ref.read(currentUidProvider).value;
+
+    if (uid == null) {
+      state = state.copyWith(
+        errorMessage: 'Session expired. Please sign in again.',
+      );
+      return false;
+    }
+
+    state = state.copyWith(isSaving: true, errorMessage: null);
+
+    final date = state.selectedDate ?? DateTime.now();
+    final tariffType = ref.read(tariffTypeProvider);
+
+    try {
+      final conflict = await _checkTariffConflict(uid, date, tariffType);
+      if (conflict != null) {
+        state = state.copyWith(isSaving: false, errorMessage: conflict);
+        return false;
+      }
+
+      await _firestore.collection('users').doc(uid).collection('readings').add({
+        'reading': state.currentReading,
+        'kwh': state.usageKwh,
+        'date': Timestamp.fromDate(date),
+        'notes': state.notes.trim(),
+        'tier': state.currentTier(tariffType),
+        'tariffType': tariffType.value,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      await _applyChainFixAndRecalculate(uid, date, tariffType);
+
+      state = state.copyWith(isSaving: false);
+      return true;
+    } on FirebaseException catch (e) {
+      state = state.copyWith(isSaving: false, errorMessage: _mapError(e.code));
+      return false;
+    } on Exception catch (_) {
+      state = state.copyWith(
+        isSaving: false,
+        errorMessage: 'Failed to save reading. Please try again.',
+      );
+      return false;
+    }
+  }
+
   Future<bool> updateReading(ReadingRecord reading) async {
     if (!state.canSave) return false;
 
@@ -333,21 +342,7 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
             'tier': state.currentTier(reading.tariffType),
           });
 
-      final next = await _chainService.findNext(uid, date);
-      if (next != null) {
-        final fix = _chainService.computeFix(next, state.currentReading);
-        final batch = _firestore.batch();
-        _chainService.applyFix(batch, uid, fix);
-        await batch.commit();
-
-        final sameMonth =
-            fix.date.year == date.year && fix.date.month == date.month;
-        if (!sameMonth) {
-          await _billService.recalculateMonth(uid, fix.date, fix.tariffType);
-        }
-      }
-
-      await _billService.recalculateMonth(uid, date, reading.tariffType);
+      await _applyChainFixAndRecalculate(uid, date, reading.tariffType);
 
       state = state.copyWith(isSaving: false);
       return true;
