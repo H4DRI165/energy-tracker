@@ -41,7 +41,7 @@ class AddReadingPageState {
       TariffRates.calculate(usageKwh, tariffType);
 
   // For domestic, returns the EEI band number rather than the old usage tier.
-// For commercial, still returns the 2-tier int (unchanged tariff structure).
+  // For commercial, still returns the 2-tier int (unchanged tariff structure).
   int currentTier(TariffType tariffType) => tariffType == TariffType.domestic
       ? currentEeiBand.number
       : TariffRates.getTier(usageKwh, TariffType.commercial);
