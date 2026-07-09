@@ -20,7 +20,8 @@ final GoRouter appRouter = GoRouter(
     final isLoggedIn = _authService.currentUser != null;
     final onboardingStatus = _authService.userNotifier.status;
 
-    final isPublicAuthRoute = state.matchedLocation == AppRoutes.login ||
+    final isPublicAuthRoute =
+        state.matchedLocation == AppRoutes.login ||
         state.matchedLocation == AppRoutes.register ||
         state.matchedLocation == AppRoutes.landing ||
         state.matchedLocation == AppRoutes.splash ||
@@ -115,15 +116,16 @@ final GoRouter appRouter = GoRouter(
         child: const TariffCalculatorPage(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(1, 0),
-              end: Offset.zero,
-            ).animate(
-              CurvedAnimation(
-                parent: animation,
-                curve: Curves.easeOut,
-              ),
-            ),
+            position:
+                Tween<Offset>(
+                  begin: const Offset(1, 0),
+                  end: Offset.zero,
+                ).animate(
+                  CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeOut,
+                  ),
+                ),
             child: child,
           );
         },
@@ -191,7 +193,8 @@ final GoRouter appRouter = GoRouter(
       pageBuilder: (context, state) => const NoTransitionPage(
         child: ComingSoonPage(
           title: 'Scan TNB Bill',
-          subtitle: 'Point your camera at your bill and '
+          subtitle:
+              'Point your camera at your bill and '
               'let AI extract the data automatically.',
           icon: Icons.document_scanner_rounded,
         ),
@@ -216,7 +219,7 @@ final GoRouter appRouter = GoRouter(
       ),
     ),
 
-    // --------------------------------TAB SHELL (bottom nav)--------------------
+    // --------------------------------TAB SHELL (bottom nav)-------------------
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) {
         return Scaffold(

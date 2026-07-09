@@ -1,17 +1,16 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/models/appliance.dart';
+import 'package:energy_tracker/services/notifiers/auth_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_devices/pg_add_appliance/notifier/add_appliance_state.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final NotifierProvider<AddApplianceNotifier, AddAppliancePageState>
-    addApplianceProvider =
+addApplianceProvider =
     NotifierProvider.autoDispose<AddApplianceNotifier, AddAppliancePageState>(
-  AddApplianceNotifier.new,
-);
+      AddApplianceNotifier.new,
+    );
 
 class AddApplianceNotifier extends Notifier<AddAppliancePageState> {
-  FirebaseAuth get _auth => FirebaseAuth.instance;
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;
   Appliance? _editing;
 
@@ -60,7 +59,7 @@ class AddApplianceNotifier extends Notifier<AddAppliancePageState> {
   Future<bool> save() async {
     if (!state.canSave) return false;
 
-    final uid = _auth.currentUser?.uid;
+    final uid = ref.read(currentUidProvider).value;
     if (uid == null) {
       state = state.copyWith(errorMessage: 'Session expired.');
       return false;
@@ -79,8 +78,10 @@ class AddApplianceNotifier extends Notifier<AddAppliancePageState> {
             : FieldValue.serverTimestamp(),
       };
 
-      final col =
-          _firestore.collection('users').doc(uid).collection('appliances');
+      final col = _firestore
+          .collection('users')
+          .doc(uid)
+          .collection('appliances');
 
       if (_editing != null) {
         await col.doc(_editing!.id).update(data);
@@ -88,15 +89,18 @@ class AddApplianceNotifier extends Notifier<AddAppliancePageState> {
         await col.add(data);
       }
 
+      if (!ref.mounted) return true;
       state = state.copyWith(isSaving: false);
       return true;
     } on FirebaseException catch (e) {
+      if (!ref.mounted) return false;
       state = state.copyWith(
         isSaving: false,
         errorMessage: _mapError(e.code),
       );
       return false;
     } on Exception catch (_) {
+      if (!ref.mounted) return false;
       state = state.copyWith(
         isSaving: false,
         errorMessage: 'Failed to save. Please try again.',

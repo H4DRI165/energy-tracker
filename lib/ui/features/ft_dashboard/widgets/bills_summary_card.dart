@@ -86,8 +86,9 @@ class BillSummaryCard extends ConsumerWidget {
                                 vertical: 2.h,
                               ),
                               decoration: BoxDecoration(
-                                color:
-                                    AppColors.surface3.withValues(alpha: 0.6),
+                                color: AppColors.surface3.withValues(
+                                  alpha: 0.6,
+                                ),
                                 borderRadius: BorderRadius.circular(6.r),
                                 border: Border.all(
                                   color: AppColors.text3.withValues(alpha: 0.3),
@@ -109,8 +110,9 @@ class BillSummaryCard extends ConsumerWidget {
                           Text(
                             'Showing ${state.tariffType.shortLabel} '
                             "rates — matches this month's readings",
-                            style: AppTextStyles.caption
-                                .copyWith(color: AppColors.text3),
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.text3,
+                            ),
                           ),
                         ],
                         SizedBox(height: 4.h),
@@ -122,8 +124,11 @@ class BillSummaryCard extends ConsumerWidget {
                         Text(
                           isAlert && state.projectedBill != null
                               ? '${state.kwhUsed.toStringAsFixed(0)} kWh · '
-                                  'Projected: RM ${state.projectedBill!.toStringAsFixed(0)}'
-                              : 'Estimated bill · ${state.kwhUsed.toStringAsFixed(0)} kWh used',
+                                    'Projected: RM '
+                                    '${state.projectedBill!.toStringAsFixed(0)}'
+                              : 'Estimated bill · '
+                                    '${state.kwhUsed.toStringAsFixed(0)} '
+                                    'kWh used',
                           style: AppTextStyles.bodyMd.copyWith(
                             color: AppColors.text2,
                           ),
@@ -229,8 +234,10 @@ class _AnimatedBudgetProgressState extends State<_AnimatedBudgetProgress>
       vsync: this,
       duration: const Duration(milliseconds: 800),
     );
-    _animation = CurvedAnimation(parent: _controller, curve: Curves.easeOut)
-        .drive(Tween(begin: 0, end: widget.value));
+    _animation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOut,
+    ).drive(Tween(begin: 0, end: widget.value));
     unawaited(_controller.forward());
   }
 
@@ -238,8 +245,10 @@ class _AnimatedBudgetProgressState extends State<_AnimatedBudgetProgress>
   void didUpdateWidget(covariant _AnimatedBudgetProgress oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.value != widget.value) {
-      _animation = CurvedAnimation(parent: _controller, curve: Curves.easeOut)
-          .drive(Tween(begin: _animation.value, end: widget.value));
+      _animation = CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeOut,
+      ).drive(Tween(begin: _animation.value, end: widget.value));
       unawaited(_controller.forward(from: 0));
     }
   }

@@ -68,8 +68,9 @@ class AddAppliancePageState {
       wattage: wattage ?? this.wattage,
       dailyHours: dailyHours ?? this.dailyHours,
       isSaving: isSaving ?? this.isSaving,
-      nameError:
-          identical(nameError, _unset) ? this.nameError : nameError as String?,
+      nameError: identical(nameError, _unset)
+          ? this.nameError
+          : nameError as String?,
       wattageError: identical(wattageError, _unset)
           ? this.wattageError
           : wattageError as String?,

@@ -13,7 +13,12 @@ class DevicesPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(devicesProvider);
+    final isLoading = ref.watch(
+      devicesProvider.select((value) => value.isLoading),
+    );
+    final isEmpty = ref.watch(
+      devicesProvider.select((value) => value.appliances.isEmpty),
+    );
 
     return ColoredBox(
       color: AppColors.bg,
@@ -22,13 +27,13 @@ class DevicesPage extends ConsumerWidget {
           children: [
             _Header(),
             Expanded(
-              child: state.isLoading
+              child: isLoading
                   ? const Center(
                       child: CircularProgressIndicator(color: AppColors.accent),
                     )
-                  : state.appliances.isEmpty
-                      ? _EmptyDevicesView()
-                      : _BodyContent(state: state),
+                  : isEmpty
+                  ? const _EmptyDevicesView()
+                  : const _BodyContent(),
             ),
           ],
         ),
@@ -37,9 +42,9 @@ class DevicesPage extends ConsumerWidget {
   }
 }
 
-class _Header extends ConsumerWidget {
+class _Header extends StatelessWidget {
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.fromLTRB(
         AppDimensions.screenPaddingH,
@@ -70,20 +75,20 @@ class _Header extends ConsumerWidget {
 }
 
 class _BodyContent extends ConsumerWidget {
-  const _BodyContent({required this.state});
-
-  final DevicesPageState state;
+  const _BodyContent();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tariffType = ref.watch(tariffTypeProvider);
+    final appliances = ref.watch(devicesProvider.select((s) => s.appliances));
+    final totalKwh = ref.watch(
+      devicesProvider.select((s) => s.totalMonthlyKwh),
+    );
 
     return RefreshIndicator(
       color: AppColors.accent,
       backgroundColor: AppColors.surface2,
-      onRefresh: () => ProviderScope.containerOf(context)
-          .read(devicesProvider.notifier)
-          .refresh(),
+      onRefresh: () => ref.read(devicesProvider.notifier).refresh(),
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.symmetric(
@@ -93,15 +98,16 @@ class _BodyContent extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _SummaryCard(state: state, tariffType: tariffType),
+            _SummaryCard(tariffType: tariffType),
             SizedBox(height: 16.h),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
                   'Appliances',
-                  style: AppTextStyles.bodyMd
-                      .copyWith(fontWeight: FontWeight.w700),
+                  style: AppTextStyles.bodyMd.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 Row(
                   children: [
@@ -113,20 +119,22 @@ class _BodyContent extends ConsumerWidget {
                     SizedBox(width: 4.w),
                     Text(
                       'Swipe to delete appliance',
-                      style: AppTextStyles.caption
-                          .copyWith(color: AppColors.text3),
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.text3,
+                      ),
                     ),
                   ],
                 ),
               ],
             ),
             SizedBox(height: 10.h),
-            ...state.appliances.map(
+            ...appliances.map(
               (appliance) => Padding(
+                key: ValueKey(appliance.id),
                 padding: EdgeInsets.only(bottom: 10.h),
                 child: _ApplianceCard(
                   appliance: appliance,
-                  totalKwh: state.totalMonthlyKwh,
+                  totalKwh: totalKwh,
                   tariffType: tariffType,
                 ),
               ),
@@ -140,6 +148,8 @@ class _BodyContent extends ConsumerWidget {
 }
 
 class _EmptyDevicesView extends StatelessWidget {
+  const _EmptyDevicesView();
+
   @override
   Widget build(BuildContext context) {
     return Center(
@@ -199,17 +209,24 @@ class _EmptyDevicesView extends StatelessWidget {
   }
 }
 
-class _SummaryCard extends StatelessWidget {
+class _SummaryCard extends ConsumerWidget {
   const _SummaryCard({
-    required this.state,
     required this.tariffType,
   });
 
-  final DevicesPageState state;
   final TariffType tariffType;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final totalKwh = ref.watch(
+      devicesProvider.select((s) => s.totalMonthlyKwh),
+    );
+    final applianceCount = ref.watch(
+      devicesProvider.select((s) => s.appliances.length),
+    );
+    final totalCost = ref.watch(
+      devicesProvider.select((s) => s.totalMonthlyCost(tariffType)),
+    );
     final kwhRef = TariffRates.ringReferenceKwh(tariffType);
 
     return Container(
@@ -236,7 +253,7 @@ class _SummaryCard extends StatelessWidget {
                 CustomPaint(
                   size: Size(80.r, 80.r),
                   painter: _RingPainter(
-                    fraction: (state.totalMonthlyKwh / kwhRef).clamp(0.0, 1.0),
+                    fraction: (totalKwh / kwhRef).clamp(0.0, 1.0),
                   ),
                 ),
                 Center(
@@ -244,7 +261,7 @@ class _SummaryCard extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        state.totalMonthlyKwh.toStringAsFixed(0),
+                        totalKwh.toStringAsFixed(0),
                         style: AppTextStyles.bodySm.copyWith(
                           fontWeight: FontWeight.w800,
                           color: AppColors.accent,
@@ -268,13 +285,13 @@ class _SummaryCard extends StatelessWidget {
                 Text('Total Monthly Cost', style: AppTextStyles.caption),
                 SizedBox(height: 4.h),
                 Text(
-                  'RM ${state.totalMonthlyCost(tariffType).toStringAsFixed(2)}',
+                  'RM ${totalCost.toStringAsFixed(2)}',
                   style: AppTextStyles.titleMd,
                 ),
                 SizedBox(height: 4.h),
                 Text(
-                  '${state.appliances.length} '
-                  'appliance${state.appliances.length == 1 ? '' : 's'} tracked',
+                  '$applianceCount '
+                  'appliance${applianceCount == 1 ? '' : 's'} tracked',
                   style: AppTextStyles.caption,
                 ),
               ],
@@ -359,8 +376,9 @@ class _ApplianceCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final fraction =
-        totalKwh > 0 ? (appliance.monthlyKwh / totalKwh).clamp(0.0, 1.0) : 0.0;
+    final fraction = totalKwh > 0
+        ? (appliance.monthlyKwh / totalKwh).clamp(0.0, 1.0)
+        : 0.0;
 
     return Dismissible(
       key: Key(appliance.id),

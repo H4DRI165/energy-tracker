@@ -23,21 +23,23 @@ class AddAppliancePage extends ConsumerStatefulWidget {
 class _AddAppliancePageState extends ConsumerState<AddAppliancePage> {
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(addApplianceProvider);
     final isEdit = widget.appliance != null;
 
-    return Scaffold(
-      backgroundColor: AppColors.bg,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _Header(isEdit: isEdit),
-            _BodyContent(
-              isEdit: isEdit,
-              state: state,
-              appliance: widget.appliance,
-            ),
-          ],
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      behavior: HitTestBehavior.opaque,
+      child: Scaffold(
+        backgroundColor: AppColors.bg,
+        body: SafeArea(
+          child: Column(
+            children: [
+              _Header(isEdit: isEdit),
+              _BodyContent(
+                isEdit: isEdit,
+                appliance: widget.appliance,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -92,12 +94,10 @@ class _Header extends StatelessWidget {
 
 class _BodyContent extends ConsumerStatefulWidget {
   const _BodyContent({
-    required this.state,
     required this.appliance,
     this.isEdit = false,
   });
 
-  final AddAppliancePageState state;
   final Appliance? appliance;
   final bool isEdit;
 
@@ -123,6 +123,7 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
       _wattageController.text = appliance.wattage.toStringAsFixed(0);
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
         ref.read(addApplianceProvider.notifier).initForEdit(appliance);
       });
     }
@@ -149,6 +150,27 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
   @override
   Widget build(BuildContext context) {
     final tariffType = ref.watch(tariffTypeProvider);
+    final category = ref.watch(
+      addApplianceProvider.select((state) => state.category),
+    );
+    final nameError = ref.watch(
+      addApplianceProvider.select((state) => state.nameError),
+    );
+    final wattageError = ref.watch(
+      addApplianceProvider.select((state) => state.wattageError),
+    );
+    final dailyHours = ref.watch(
+      addApplianceProvider.select((state) => state.dailyHours),
+    );
+    final errorMessage = ref.watch(
+      addApplianceProvider.select((state) => state.errorMessage),
+    );
+    final isSaving = ref.watch(
+      addApplianceProvider.select((state) => state.isSaving),
+    );
+    final canSave = ref.watch(
+      addApplianceProvider.select((state) => state.canSave),
+    );
 
     return Expanded(
       child: SingleChildScrollView(
@@ -162,7 +184,7 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
             Text('Category', style: AppTextStyles.label),
             SizedBox(height: 8.h),
             _CategoryGrid(
-              selected: widget.state.category,
+              selected: category,
               onSelect: (c) =>
                   ref.read(addApplianceProvider.notifier).setCategory(c),
             ),
@@ -173,7 +195,7 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
               hintText: 'e.g. Air Conditioner (Bedroom)',
               prefixIcon: Icons.electrical_services_rounded,
               textCapitalization: TextCapitalization.words,
-              errorText: widget.state.nameError,
+              errorText: nameError,
             ),
             SizedBox(height: 16.h),
             AppTextField(
@@ -182,14 +204,14 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
               hintText: '0',
               prefixIcon: Icons.bolt_rounded,
               keyboardType: TextInputType.number,
-              errorText: widget.state.wattageError,
+              errorText: wattageError,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             ),
             SizedBox(height: 16.h),
             Text('Daily Usage (hours)', style: AppTextStyles.label),
             SizedBox(height: 8.h),
             _HoursStepper(
-              hours: widget.state.dailyHours,
+              hours: dailyHours,
               onIncrement: () =>
                   ref.read(addApplianceProvider.notifier).incrementHours(),
               onDecrement: () =>
@@ -197,11 +219,10 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
             ),
             SizedBox(height: 16.h),
             _MonthlyEstimateCard(
-              state: widget.state,
               tariffType: tariffType,
             ),
             SizedBox(height: 24.h),
-            if (widget.state.errorMessage != null) ...[
+            if (errorMessage != null) ...[
               Container(
                 width: double.infinity,
                 padding: EdgeInsets.all(12.r),
@@ -213,7 +234,7 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
                   ),
                 ),
                 child: Text(
-                  widget.state.errorMessage!,
+                  errorMessage,
                   style: AppTextStyles.bodySm.copyWith(color: AppColors.danger),
                 ),
               ),
@@ -221,8 +242,8 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
             ],
             GradientButton(
               label: widget.isEdit ? 'Save Changes' : 'Add Appliance',
-              isLoading: widget.state.isSaving,
-              isEnabled: widget.state.canSave,
+              isLoading: isSaving,
+              isEnabled: canSave,
               onTap: _handleSave,
             ),
             SizedBox(height: 24.h),
@@ -346,10 +367,12 @@ class _CategoryGrid extends StatelessWidget {
                         item.$1,
                         style: AppTextStyles.caption.copyWith(
                           fontSize: 9.sp,
-                          color:
-                              isSelected ? AppColors.accent2 : AppColors.text3,
-                          fontWeight:
-                              isSelected ? FontWeight.w600 : FontWeight.w400,
+                          color: isSelected
+                              ? AppColors.accent2
+                              : AppColors.text3,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.w400,
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -457,17 +480,28 @@ class _HoursStepper extends StatelessWidget {
   }
 }
 
-class _MonthlyEstimateCard extends StatelessWidget {
+class _MonthlyEstimateCard extends ConsumerWidget {
   const _MonthlyEstimateCard({
-    required this.state,
     required this.tariffType,
   });
 
-  final AddAppliancePageState state;
   final TariffType tariffType;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final monthlyKwh = ref.watch(
+      addApplianceProvider.select((state) => state.monthlyKwh),
+    );
+    final monthlyCost = ref.watch(
+      addApplianceProvider.select((state) => state.monthlyCost(tariffType)),
+    );
+    final dailyKwh = ref.watch(
+      addApplianceProvider.select((state) => state.dailyKwh),
+    );
+    final dailyCost = ref.watch(
+      addApplianceProvider.select((state) => state.dailyCost(tariffType)),
+    );
+
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(16.r),
@@ -500,14 +534,13 @@ class _MonthlyEstimateCard extends StatelessWidget {
               Expanded(
                 child: _EstimateStat(
                   label: 'Energy/month',
-                  value: '${state.monthlyKwh.toStringAsFixed(1)} kWh',
+                  value: '${monthlyKwh.toStringAsFixed(1)} kWh',
                 ),
               ),
               Expanded(
                 child: _EstimateStat(
                   label: 'Cost/month',
-                  value:
-                      'RM ${state.monthlyCost(tariffType).toStringAsFixed(2)}',
+                  value: 'RM ${monthlyCost.toStringAsFixed(2)}',
                   valueColor: AppColors.accent,
                 ),
               ),
@@ -519,13 +552,13 @@ class _MonthlyEstimateCard extends StatelessWidget {
               Expanded(
                 child: _EstimateStat(
                   label: 'Energy/day',
-                  value: '${state.dailyKwh.toStringAsFixed(3)} kWh',
+                  value: '${dailyKwh.toStringAsFixed(3)} kWh',
                 ),
               ),
               Expanded(
                 child: _EstimateStat(
                   label: 'Cost/day',
-                  value: 'RM ${state.dailyCost(tariffType).toStringAsFixed(3)}',
+                  value: 'RM ${dailyCost.toStringAsFixed(3)}',
                   valueColor: AppColors.accent,
                 ),
               ),
@@ -546,7 +579,7 @@ class _MonthlyEstimateCard extends StatelessWidget {
                   'Based on flat energy, capacity & network rates '
                   '(${(TariffRates.marginalRatePerKwh(tariffType) * 100).toStringAsFixed(2)} sen/kWh). '
                   '${tariffType == TariffType.domestic ? 'Excludes EEI rebate, '
-                      'KWTBB & SST' : 'Excludes KWTBB & SST'} — these depend '
+                            'KWTBB & SST' : 'Excludes KWTBB & SST'} — these depend '
                   'on your total ${tariffType == TariffType.domestic ? 'household' : 'business'} usage.',
                   style: AppTextStyles.caption.copyWith(color: AppColors.text3),
                 ),

@@ -26,6 +26,14 @@ class DevicesNotifier extends Notifier<DevicesPageState> {
     return const DevicesPageState();
   }
 
+  Future<void> refresh() async {
+    final uid = ref.read(currentUidProvider).value;
+    if (uid == null) return;
+
+    state = state.copyWith(isLoading: true);
+    await _loadAppliances(uid);
+  }
+
   Future<void> _loadAppliances(String uid) async {
     try {
       final snap = await _firestore
@@ -35,25 +43,21 @@ class DevicesNotifier extends Notifier<DevicesPageState> {
           .orderBy('createdAt', descending: false)
           .get();
 
+      if (!ref.mounted) return;
+
       final appliances = snap.docs
           .map((doc) => Appliance.fromDoc(doc.id, doc.data()))
           .toList();
 
       state = state.copyWith(isLoading: false, appliances: appliances);
     } on FirebaseException catch (e) {
+      if (!ref.mounted) return;
+
       state = state.copyWith(
         isLoading: false,
         errorMessage: 'Failed to load appliances: ${e.message}',
       );
     }
-  }
-
-  Future<void> refresh() async {
-    final uid = ref.read(currentUidProvider).value;
-    if (uid == null) return;
-
-    state = state.copyWith(isLoading: true);
-    await _loadAppliances(uid);
   }
 
   Future<bool> deleteAppliance(String id) async {
@@ -67,6 +71,8 @@ class DevicesNotifier extends Notifier<DevicesPageState> {
           .collection('appliances')
           .doc(id)
           .delete();
+
+      if (!ref.mounted) return true;
 
       state = state.copyWith(
         appliances: state.appliances.where((a) => a.id != id).toList(),
