@@ -1,5 +1,5 @@
 import 'package:energy_tracker/extensions/tariff_type_extension.dart';
-import 'package:energy_tracker/services/notifiers/user_profile_notifier.dart';
+import 'package:energy_tracker/services/notifier/user_profile_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_settings/pg_tariff_calculator/notifier/tariff_calculator_state.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

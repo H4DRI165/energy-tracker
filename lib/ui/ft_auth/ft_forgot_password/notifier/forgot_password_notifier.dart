@@ -1,4 +1,4 @@
-import 'package:energy_tracker/ui/components/logger.dart';
+import 'package:energy_tracker/ui/components/utils/logger.dart';
 import 'package:energy_tracker/ui/ft_auth/ft_forgot_password/notifier/forgot_password_state.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

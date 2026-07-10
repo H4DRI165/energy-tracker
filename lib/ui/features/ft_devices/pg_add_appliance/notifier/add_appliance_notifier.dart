@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/models/appliance.dart';
-import 'package:energy_tracker/services/notifiers/auth_notifier.dart';
+import 'package:energy_tracker/services/auth/providers/current_uid_provider.dart';
 import 'package:energy_tracker/ui/features/ft_devices/pg_add_appliance/notifier/add_appliance_state.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

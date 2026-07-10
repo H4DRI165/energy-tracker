@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/theme/app_colors.dart';
-import 'package:energy_tracker/ui/components/logger.dart';
+import 'package:energy_tracker/ui/components/utils/logger.dart';
 import 'package:energy_tracker/ui/ft_auth/ft_register/notifier/register_state.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';

@@ -4,10 +4,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/extensions/date_time_extension.dart';
 import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 import 'package:energy_tracker/models/reading_record.dart';
-import 'package:energy_tracker/services/bill_recalculation_service.dart';
-import 'package:energy_tracker/services/notifiers/auth_notifier.dart';
-import 'package:energy_tracker/services/notifiers/user_profile_notifier.dart';
-import 'package:energy_tracker/services/reading_chain_service.dart';
+import 'package:energy_tracker/services/auth/providers/current_uid_provider.dart';
+import 'package:energy_tracker/services/billing/bill_recalculation_service.dart';
+import 'package:energy_tracker/services/billing/reading_chain_service.dart';
+import 'package:energy_tracker/services/notifier/user_profile_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_add_meter_reading/notifier/add_meter_reading_state.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
