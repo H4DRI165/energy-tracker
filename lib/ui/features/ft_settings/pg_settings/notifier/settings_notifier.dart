@@ -95,19 +95,58 @@ class SettingsNotifier extends AsyncNotifier<SettingsPageState> {
     return ok;
   }
 
-  Future<void> toggleBudgetAlerts({required bool value}) async {
-    _updateState((s) => s.copyWith(budgetAlertsEnabled: value));
-    await _updateFirestore({'budgetAlertsEnabled': value});
+  Future<bool> toggleBudgetAlerts({required bool value}) async {
+    final previous = state.value;
+    _updateState(
+      (s) => s.copyWith(budgetAlertsEnabled: value, errorMessage: null),
+    );
+
+    final ok = await _updateFirestore({'budgetAlertsEnabled': value});
+
+    if (!ok && previous != null) {
+      state = AsyncData(
+        previous.copyWith(
+          errorMessage: 'Failed to update budget alerts. Please try again.',
+        ),
+      );
+    }
+    return ok;
   }
 
-  Future<void> toggleBillReminders({required bool value}) async {
-    _updateState((s) => s.copyWith(billRemindersEnabled: value));
-    await _updateFirestore({'billRemindersEnabled': value});
+  Future<bool> toggleBillReminders({required bool value}) async {
+    final previous = state.value;
+    _updateState(
+      (s) => s.copyWith(billRemindersEnabled: value, errorMessage: null),
+    );
+
+    final ok = await _updateFirestore({'billRemindersEnabled': value});
+
+    if (!ok && previous != null) {
+      state = AsyncData(
+        previous.copyWith(
+          errorMessage: 'Failed to update bill reminders. Please try again.',
+        ),
+      );
+    }
+    return ok;
   }
 
-  Future<void> toggleMonthlySummary({required bool value}) async {
-    _updateState((s) => s.copyWith(monthlySummaryEnabled: value));
-    await _updateFirestore({'monthlySummaryEnabled': value});
+  Future<bool> toggleMonthlySummary({required bool value}) async {
+    final previous = state.value;
+    _updateState(
+      (s) => s.copyWith(monthlySummaryEnabled: value, errorMessage: null),
+    );
+
+    final ok = await _updateFirestore({'monthlySummaryEnabled': value});
+
+    if (!ok && previous != null) {
+      state = AsyncData(
+        previous.copyWith(
+          errorMessage: 'Failed to update monthly summary. Please try again.',
+        ),
+      );
+    }
+    return ok;
   }
 
   Future<bool> signOut() async {

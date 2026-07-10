@@ -31,7 +31,6 @@ class DashboardPage extends ConsumerWidget {
                     const SliverToBoxAdapter(child: SizedBox.shrink()),
                 data: (state) => SliverToBoxAdapter(
                   child: _Header(
-                    state: state,
                     greeting: notifier.greeting,
                   ),
                 ),
@@ -79,17 +78,21 @@ class DashboardPage extends ConsumerWidget {
   }
 }
 
-class _Header extends StatelessWidget {
+class _Header extends ConsumerWidget {
   const _Header({
-    required this.state,
     required this.greeting,
   });
 
-  final DashboardPageState state;
   final String greeting;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(dashboardProvider).value;
+
+    if (state == null) {
+      return const SizedBox.shrink();
+    }
+
     final isAlert = state.isNearBudget || state.isOverBudget;
 
     return Padding(
@@ -155,26 +158,6 @@ class _Header extends StatelessWidget {
                   ),
                 ),
             ],
-          ),
-          SizedBox(width: 8.w),
-          Container(
-            width: AppDimensions.avatarSize,
-            height: AppDimensions.avatarSize,
-            decoration: const BoxDecoration(
-              gradient: AppColors.primaryGradient,
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                state.userName.isNotEmpty
-                    ? state.userName[0].toUpperCase()
-                    : '?',
-                style: AppTextStyles.bodySm.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: Colors.black,
-                ),
-              ),
-            ),
           ),
         ],
       ),

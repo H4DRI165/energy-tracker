@@ -20,7 +20,6 @@ class OnboardingPageState {
   static const double minBudget = 50;
   static const double maxBudget = 300;
 
-  // Estimated kWh range based on RM budget (domestic tariff approximation)
   String get estimatedKwh {
     final low = (monthlyBudget / 0.30).round();
     final high = (monthlyBudget / 0.25).round();
@@ -28,6 +27,8 @@ class OnboardingPageState {
   }
 
   double get progressValue => (currentStep + 1) / totalSteps;
+
+  bool get canGoBack => currentStep > 0;
 
   OnboardingPageState copyWith({
     int? currentStep,

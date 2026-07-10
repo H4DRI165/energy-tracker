@@ -174,6 +174,7 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
 
     return Expanded(
       child: SingleChildScrollView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         padding: EdgeInsets.symmetric(
           horizontal: AppDimensions.screenPaddingH,
           vertical: 4.h,

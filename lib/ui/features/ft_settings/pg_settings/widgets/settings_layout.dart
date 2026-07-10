@@ -1,20 +1,35 @@
 import 'package:energy_tracker/theme/theme.dart';
+import 'package:energy_tracker/ui/features/ft_settings/pg_settings/notifier/settings_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_settings/pg_settings/notifier/settings_state.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-class UserProfileCard extends StatelessWidget {
+class UserProfileCard extends ConsumerWidget {
   const UserProfileCard({
-    required this.state,
     required this.onTap,
     super.key,
   });
 
-  final SettingsPageState state;
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final (initials, fullName, email, tnbAccountNo) = ref.watch(
+      settingsProvider.select((async) {
+        final s = async.maybeWhen(
+          data: (state) => state,
+          orElse: () => null,
+        );
+        return (
+          s?.initials ?? '?',
+          s?.fullName ?? '',
+          s?.email ?? '',
+          s?.tnbAccountNo ?? '',
+        );
+      }),
+    );
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -23,7 +38,7 @@ class UserProfileCard extends StatelessWidget {
           gradient: const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0x2600D4AA), Color(0x140099FF)],
+            colors: [Color.fromARGB(37, 52, 59, 58), Color(0x140099FF)],
           ),
           borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
           border: Border.all(color: AppColors.borderAccent),
@@ -39,7 +54,7 @@ class UserProfileCard extends StatelessWidget {
               ),
               child: Center(
                 child: Text(
-                  state.initials,
+                  initials,
                   style: AppTextStyles.titleMd.copyWith(color: Colors.black),
                 ),
               ),
@@ -50,16 +65,16 @@ class UserProfileCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    state.fullName.isNotEmpty ? state.fullName : 'Loading...',
+                    fullName.isNotEmpty ? fullName : 'Loading...',
                     style: AppTextStyles.bodyLg.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   SizedBox(height: 2.h),
-                  Text(state.email, style: AppTextStyles.bodySm),
+                  Text(email, style: AppTextStyles.bodySm),
                   SizedBox(height: 2.h),
                   Text(
-                    'TNB: ${state.tnbAccountNo.isNotEmpty ? state.tnbAccountNo : '—'}',
+                    'TNB: ${tnbAccountNo.isNotEmpty ? tnbAccountNo : '—'}',
                     style: AppTextStyles.bodySm.copyWith(
                       color: AppColors.accent,
                     ),
@@ -170,11 +185,11 @@ class SettingsListTile extends StatelessWidget {
   }
 }
 
-class SettingsToggleTile extends StatelessWidget {
+class SettingsToggleTile extends ConsumerWidget {
   const SettingsToggleTile({
     required this.icon,
     required this.label,
-    required this.value,
+    required this.fieldSelector,
     required this.onChanged,
     this.isLast = false,
     super.key,
@@ -182,23 +197,25 @@ class SettingsToggleTile extends StatelessWidget {
 
   final String icon;
   final String label;
-  final bool value;
+  final bool Function(SettingsPageState) fieldSelector;
   final ValueChanged<bool> onChanged;
   final bool isLast;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final value = ref.watch(
+      settingsProvider.select((async) {
+        final s = async.maybeWhen(data: (value) => value, orElse: () => null);
+        return s != null && fieldSelector(s);
+      }),
+    );
+
     return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: 14.w,
-        vertical: 10.h,
-      ),
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
       decoration: BoxDecoration(
         border: isLast
             ? null
-            : const Border(
-                bottom: BorderSide(color: AppColors.border),
-              ),
+            : const Border(bottom: BorderSide(color: AppColors.border)),
       ),
       child: Row(
         children: [
@@ -211,9 +228,7 @@ class SettingsToggleTile extends StatelessWidget {
             ),
           ),
           SizedBox(width: 10.w),
-          Expanded(
-            child: Text(label, style: AppTextStyles.bodyMd),
-          ),
+          Expanded(child: Text(label, style: AppTextStyles.bodyMd)),
           Switch(
             value: value,
             onChanged: onChanged,
