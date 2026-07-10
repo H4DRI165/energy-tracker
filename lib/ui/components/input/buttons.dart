@@ -18,35 +18,39 @@ class GradientButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: (isEnabled && !isLoading) ? onTap : null,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: double.infinity,
-        height: 52.h,
-        decoration: BoxDecoration(
-          gradient: isEnabled ? AppColors.primaryGradient : null,
-          color: isEnabled ? null : AppColors.surface2,
-          borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-          boxShadow: isEnabled ? AppColors.btnPrimaryShadow : null,
-          border: isEnabled ? null : Border.all(color: AppColors.border),
-        ),
-        child: Center(
-          child: isLoading
-              ? SizedBox(
-                  width: 20.r,
-                  height: 20.r,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: isEnabled ? Colors.black : AppColors.text3,
+    return Semantics(
+      button: true,
+      enabled: isEnabled && !isLoading,
+      child: GestureDetector(
+        onTap: (isEnabled && !isLoading) ? onTap : null,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          width: double.infinity,
+          height: 52.h,
+          decoration: BoxDecoration(
+            gradient: isEnabled ? AppColors.primaryGradient : null,
+            color: isEnabled ? null : AppColors.surface2,
+            borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+            boxShadow: isEnabled ? AppColors.btnPrimaryShadow : null,
+            border: isEnabled ? null : Border.all(color: AppColors.border),
+          ),
+          child: Center(
+            child: isLoading
+                ? SizedBox(
+                    width: 20.r,
+                    height: 20.r,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: isEnabled ? Colors.black : AppColors.text3,
+                    ),
+                  )
+                : Text(
+                    label,
+                    style: AppTextStyles.button.copyWith(
+                      color: isEnabled ? Colors.black : AppColors.text3,
+                    ),
                   ),
-                )
-              : Text(
-                  label,
-                  style: AppTextStyles.button.copyWith(
-                    color: isEnabled ? Colors.black : AppColors.text3,
-                  ),
-                ),
+          ),
         ),
       ),
     );

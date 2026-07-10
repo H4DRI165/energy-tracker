@@ -41,7 +41,7 @@ class AppBottomNav extends StatelessWidget {
                 currentIndex: currentIndex,
                 onTap: onTap,
               ),
-              _NavFab(),
+              const _NavFab(),
               _NavItem(
                 icon: Icons.electrical_services_rounded,
                 label: 'Devices',
@@ -115,6 +115,8 @@ class _NavItem extends StatelessWidget {
 }
 
 class _NavFab extends StatelessWidget {
+  const _NavFab();
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
