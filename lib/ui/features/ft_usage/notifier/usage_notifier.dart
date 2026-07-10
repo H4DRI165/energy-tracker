@@ -154,10 +154,11 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
   List<BillRecord> _buildBillHistory(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
   ) {
+    final formatter = DateFormat('MMM yyyy');
+
     return docs.map((doc) {
       final data = doc.data();
       final date = (data['date'] as Timestamp).toDate();
-      final formatter = DateFormat('MMM yyyy');
 
       return BillRecord(
         id: doc.id,

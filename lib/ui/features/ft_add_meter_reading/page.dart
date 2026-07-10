@@ -189,11 +189,8 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
             Text('Notes (optional)', style: AppTextStyles.label),
             SizedBox(height: 6.h),
             _NotesField(controller: _notesController),
-            if (ref.watch(addReadingProvider.select((s) => s.errorMessage)) !=
-                null) ...[
-              SizedBox(height: 16.h),
-              const _ErrorBanner(),
-            ],
+
+            const _ErrorBanner(),
             SizedBox(height: 28.h),
             _SaveButton(
               isEdit: _isEdit,

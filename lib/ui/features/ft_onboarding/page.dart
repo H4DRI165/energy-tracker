@@ -102,7 +102,7 @@ class _OnboardingHeader extends ConsumerWidget {
       onboardingProvider.select((state) => state.progressValue),
     );
     final canGoBack = ref.watch(
-      onboardingProvider.select((state) => state.currentStep > 0),
+      onboardingProvider.select((state) => state.canGoBack),
     );
 
     return Padding(

@@ -16,6 +16,9 @@ class DevicesPage extends ConsumerWidget {
     final isLoading = ref.watch(
       devicesProvider.select((value) => value.isLoading),
     );
+    final errorMessage = ref.watch(
+      devicesProvider.select((value) => value.errorMessage),
+    );
     final isEmpty = ref.watch(
       devicesProvider.select((value) => value.appliances.isEmpty),
     );
@@ -25,11 +28,17 @@ class DevicesPage extends ConsumerWidget {
       child: SafeArea(
         child: Column(
           children: [
-            _Header(),
+            const _Header(),
             Expanded(
               child: isLoading
                   ? const Center(
                       child: CircularProgressIndicator(color: AppColors.accent),
+                    )
+                  : errorMessage != null
+                  ? ErrorView(
+                      message: errorMessage,
+                      onRetry: () =>
+                          ref.read(devicesProvider.notifier).refresh(),
                     )
                   : isEmpty
                   ? const _EmptyDevicesView()
@@ -43,6 +52,8 @@ class DevicesPage extends ConsumerWidget {
 }
 
 class _Header extends StatelessWidget {
+  const _Header();
+
   @override
   Widget build(BuildContext context) {
     return Padding(

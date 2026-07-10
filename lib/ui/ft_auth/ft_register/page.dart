@@ -37,12 +37,13 @@ class _RegisterPageState extends ConsumerState<RegisterPage>
       curve: Curves.easeOut,
     );
 
-    _slideIn = Tween<Offset>(
-      begin: const Offset(0, 0.04),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
+    _slideIn =
+        Tween<Offset>(
+          begin: const Offset(0, 0.04),
+          end: Offset.zero,
+        ).animate(
+          CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+        );
   }
 
   @override
@@ -247,8 +248,9 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
           errorText: state.passwordError,
           obscureText: state.obscurePassword,
           suffixIcon: IconButton(
-            onPressed:
-                ref.read(registerProvider.notifier).toggleObscurePassword,
+            onPressed: ref
+                .read(registerProvider.notifier)
+                .toggleObscurePassword,
             icon: Icon(
               state.obscurePassword
                   ? Icons.visibility_off_outlined
@@ -315,8 +317,9 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
                 Expanded(
                   child: Text(
                     state.authError!,
-                    style:
-                        AppTextStyles.bodySm.copyWith(color: AppColors.danger),
+                    style: AppTextStyles.bodySm.copyWith(
+                      color: AppColors.danger,
+                    ),
                   ),
                 ),
               ],
@@ -367,7 +370,8 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
 
     final state = ref.read(registerProvider);
 
-    final hasValidationErrors = state.fullNameError != null ||
+    final hasValidationErrors =
+        state.fullNameError != null ||
         state.emailError != null ||
         state.tnbAccountError != null ||
         state.passwordError != null ||

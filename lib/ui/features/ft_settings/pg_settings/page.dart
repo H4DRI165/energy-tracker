@@ -59,7 +59,9 @@ class SettingsPage extends ConsumerWidget {
                       confirmColor: AppColors.danger,
                     );
                     if (!confirmed) return;
-                    await notifier.signOut();
+
+                    final success = await notifier.signOut();
+                    if (!success) return;
                     if (context.mounted) context.go(AppRoutes.login);
                   },
                 ),

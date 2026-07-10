@@ -92,16 +92,20 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState> {
             .collection('users')
             .doc(uid)
             .collection('readings')
-            .where('date',
-                isGreaterThanOrEqualTo: Timestamp.fromDate(earliestNeeded),)
+            .where(
+              'date',
+              isGreaterThanOrEqualTo: Timestamp.fromDate(earliestNeeded),
+            )
             .orderBy('date', descending: false)
             .get(),
         _firestore
             .collection('users')
             .doc(uid)
             .collection('readings')
-            .where('date',
-                isGreaterThanOrEqualTo: Timestamp.fromDate(startOfLastMonth),)
+            .where(
+              'date',
+              isGreaterThanOrEqualTo: Timestamp.fromDate(startOfLastMonth),
+            )
             .where('date', isLessThan: Timestamp.fromDate(startOfMonth))
             .orderBy('date', descending: false)
             .get(),
@@ -216,21 +220,8 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState> {
     for (var i = 6; i >= 0; i--) {
       final day = now.subtract(Duration(days: i));
       final label = i == 0 ? 'Today' : dayLabels[day.weekday - 1];
-
-      // Find matching reading if exists
-      final match = docs.where((d) {
-        final ts = d.data()! as Map<String, dynamic>;
-        final date = (ts['date'] as Timestamp).toDate();
-        return date.year == day.year &&
-            date.month == day.month &&
-            date.day == day.day;
-      }).firstOrNull;
-
-      final kwh = match != null
-          ? ((match.data()! as Map<String, dynamic>)['kwh'] as num?)
-                    ?.toDouble() ??
-                0.0
-          : 0.0;
+      final key = '${day.year}-${day.month}-${day.day}';
+      final kwh = kwhByDate[key] ?? 0.0;
 
       result.add(DailyUsage(label: label, kwh: kwh, isToday: i == 0));
     }

@@ -56,6 +56,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   }
 
   Future<void> _handleSave() async {
+    final hadChanges = ref.read(editProfileProvider).value?.hasChanges ?? false;
     final success = await ref.read(editProfileProvider.notifier).save();
 
     if (!success) return;
@@ -86,7 +87,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
       ),
     );
 
-    if (message == 'No changes to save.') {
+    if (!hadChanges) {
       return;
     }
 
