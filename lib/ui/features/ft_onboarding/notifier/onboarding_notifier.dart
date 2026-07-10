@@ -39,8 +39,6 @@ class OnboardingNotifier extends Notifier<OnboardingPageState> {
     }
   }
 
-  bool get canGoBack => state.currentStep > 0;
-
   Future<bool> completeOnboarding() async {
     final uid = ref.read(currentUidProvider).value;
 

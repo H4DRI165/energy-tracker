@@ -18,89 +18,53 @@ class EditProfilePage extends ConsumerStatefulWidget {
 }
 
 class _EditProfilePageState extends ConsumerState<EditProfilePage> {
-  late final TextEditingController _fullNameController;
-  late final TextEditingController _tnbController;
-  bool _controllersPopulated = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _fullNameController = TextEditingController();
-    _tnbController = TextEditingController();
-
-    _fullNameController.addListener(
-      () => ref.read(editProfileProvider.notifier).setFullName(
-            _fullNameController.text,
-          ),
-    );
-    _tnbController.addListener(
-      () => ref
-          .read(editProfileProvider.notifier)
-          .setTnbAccountNo(_tnbController.text),
-    );
-  }
-
-  @override
-  void dispose() {
-    _fullNameController.dispose();
-    _tnbController.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(editProfileProvider);
-    ref.listen(editProfileProvider, (previous, next) {
-      if (!_controllersPopulated) {
-        next.whenData((s) {
-          if (!_controllersPopulated) {
-            _fullNameController.text = s.fullName;
-            _tnbController.text = s.tnbAccountNo;
-            _controllersPopulated = true;
-          }
-        });
-      }
-    });
-
     final hasChanges = state.value?.hasChanges ?? false;
 
-    return Scaffold(
-      backgroundColor: AppColors.bg,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _Header(
-              isSaving: state.value?.isSaving ?? false,
-              hasChanges: hasChanges,
-              onSave: _handleSave,
-            ),
-            Expanded(
-              child: state.when(
-                loading: () => const Center(
-                  child: CircularProgressIndicator(color: AppColors.accent),
-                ),
-                error: (_, __) => ErrorView(
-                  onRetry: () => ref.invalidate(editProfileProvider),
-                  message: 'Failed to load profile',
-                ),
-                data: (state) => _BodyContent(
-                  state: state,
-                  fullNameController: _fullNameController,
-                  tnbController: _tnbController,
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      behavior: HitTestBehavior.opaque,
+      child: Scaffold(
+        backgroundColor: AppColors.bg,
+        body: SafeArea(
+          child: Column(
+            children: [
+              _Header(
+                isSaving: state.value?.isSaving ?? false,
+                hasChanges: hasChanges,
+                onSave: _handleSave,
+              ),
+              Expanded(
+                child: state.when(
+                  loading: () => const Center(
+                    child: CircularProgressIndicator(color: AppColors.accent),
+                  ),
+                  error: (_, _) => ErrorView(
+                    onRetry: () => ref.invalidate(editProfileProvider),
+                    message: 'Failed to load profile',
+                  ),
+                  data: (state) => const _BodyContent(),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
   Future<void> _handleSave() async {
+    final hadChanges = ref.read(editProfileProvider).value?.hasChanges ?? false;
     final success = await ref.read(editProfileProvider.notifier).save();
 
     if (!success) return;
     if (!mounted) return;
+
+    final message =
+        ref.read(editProfileProvider).value?.successMessage ??
+        'Profile updated successfully';
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -112,7 +76,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
               size: 18.r,
             ),
             SizedBox(width: 10.w),
-            Text('Profile updated successfully', style: AppTextStyles.bodyMd),
+            Text(message, style: AppTextStyles.bodyMd),
           ],
         ),
         backgroundColor: AppColors.surface2,
@@ -123,8 +87,14 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
       ),
     );
 
-    await ref.read(dashboardProvider.notifier).refresh();
-    await ref.read(settingsProvider.notifier).refresh();
+    if (!hadChanges) {
+      return;
+    }
+
+    await Future.wait([
+      ref.read(dashboardProvider.notifier).refresh(),
+      ref.read(settingsProvider.notifier).refresh(),
+    ]);
 
     if (!mounted) return;
     context.pop();
@@ -213,20 +183,67 @@ class _Header extends StatelessWidget {
   }
 }
 
-class _BodyContent extends StatelessWidget {
-  const _BodyContent({
-    required this.state,
-    required this.fullNameController,
-    required this.tnbController,
-  });
+class _BodyContent extends ConsumerStatefulWidget {
+  const _BodyContent();
 
-  final EditProfilePageState state;
-  final TextEditingController fullNameController;
-  final TextEditingController tnbController;
+  @override
+  ConsumerState<_BodyContent> createState() => _BodyContentState();
+}
+
+class _BodyContentState extends ConsumerState<_BodyContent> {
+  late final TextEditingController _fullNameController;
+  late final TextEditingController _tnbController;
+  late final TextEditingController _emailController;
+  bool _controllersPopulated = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fullNameController = TextEditingController();
+    _tnbController = TextEditingController();
+    _emailController = TextEditingController();
+
+    _fullNameController.addListener(_onFullNameChanged);
+    _tnbController.addListener(_onTnbChanged);
+  }
+
+  void _onFullNameChanged() => ref
+      .read(editProfileProvider.notifier)
+      .setFullName(_fullNameController.text);
+
+  void _onTnbChanged() => ref
+      .read(editProfileProvider.notifier)
+      .setTnbAccountNo(_tnbController.text);
+
+  @override
+  void dispose() {
+    _fullNameController.dispose();
+    _tnbController.dispose();
+    _emailController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(editProfileProvider).value;
+
+    if (!_controllersPopulated && state != null) {
+      _fullNameController.removeListener(_onFullNameChanged);
+      _tnbController.removeListener(_onTnbChanged);
+      _fullNameController.text = state.fullName;
+      _tnbController.text = state.tnbAccountNo;
+      _emailController.text = state.email;
+      _fullNameController.addListener(_onFullNameChanged);
+      _tnbController.addListener(_onTnbChanged);
+      _controllersPopulated = true;
+    }
+
+    if (state == null) {
+      return const SizedBox.shrink();
+    }
+
     return SingleChildScrollView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       padding: EdgeInsets.symmetric(
         horizontal: AppDimensions.screenPaddingH,
         vertical: 8.h,
@@ -234,11 +251,11 @@ class _BodyContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _AvatarSection(initials: state.initials),
+          const _AvatarSection(),
           SizedBox(height: 32.h),
           AppTextField(
             label: 'Full Name',
-            controller: fullNameController,
+            controller: _fullNameController,
             hintText: 'Enter your full name',
             keyboardType: TextInputType.name,
             textCapitalization: TextCapitalization.words,
@@ -253,7 +270,7 @@ class _BodyContent extends StatelessWidget {
           SizedBox(height: 16.h),
           AppTextField(
             label: 'Email Address',
-            controller: TextEditingController(text: state.email),
+            controller: _emailController,
             hintText: 'Email address',
             keyboardType: TextInputType.emailAddress,
             prefixIcon: Icons.email_outlined,
@@ -283,7 +300,7 @@ class _BodyContent extends StatelessWidget {
           SizedBox(height: 16.h),
           AppTextField(
             label: 'TNB Account No.',
-            controller: tnbController,
+            controller: _tnbController,
             hintText: 'e.g. 1234567890',
             keyboardType: TextInputType.number,
             prefixIcon: Icons.receipt_long_outlined,
@@ -315,12 +332,17 @@ class _BodyContent extends StatelessWidget {
   }
 }
 
-class _AvatarSection extends StatelessWidget {
-  const _AvatarSection({required this.initials});
-  final String initials;
+class _AvatarSection extends ConsumerWidget {
+  const _AvatarSection();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(editProfileProvider).value;
+
+    if (state == null) {
+      return const SizedBox.shrink();
+    }
+
     return Center(
       child: Stack(
         children: [
@@ -340,7 +362,7 @@ class _AvatarSection extends StatelessWidget {
             ),
             child: Center(
               child: Text(
-                initials,
+                state.initials,
                 style: AppTextStyles.titleLg.copyWith(
                   color: Colors.black,
                   fontSize: 28.sp,

@@ -30,7 +30,6 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(onboardingProvider);
     final notifier = ref.read(onboardingProvider.notifier);
 
     ref.listen(onboardingProvider, (previous, next) {
@@ -49,8 +48,8 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop && notifier.canGoBack) {
-          notifier.goBack();
+        if (!didPop && ref.read(onboardingProvider).canGoBack) {
+          ref.read(onboardingProvider.notifier).goBack();
         }
       },
       child: Scaffold(
@@ -58,25 +57,19 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
         body: SafeArea(
           child: Column(
             children: [
-              _OnboardingHeader(
-                state: state,
-                onBack: notifier.canGoBack ? notifier.goBack : null,
-              ),
+              const _OnboardingHeader(),
               Expanded(
                 child: PageView(
                   controller: _pageController,
                   physics: const NeverScrollableScrollPhysics(),
                   children: [
                     _StepTariff(
-                      state: state,
                       notifier: notifier,
                     ),
                     _StepBudget(
-                      state: state,
                       notifier: notifier,
                     ),
                     _StepComplete(
-                      state: state,
                       notifier: notifier,
                       onStartTracking: _handleComplete,
                     ),
@@ -97,17 +90,21 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   }
 }
 
-class _OnboardingHeader extends StatelessWidget {
-  const _OnboardingHeader({
-    required this.state,
-    this.onBack,
-  });
-
-  final OnboardingPageState state;
-  final VoidCallback? onBack;
+class _OnboardingHeader extends ConsumerWidget {
+  const _OnboardingHeader();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final currentStep = ref.watch(
+      onboardingProvider.select((state) => state.currentStep),
+    );
+    final progressValue = ref.watch(
+      onboardingProvider.select((state) => state.progressValue),
+    );
+    final canGoBack = ref.watch(
+      onboardingProvider.select((state) => state.canGoBack),
+    );
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
       child: Column(
@@ -115,9 +112,9 @@ class _OnboardingHeader extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              if (onBack != null)
+              if (canGoBack)
                 GestureDetector(
-                  onTap: onBack,
+                  onTap: () => ref.read(onboardingProvider.notifier).goBack(),
                   child: Container(
                     width: 36.r,
                     height: 36.r,
@@ -136,7 +133,7 @@ class _OnboardingHeader extends StatelessWidget {
               else
                 SizedBox(width: 36.w),
               Text(
-                '${state.currentStep + 1} of ${OnboardingPageState.totalSteps}',
+                '${currentStep + 1} of ${OnboardingPageState.totalSteps}',
                 style: AppTextStyles.bodyMd.copyWith(color: AppColors.text2),
               ),
               SizedBox(width: 36.w),
@@ -146,7 +143,7 @@ class _OnboardingHeader extends StatelessWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(2),
             child: LinearProgressIndicator(
-              value: state.progressValue,
+              value: progressValue,
               backgroundColor: AppColors.surface3,
               valueColor: const AlwaysStoppedAnimation<Color>(AppColors.accent),
               minHeight: 3,
@@ -159,17 +156,15 @@ class _OnboardingHeader extends StatelessWidget {
   }
 }
 
-class _StepTariff extends StatelessWidget {
+class _StepTariff extends ConsumerWidget {
   const _StepTariff({
-    required this.state,
     required this.notifier,
   });
 
-  final OnboardingPageState state;
   final OnboardingNotifier notifier;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return SingleChildScrollView(
       padding: EdgeInsets.symmetric(horizontal: 20.w),
       child: Column(
@@ -192,14 +187,9 @@ class _StepTariff extends StatelessWidget {
           ),
           SizedBox(height: 24.h),
           ...TariffType.values.map((tariff) {
-            final isSelected = state.selectedTariff == tariff;
             return Padding(
               padding: EdgeInsets.only(bottom: 10.h),
-              child: _TariffOption(
-                tariff: tariff,
-                isSelected: isSelected,
-                onTap: () => notifier.selectTariff(tariff),
-              ),
+              child: _TariffOption(tariff: tariff, notifier: notifier),
             );
           }),
           SizedBox(height: 28.h),
@@ -215,21 +205,23 @@ class _StepTariff extends StatelessWidget {
   }
 }
 
-class _TariffOption extends StatelessWidget {
+class _TariffOption extends ConsumerWidget {
   const _TariffOption({
     required this.tariff,
-    required this.isSelected,
-    required this.onTap,
+    required this.notifier,
   });
 
   final TariffType tariff;
-  final bool isSelected;
-  final VoidCallback onTap;
+  final OnboardingNotifier notifier;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isSelected = ref.watch(
+      onboardingProvider.select((state) => state.selectedTariff == tariff),
+    );
+
     return GestureDetector(
-      onTap: onTap,
+      onTap: () => notifier.selectTariff(tariff),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: EdgeInsets.all(16.r),
@@ -277,11 +269,7 @@ class _TariffOption extends StatelessWidget {
                 ),
               ),
               child: isSelected
-                  ? Icon(
-                      Icons.check_rounded,
-                      size: 13.r,
-                      color: Colors.black,
-                    )
+                  ? Icon(Icons.check_rounded, size: 13.r, color: Colors.black)
                   : null,
             ),
           ],
@@ -291,17 +279,24 @@ class _TariffOption extends StatelessWidget {
   }
 }
 
-class _StepBudget extends StatelessWidget {
+class _StepBudget extends ConsumerWidget {
   const _StepBudget({
-    required this.state,
     required this.notifier,
   });
 
-  final OnboardingPageState state;
   final OnboardingNotifier notifier;
 
+  static const _presets = [50.0, 100.0, 150.0, 200.0, 250.0, 300.0];
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final monthlyBudget = ref.watch(
+      onboardingProvider.select((state) => state.monthlyBudget),
+    );
+    final estimatedKwh = ref.watch(
+      onboardingProvider.select((state) => state.estimatedKwh),
+    );
+
     return SingleChildScrollView(
       padding: EdgeInsets.symmetric(horizontal: 20.w),
       child: Column(
@@ -343,14 +338,14 @@ class _StepBudget extends StatelessWidget {
                 ),
                 SizedBox(height: 4.h),
                 Text(
-                  'RM ${state.monthlyBudget.toStringAsFixed(0)}',
+                  'RM ${monthlyBudget.toStringAsFixed(0)}',
                   style: AppTextStyles.displayLg.copyWith(
                     color: AppColors.accent,
                   ),
                 ),
                 SizedBox(height: 4.h),
                 Text(
-                  state.estimatedKwh,
+                  estimatedKwh,
                   style: AppTextStyles.bodySm,
                 ),
               ],
@@ -368,7 +363,7 @@ class _StepBudget extends StatelessWidget {
               overlayShape: const RoundSliderOverlayShape(overlayRadius: 18),
             ),
             child: Slider(
-              value: state.monthlyBudget,
+              value: monthlyBudget,
               min: OnboardingPageState.minBudget,
               max: OnboardingPageState.maxBudget,
               divisions: 50, // RM 5 increments
@@ -390,6 +385,39 @@ class _StepBudget extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+          Text(
+            'Quick Select',
+            style: AppTextStyles.caption.copyWith(fontWeight: FontWeight.w600),
+          ),
+          SizedBox(height: 8.h),
+          Wrap(
+            spacing: 8.w,
+            children: _presets.map((preset) {
+              final isSelected = monthlyBudget == preset;
+              return FilterChip(
+                label: Text('RM ${preset.toInt()}'),
+                selected: isSelected,
+                onSelected: (_) => notifier.setBudget(preset),
+                selectedColor: AppColors.accent.withValues(alpha: 0.12),
+                checkmarkColor: AppColors.accent,
+                side: BorderSide(
+                  color: isSelected
+                      ? AppColors.accent.withValues(alpha: 0.3)
+                      : AppColors.border,
+                ),
+                labelStyle: AppTextStyles.caption.copyWith(
+                  color: isSelected ? AppColors.accent : AppColors.text2,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+                ),
+                backgroundColor: AppColors.surface2,
+                showCheckmark: false,
+                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+              );
+            }).toList(),
           ),
           SizedBox(height: 20.h),
           Container(
@@ -437,19 +465,24 @@ class _StepBudget extends StatelessWidget {
   }
 }
 
-class _StepComplete extends StatelessWidget {
+class _StepComplete extends ConsumerWidget {
   const _StepComplete({
-    required this.state,
     required this.notifier,
     required this.onStartTracking,
   });
 
-  final OnboardingPageState state;
   final OnboardingNotifier notifier;
   final VoidCallback onStartTracking;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selectedTariff = ref.watch(
+      onboardingProvider.select((state) => state.selectedTariff),
+    );
+    final monthlyBudget = ref.watch(
+      onboardingProvider.select((state) => state.monthlyBudget),
+    );
+
     return SingleChildScrollView(
       padding: EdgeInsets.symmetric(horizontal: 20.w),
       child: Column(
@@ -474,13 +507,13 @@ class _StepComplete extends StatelessWidget {
           _SummaryItem(
             icon: '✅',
             title: 'Tariff configured',
-            subtitle: state.selectedTariff.label,
+            subtitle: selectedTariff.label,
           ),
           SizedBox(height: 10.h),
           _SummaryItem(
             icon: '✅',
             title: 'Budget set',
-            subtitle: 'RM ${state.monthlyBudget.toStringAsFixed(0)} / month',
+            subtitle: 'RM ${monthlyBudget.toStringAsFixed(0)} / month',
           ),
           SizedBox(height: 10.h),
           const _SummaryItem(
@@ -488,42 +521,9 @@ class _StepComplete extends StatelessWidget {
             title: 'Alerts enabled',
             subtitle: '80% & 100% notifications',
           ),
-          if (state.errorMessage != null) ...[
-            SizedBox(height: 16.h),
-            Container(
-              padding: EdgeInsets.all(12.r),
-              decoration: BoxDecoration(
-                color: AppColors.danger.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-                border: Border.all(
-                  color: AppColors.danger.withValues(alpha: 0.3),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.error_outline,
-                    color: AppColors.danger,
-                    size: 16.r,
-                  ),
-                  SizedBox(width: 8.w),
-                  Expanded(
-                    child: Text(
-                      state.errorMessage!,
-                      style: AppTextStyles.bodySm
-                          .copyWith(color: AppColors.danger),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+          const _CompleteErrorBanner(),
           SizedBox(height: 28.h),
-          GradientButton(
-            label: 'Start Tracking ⚡',
-            isLoading: state.isLoading,
-            onTap: onStartTracking,
-          ),
+          _CompleteButton(onStartTracking: onStartTracking),
           SizedBox(height: 24.h),
         ],
       ),
@@ -573,8 +573,9 @@ class _SummaryItem extends StatelessWidget {
             children: [
               Text(
                 title,
-                style:
-                    AppTextStyles.bodyMd.copyWith(fontWeight: FontWeight.w600),
+                style: AppTextStyles.bodyMd.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               SizedBox(height: 2.h),
               Text(subtitle, style: AppTextStyles.bodySm),
@@ -582,6 +583,62 @@ class _SummaryItem extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _CompleteErrorBanner extends ConsumerWidget {
+  const _CompleteErrorBanner();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final errorMessage = ref.watch(
+      onboardingProvider.select((state) => state.errorMessage),
+    );
+
+    if (errorMessage == null) return const SizedBox.shrink();
+
+    return Padding(
+      padding: EdgeInsets.only(top: 16.h),
+      child: Container(
+        padding: EdgeInsets.all(12.r),
+        decoration: BoxDecoration(
+          color: AppColors.danger.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+          border: Border.all(color: AppColors.danger.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.error_outline, color: AppColors.danger, size: 16.r),
+            SizedBox(width: 8.w),
+            Expanded(
+              child: Text(
+                errorMessage,
+                style: AppTextStyles.bodySm.copyWith(color: AppColors.danger),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CompleteButton extends ConsumerWidget {
+  const _CompleteButton({required this.onStartTracking});
+
+  final VoidCallback onStartTracking;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isLoading = ref.watch(
+      onboardingProvider.select((state) => state.isLoading),
+    );
+
+    return GradientButton(
+      label: 'Start Tracking ⚡',
+      isLoading: isLoading,
+      onTap: onStartTracking,
     );
   }
 }

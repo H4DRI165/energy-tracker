@@ -11,12 +11,12 @@ class DashboardPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final asyncState = ref.watch(dashboardProvider);
+    final state = ref.watch(dashboardProvider);
     final notifier = ref.read(dashboardProvider.notifier);
 
-    return Scaffold(
-      backgroundColor: AppColors.bg,
-      body: SafeArea(
+    return ColoredBox(
+      color: AppColors.bg,
+      child: SafeArea(
         child: RefreshIndicator(
           color: AppColors.accent,
           backgroundColor: AppColors.surface2,
@@ -24,19 +24,18 @@ class DashboardPage extends ConsumerWidget {
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
-              asyncState.when(
+              state.when(
                 loading: () =>
                     const SliverToBoxAdapter(child: SizedBox.shrink()),
                 error: (e, _) =>
                     const SliverToBoxAdapter(child: SizedBox.shrink()),
                 data: (state) => SliverToBoxAdapter(
                   child: _Header(
-                    state: state,
                     greeting: notifier.greeting,
                   ),
                 ),
               ),
-              asyncState.when(
+              state.when(
                 loading: () => const SliverFillRemaining(
                   child: Center(
                     child: CircularProgressIndicator(color: AppColors.accent),
@@ -69,28 +68,31 @@ class DashboardPage extends ConsumerWidget {
                     ),
                   ),
                 ),
-                data: (state) => _BodyContent(state: state, notifier: notifier),
+                data: (state) => const _BodyContent(),
               ),
             ],
           ),
         ),
       ),
-      bottomNavigationBar: const AppBottomNav(currentIndex: 0),
     );
   }
 }
 
-class _Header extends StatelessWidget {
+class _Header extends ConsumerWidget {
   const _Header({
-    required this.state,
     required this.greeting,
   });
 
-  final DashboardPageState state;
   final String greeting;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(dashboardProvider).value;
+
+    if (state == null) {
+      return const SizedBox.shrink();
+    }
+
     final isAlert = state.isNearBudget || state.isOverBudget;
 
     return Padding(
@@ -157,87 +159,33 @@ class _Header extends StatelessWidget {
                 ),
             ],
           ),
-          SizedBox(width: 8.w),
-          Container(
-            width: AppDimensions.avatarSize,
-            height: AppDimensions.avatarSize,
-            decoration: const BoxDecoration(
-              gradient: AppColors.primaryGradient,
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                state.userName.isNotEmpty
-                    ? state.userName[0].toUpperCase()
-                    : '?',
-                style: AppTextStyles.bodySm.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: Colors.black,
-                ),
-              ),
-            ),
-          ),
         ],
       ),
     );
   }
 }
 
-class _BodyContent extends StatelessWidget {
-  const _BodyContent({required this.state, required this.notifier});
-
-  final DashboardPageState state;
-  final DashboardNotifier notifier;
+class _BodyContent extends ConsumerWidget {
+  const _BodyContent();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(dashboardProvider).value;
+    final notifier = ref.read(dashboardProvider.notifier);
+
+    if (state == null) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+
+    final isAlert = state.isNearBudget || state.isOverBudget;
+
     return SliverMainAxisGroup(
       slivers: [
         if (state.errorMessage != null)
           SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: AppDimensions.screenPaddingH,
-                vertical: 8.h,
-              ),
-              child: Material(
-                color: AppColors.danger.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 12.w,
-                    vertical: 10.h,
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.warning_amber_rounded,
-                        color: AppColors.danger,
-                        size: 18.r,
-                      ),
-                      SizedBox(width: 8.w),
-                      Expanded(
-                        child: Text(
-                          state.errorMessage!,
-                          style: AppTextStyles.bodySm.copyWith(
-                            color: AppColors.danger,
-                          ),
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: notifier.refresh,
-                        child: Text(
-                          'Retry',
-                          style: AppTextStyles.bodySm.copyWith(
-                            color: AppColors.danger,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+            child: ErrorBanner(
+              onRetry: notifier.refresh,
+              message: '${state.errorMessage}',
             ),
           ),
         SliverPadding(
@@ -247,30 +195,17 @@ class _BodyContent extends StatelessWidget {
           sliver: SliverList(
             delegate: SliverChildListDelegate(
               [
-                if (state.isNearBudget || state.isOverBudget) ...[
-                  BudgetAlertBanner(state: state),
+                if (isAlert) ...[
+                  const BudgetAlertBanner(),
                   SizedBox(height: 14.h),
                 ],
-                BillSummaryCard(state: state),
+                const BillSummaryCard(),
                 SizedBox(height: 14.h),
-                StatCardsRow(state: state),
+                const StatCardsRow(),
                 SizedBox(height: 14.h),
-                UsageBarChartCard(
-                  title: '7-Day Usage',
-                  subtitle: 'kWh/day',
-                  chartHeight: 80, // compact for dashboard
-                  entries: state.weeklyUsage
-                      .map(
-                        (day) => BarChartEntry(
-                          label: day.label,
-                          kwh: day.kwh,
-                          isHighlighted: day.isToday,
-                        ),
-                      )
-                      .toList(),
-                ),
+                const WeeklyUsageChartCard(),
                 SizedBox(height: 14.h),
-                if (state.isNearBudget || state.isOverBudget) ...[
+                if (isAlert) ...[
                   const SavingTipsCard(),
                   SizedBox(height: 14.h),
                 ],
@@ -284,6 +219,60 @@ class _BodyContent extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class ErrorBanner extends StatelessWidget {
+  const ErrorBanner({
+    required this.message,
+    required this.onRetry,
+    super.key,
+  });
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: AppDimensions.screenPaddingH,
+        vertical: 8.h,
+      ),
+      child: Material(
+        color: AppColors.danger.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+          child: Row(
+            children: [
+              Icon(
+                Icons.warning_amber_rounded,
+                color: AppColors.danger,
+                size: 18.r,
+              ),
+              SizedBox(width: 8.w),
+              Expanded(
+                child: Text(
+                  message,
+                  style: AppTextStyles.bodySm.copyWith(color: AppColors.danger),
+                ),
+              ),
+              GestureDetector(
+                onTap: onRetry,
+                child: Text(
+                  'Retry',
+                  style: AppTextStyles.bodySm.copyWith(
+                    color: AppColors.danger,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

@@ -80,53 +80,64 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState> {
       final daysLeft = DateUtils.getDaysInMonth(now.year, now.month) - now.day;
 
       final startOfMonth = DateTime(now.year, now.month);
-      final readingsSnap = await _firestore
-          .collection('users')
-          .doc(uid)
-          .collection('readings')
-          .where(
-            'date',
-            isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth),
-          )
-          .orderBy('date', descending: false)
-          .get();
+      final startOf7DayWindow = DateTime(now.year, now.month, now.day - 6);
+      final earliestNeeded = startOf7DayWindow.isBefore(startOfMonth)
+          ? startOf7DayWindow
+          : startOfMonth;
 
       final startOfLastMonth = DateTime(now.year, now.month - 1);
-      final lastMonthSnap = await _firestore
-          .collection('users')
-          .doc(uid)
-          .collection('readings')
-          .where(
-            'date',
-            isGreaterThanOrEqualTo: Timestamp.fromDate(startOfLastMonth),
-          )
-          .where('date', isLessThan: Timestamp.fromDate(startOfMonth))
-          .orderBy('date', descending: false)
-          .get();
+
+      final results = await Future.wait([
+        _firestore
+            .collection('users')
+            .doc(uid)
+            .collection('readings')
+            .where(
+              'date',
+              isGreaterThanOrEqualTo: Timestamp.fromDate(earliestNeeded),
+            )
+            .orderBy('date', descending: false)
+            .get(),
+        _firestore
+            .collection('users')
+            .doc(uid)
+            .collection('readings')
+            .where(
+              'date',
+              isGreaterThanOrEqualTo: Timestamp.fromDate(startOfLastMonth),
+            )
+            .where('date', isLessThan: Timestamp.fromDate(startOfMonth))
+            .orderBy('date', descending: false)
+            .get(),
+      ]);
+
+      final combinedSnap = results[0];
+      final lastMonthSnap = results[1];
+
+      // Filter for current-month-only (kwhUsed & tariffType detection)
+      final currentMonthDocs = combinedSnap.docs.where((d) {
+        final date = (d.data()['date'] as Timestamp).toDate();
+        return !date.isBefore(startOfMonth);
+      }).toList();
 
       double kwhUsed = 0;
-      for (final doc in readingsSnap.docs) {
-        final kwh = (doc.data()['kwh'] as num?)?.toDouble() ?? 0;
-        kwhUsed += kwh;
+      for (final doc in currentMonthDocs) {
+        kwhUsed += (doc.data()['kwh'] as num?)?.toDouble() ?? 0;
       }
 
       double lastMonthKwh = 0;
       for (final doc in lastMonthSnap.docs) {
-        final kwh = (doc.data()['kwh'] as num?)?.toDouble() ?? 0;
-        lastMonthKwh += kwh;
+        lastMonthKwh += (doc.data()['kwh'] as num?)?.toDouble() ?? 0;
       }
 
       final percentVsLast = lastMonthKwh > 0
           ? ((kwhUsed - lastMonthKwh) / lastMonthKwh) * 100
           : 0.0;
 
-      // Use whichever tariff the current month's readings were actually
-      // recorded under. Falls back to the live profile tariff when there's
-      // no data yet (new month, no readings saved).
-      final tariffType = readingsSnap.docs.isEmpty
+      final tariffType = currentMonthDocs.isEmpty
           ? liveTariffType
           : TariffTypeX.fromValue(
-              readingsSnap.docs.last.data()['tariffType'] as String? ??
+              currentMonthDocs.last.data()['tariffType'] as String? ??
                   TariffType.domestic.value,
             );
 
@@ -157,20 +168,7 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState> {
       final projectedKwh =
           dailyAvg * DateUtils.getDaysInMonth(now.year, now.month);
       final projectedBill = TariffRates.calculate(projectedKwh, tariffType);
-
-      final startOf7DayWindow = DateTime(now.year, now.month, now.day - 6);
-      final weekSnap = await _firestore
-          .collection('users')
-          .doc(uid)
-          .collection('readings')
-          .where(
-            'date',
-            isGreaterThanOrEqualTo: Timestamp.fromDate(startOf7DayWindow),
-          )
-          .orderBy('date', descending: true)
-          .get();
-
-      final weeklyUsage = _buildWeeklyUsage(weekSnap.docs, now);
+      final weeklyUsage = _buildWeeklyUsage(combinedSnap.docs, now);
 
       return DashboardPageState(
         monthLabel: monthLabel,
@@ -208,27 +206,22 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState> {
   ) {
     const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-    // Fill last 7 days with whatever data we have, zeroing missing days
-    final result = <DailyUsage>[];
+    // Index once: key = "yyyy-MM-dd", value = kwh
+    final kwhByDate = <String, double>{};
+    for (final doc in docs) {
+      final data = doc.data()! as Map<String, dynamic>;
+      final date = (data['date'] as Timestamp).toDate();
+      final key = '${date.year}-${date.month}-${date.day}';
+      final kwh = (data['kwh'] as num?)?.toDouble() ?? 0.0;
+      kwhByDate[key] = (kwhByDate[key] ?? 0) + kwh; // sum if > 1 reading/day
+    }
 
+    final result = <DailyUsage>[];
     for (var i = 6; i >= 0; i--) {
       final day = now.subtract(Duration(days: i));
       final label = i == 0 ? 'Today' : dayLabels[day.weekday - 1];
-
-      // Find matching reading if exists
-      final match = docs.where((d) {
-        final ts = d.data()! as Map<String, dynamic>;
-        final date = (ts['date'] as Timestamp).toDate();
-        return date.year == day.year &&
-            date.month == day.month &&
-            date.day == day.day;
-      }).firstOrNull;
-
-      final kwh = match != null
-          ? ((match.data()! as Map<String, dynamic>)['kwh'] as num?)
-                    ?.toDouble() ??
-                0.0
-          : 0.0;
+      final key = '${day.year}-${day.month}-${day.day}';
+      final kwh = kwhByDate[key] ?? 0.0;
 
       result.add(DailyUsage(label: label, kwh: kwh, isToday: i == 0));
     }

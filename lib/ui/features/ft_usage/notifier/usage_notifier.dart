@@ -21,7 +21,6 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
     final uid = ref.watch(currentUidProvider).value;
     if (uid == null) return const UsageState();
 
-    ref.watch(tariffTypeProvider);
     return _fetchUsageData(uid);
   }
 
@@ -44,24 +43,27 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
       // Fetch readings for the past 12 months
       final startOf12MonthsAgo = DateTime(now.year - 1, now.month);
 
-      final readingsSnap = await _firestore
-          .collection('users')
-          .doc(uid)
-          .collection('readings')
-          .where(
-            'date',
-            isGreaterThanOrEqualTo: Timestamp.fromDate(startOf12MonthsAgo),
-          )
-          .orderBy('date', descending: false)
-          .get();
-
-      final billsSnap = await _firestore
-          .collection('users')
-          .doc(uid)
-          .collection('bills')
-          .orderBy('date', descending: true)
-          .limit(12)
-          .get();
+      final results = await Future.wait([
+        _firestore
+            .collection('users')
+            .doc(uid)
+            .collection('readings')
+            .where(
+              'date',
+              isGreaterThanOrEqualTo: Timestamp.fromDate(startOf12MonthsAgo),
+            )
+            .orderBy('date', descending: false)
+            .get(),
+        _firestore
+            .collection('users')
+            .doc(uid)
+            .collection('bills')
+            .orderBy('date', descending: true)
+            .limit(12)
+            .get(),
+      ]);
+      final readingsSnap = results[0];
+      final billsSnap = results[1];
 
       final billHistory = _buildBillHistory(billsSnap.docs);
       // Current month data
@@ -112,11 +114,13 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
   ) {
     final monthlyKwh = <String, double>{};
     final monthlyTariff = <String, TariffType>{};
+    final formatter = DateFormat('MMM-yyyy');
 
     for (final doc in docs) {
       final data = doc.data()! as Map<String, dynamic>;
       final date = (data['date'] as Timestamp).toDate();
-      final key = DateFormat('MMM-yyyy').format(date);
+
+      final key = formatter.format(date);
       final kwh = (data['kwh'] as num?)?.toDouble() ?? 0;
       monthlyKwh[key] = (monthlyKwh[key] ?? 0) + kwh;
 
@@ -130,7 +134,7 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
     final result = <MonthlyUsage>[];
     for (var i = 11; i >= 0; i--) {
       final month = DateTime(now.year, now.month - i);
-      final key = DateFormat('MMM-yyyy').format(month);
+      final key = formatter.format(month);
       final kwh = monthlyKwh[key] ?? 0;
       final tariffType = monthlyTariff[key] ?? TariffType.domestic;
 
@@ -150,12 +154,15 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
   List<BillRecord> _buildBillHistory(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
   ) {
+    final formatter = DateFormat('MMM yyyy');
+
     return docs.map((doc) {
       final data = doc.data();
       final date = (data['date'] as Timestamp).toDate();
+
       return BillRecord(
         id: doc.id,
-        monthYear: DateFormat('MMM yyyy').format(date),
+        monthYear: formatter.format(date),
         kwh: (data['kwh'] as num?)?.toDouble() ?? 0,
         amount: (data['amount'] as num?)?.toDouble() ?? 0,
         isPaid: data['isPaid'] as bool? ?? false,
@@ -164,7 +171,7 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
           data['tariffType'] as String? ?? TariffType.domestic.value,
         ),
       );
-    }).toList()..sort((a, b) => b.date.compareTo(a.date));
+    }).toList();
   }
 
   Future<void> deleteMonth(BillRecord bill) async {

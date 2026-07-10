@@ -1,6 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 import 'package:energy_tracker/models/appliance.dart';
+import 'package:flutter/material.dart';
 
+@immutable
 class DevicesPageState {
   const DevicesPageState({
     this.isLoading = true,
@@ -14,10 +17,10 @@ class DevicesPageState {
   static const Object _unset = Object();
 
   double get totalMonthlyKwh =>
-      appliances.fold(0, (sum, a) => sum + a.monthlyKwh);
+      appliances.fold(0, (total, a) => total + a.monthlyKwh);
 
   double totalMonthlyCost(TariffType tariffType) =>
-      appliances.fold(0, (sum, a) => sum + a.monthlyCost(tariffType));
+      appliances.fold(0, (total, a) => total + a.monthlyCost(tariffType));
 
   DevicesPageState copyWith({
     bool? isLoading,
@@ -32,4 +35,20 @@ class DevicesPageState {
           : errorMessage as String?,
     );
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is DevicesPageState &&
+        other.isLoading == isLoading &&
+        other.errorMessage == errorMessage &&
+        const ListEquality<Appliance>().equals(other.appliances, appliances);
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    isLoading,
+    errorMessage,
+    const ListEquality<Appliance>().hash(appliances),
+  );
 }

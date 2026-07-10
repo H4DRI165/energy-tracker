@@ -147,7 +147,7 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
     final uid = ref.read(currentUidProvider).value;
     if (uid == null) return;
 
-    state = state.copyWith(isUpdatingPaid: true);
+    state = state.copyWith(isUpdatingPaid: true, errorMessage: null);
     final newIsPaid = !state.isPaid;
 
     try {
@@ -189,12 +189,17 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
     // update widget tree update on Dismissible's
     state = state.copyWith(
       readings: state.readings.where((r) => r.id != reading.id).toList(),
+      errorMessage: null,
     );
 
     var committed = false;
     try {
-      final previous = await _chainService.findPrevious(uid, reading.date);
-      final next = await _chainService.findNext(uid, reading.date);
+      final results = await Future.wait([
+        _chainService.findPrevious(uid, reading.date),
+        _chainService.findNext(uid, reading.date),
+      ]);
+      final previous = results[0];
+      final next = results[1];
 
       final batch = _firestore.batch()
         ..delete(
@@ -240,9 +245,10 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
       }
 
       return true;
-    } on FirebaseException catch (e, st) {
+    } on Exception catch (e, st) {
       if (!committed) {
         state = previousState;
+        AppLogger.error('Failed to delete reading ${reading.id}', e, st);
         return false;
       }
 

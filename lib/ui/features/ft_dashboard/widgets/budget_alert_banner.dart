@@ -1,18 +1,22 @@
 import 'package:energy_tracker/theme/theme.dart';
-import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_state.dart';
+import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_notifier.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-class BudgetAlertBanner extends StatelessWidget {
+class BudgetAlertBanner extends ConsumerWidget {
   const BudgetAlertBanner({
-    required this.state,
     super.key,
   });
 
-  final DashboardPageState state;
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(
+      dashboardProvider.select((s) => s.value),
+    );
+
+    if (state == null) return const SizedBox.shrink();
+
     final isExceeded = state.isOverBudget;
     final color = isExceeded ? AppColors.danger : AppColors.warn;
     final bgColor = color.withValues(alpha: 0.10);

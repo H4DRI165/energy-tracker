@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
 class UsagePage extends ConsumerWidget {
   const UsagePage({super.key});
@@ -14,9 +13,9 @@ class UsagePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(usageProvider);
 
-    return Scaffold(
-      backgroundColor: AppColors.bg,
-      body: SafeArea(
+    return ColoredBox(
+      color: AppColors.bg,
+      child: SafeArea(
         child: Column(
           children: [
             _Header(),
@@ -29,16 +28,16 @@ class UsagePage extends ConsumerWidget {
                   onRetry: () => ref.read(usageProvider.notifier).refresh(),
                   message: 'Failed to load usage data',
                 ),
-                data: (state) => state.monthlyData.every((m) => m.kwh == 0) &&
+                data: (state) =>
+                    state.monthlyData.every((m) => m.kwh == 0) &&
                         state.billHistory.isEmpty
                     ? _EmptyUsageView()
-                    : _BodyContent(state: state),
+                    : const _BodyContent(),
               ),
             ),
           ],
         ),
       ),
-      bottomNavigationBar: const AppBottomNav(currentIndex: 1),
     );
   }
 }
@@ -81,17 +80,18 @@ class _Header extends StatelessWidget {
 }
 
 class _BodyContent extends ConsumerWidget {
-  const _BodyContent({required this.state});
-  final UsageState state;
-
-  String _currentMonthAbbr() => DateFormat('MMM').format(DateTime.now());
-
+  const _BodyContent();
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(usageProvider).value;
+    final notifier = ref.read(usageProvider.notifier);
+
+    if (state == null) return const SizedBox.shrink();
+
     return RefreshIndicator(
       color: AppColors.accent,
       backgroundColor: AppColors.surface2,
-      onRefresh: () => ref.read(usageProvider.notifier).refresh(),
+      onRefresh: notifier.refresh,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.symmetric(
@@ -103,8 +103,7 @@ class _BodyContent extends ConsumerWidget {
           children: [
             UsageFilterTabs(
               selected: state.filter,
-              onChanged: (filter) =>
-                  ref.read(usageProvider.notifier).setFilter(filter),
+              onChanged: notifier.setFilter,
             ),
             SizedBox(height: 16.h),
             UsageSummaryRow(
@@ -114,20 +113,7 @@ class _BodyContent extends ConsumerWidget {
               tariffType: state.currentTariffType,
             ),
             SizedBox(height: 14.h),
-            UsageBarChartCard(
-              title: 'kWh Usage',
-              subtitle: 'kWh',
-              entries: state.chartData
-                  .map(
-                    (month) => BarChartEntry(
-                      label: month.month,
-                      kwh: month.kwh,
-                      isHighlighted: month.year == DateTime.now().year &&
-                          month.month == _currentMonthAbbr(),
-                    ),
-                  )
-                  .toList(),
-            ),
+            const MonthlyUsageChartCard(),
             SizedBox(height: 14.h),
             BillBreakdownCard(
               items: state.chargeBreakdown,

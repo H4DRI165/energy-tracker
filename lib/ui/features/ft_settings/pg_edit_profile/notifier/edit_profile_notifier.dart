@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/services/notifiers/auth_notifier.dart';
+import 'package:energy_tracker/ui/components/logger.dart';
 import 'package:energy_tracker/ui/features/ft_settings/pg_edit_profile/notifier/edit_profile_state.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -107,7 +108,7 @@ class EditProfileNotifier extends AsyncNotifier<EditProfilePageState> {
     }
 
     if (current.tnbAccountNo.trim().isNotEmpty &&
-        current.tnbAccountNo.trim().length < 12) {
+        current.tnbAccountNo.trim().length != 12) {
       state = state.whenData(
         (s) => s.copyWith(
           tnbAccountError: 'TNB Account Number must be exactly 12 digits',
@@ -139,7 +140,12 @@ class EditProfileNotifier extends AsyncNotifier<EditProfilePageState> {
         },
         SetOptions(merge: true),
       );
-      await user.updateDisplayName(current.fullName.trim());
+
+      try {
+        await user.updateDisplayName(current.fullName.trim());
+      } on Exception catch (e) {
+        AppLogger.error('Failed to sync displayName to FirebaseAuth', e);
+      }
 
       _originalFullName = current.fullName.trim();
       _originalTnbAccountNo = current.tnbAccountNo.trim();
