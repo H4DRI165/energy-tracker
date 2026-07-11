@@ -1,5 +1,5 @@
-import 'package:energy_tracker/services/auth_service.dart';
-import 'package:energy_tracker/ui/components/logger.dart';
+import 'package:energy_tracker/services/auth/auth_service.dart';
+import 'package:energy_tracker/ui/components/utils/logger.dart';
 import 'package:energy_tracker/ui/ft_auth/ft_login/notifier/login_state.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

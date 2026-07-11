@@ -157,7 +157,8 @@ class AppTextFloatingLabelField extends StatelessWidget {
                 controller: controller,
                 focusNode: focusNode,
                 decoration: InputDecoration(
-                  floatingLabelBehavior: border ==
+                  floatingLabelBehavior:
+                      border ==
                           AppFormFieldBorder.outlinedWithAlwaysFloatingLabel
                       ? FloatingLabelBehavior.always
                       : null,
@@ -168,13 +169,15 @@ class AppTextFloatingLabelField extends StatelessWidget {
                   ),
                   labelText: labelText,
                   labelStyle: TextStyle(
-                    color:
-                        enabled && hasError ? errorTextColor : labelTextColor,
+                    color: enabled && hasError
+                        ? errorTextColor
+                        : labelTextColor,
                     fontSize: labelTextFontSize,
                   ),
                   floatingLabelStyle: TextStyle(
-                    color:
-                        enabled && hasError ? errorTextColor : labelTextColor,
+                    color: enabled && hasError
+                        ? errorTextColor
+                        : labelTextColor,
                     fontSize: floatingLabelTextFontSize,
                   ),
                   border: createBorder(
@@ -271,8 +274,10 @@ class AppTextField extends StatelessWidget {
                 : AppColors.surface2,
             borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
             border: Border.all(
-              color: errorText != null ? AppColors.danger : AppColors.border,
-              width: errorText != null ? 1.5 : 1,
+              color: (errorText?.isNotEmpty ?? false)
+                  ? AppColors.danger
+                  : AppColors.border,
+              width: (errorText?.isNotEmpty ?? false) ? 1.5 : 1,
             ),
           ),
           child: Row(
@@ -317,7 +322,7 @@ class AppTextField extends StatelessWidget {
             ],
           ),
         ),
-        if (errorText != null) ...[
+        if (errorText?.isNotEmpty ?? false) ...[
           SizedBox(height: 4.h),
           Row(
             children: [

@@ -1,5 +1,5 @@
 import 'package:energy_tracker/app.dart';
-import 'package:energy_tracker/services/notifiers/user_profile_notifier.dart';
+import 'package:energy_tracker/services/notifier/user_profile_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_add_meter_reading/notifier/notifier.dart';
 import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_usage/notifier/usage_notifier.dart';
@@ -271,10 +271,14 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
       );
 
       if (context.mounted) {
-        ref
-          ..invalidate(usageProvider)
-          ..invalidate(dashboardProvider);
-        context.pop();
+        await Future.wait([
+          ref.read(usageProvider.notifier).refresh(),
+          ref.read(dashboardProvider.notifier).refresh(),
+        ]);
+        
+        if (mounted) {
+          context.pop();
+        }
       }
     }
   }

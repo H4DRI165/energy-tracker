@@ -154,8 +154,9 @@ class _UsageBarChartCardState extends State<UsageBarChartCard>
             children: [
               Text(
                 widget.title,
-                style:
-                    AppTextStyles.bodyMd.copyWith(fontWeight: FontWeight.w700),
+                style: AppTextStyles.bodyMd.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               Row(
                 children: [
@@ -191,8 +192,8 @@ class _UsageBarChartCardState extends State<UsageBarChartCard>
                     final entry = entries[i];
                     final heightFraction = maxKwh > 0
                         ? (entry.kwh <= 0
-                            ? 0.0
-                            : (entry.kwh / maxKwh).clamp(0.05, 1.0))
+                              ? 0.0
+                              : (entry.kwh / maxKwh).clamp(0.05, 1.0))
                         : 0.0;
 
                     final start = (i / entries.length) * 0.3;
@@ -279,8 +280,9 @@ class _SlimBar extends StatelessWidget {
                     style: AppTextStyles.caption.copyWith(
                       fontSize: 9.sp,
                       color: isHighlighted ? AppColors.accent : AppColors.text3,
-                      fontWeight:
-                          isHighlighted ? FontWeight.w600 : FontWeight.w400,
+                      fontWeight: isHighlighted
+                          ? FontWeight.w600
+                          : FontWeight.w400,
                     ),
                   ),
                 )
@@ -299,8 +301,9 @@ class _SlimBar extends StatelessWidget {
                     color: isHighlighted
                         ? AppColors.accent
                         : AppColors.accent.withValues(alpha: 0.12),
-                    borderRadius:
-                        const BorderRadius.vertical(top: Radius.circular(4)),
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(4.r),
+                    ),
                   ),
                 ),
               ),

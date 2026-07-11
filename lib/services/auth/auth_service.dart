@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/models/user_profile.dart';
-import 'package:energy_tracker/services/app_user_notifier.dart';
+import 'package:energy_tracker/services/notifier/app_user_notifier.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 

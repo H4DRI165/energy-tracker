@@ -2,8 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/constants/tariff_rates.dart';
 import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 import 'package:energy_tracker/models/bill_record.dart';
-import 'package:energy_tracker/services/notifiers/auth_notifier.dart';
-import 'package:energy_tracker/services/notifiers/user_profile_notifier.dart';
+import 'package:energy_tracker/services/auth/providers/current_uid_provider.dart';
+import 'package:energy_tracker/services/notifier/user_profile_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_usage/notifier/usage_state.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -21,19 +21,14 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
     final uid = ref.watch(currentUidProvider).value;
     if (uid == null) return const UsageState();
 
-    return _fetchUsageData(uid);
+    final selectedFilter = state.value?.filter ?? UsageFilter.monthly;
+    final fresh = await _fetchUsageData(uid);
+    return fresh.copyWith(filter: selectedFilter);
   }
 
   Future<void> refresh() async {
-    final selectedFilter = state.asData?.value.filter ?? UsageFilter.monthly;
-    final uid = ref.read(currentUidProvider).value;
-    if (uid == null) return;
-
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(() async {
-      final fresh = await _fetchUsageData(uid);
-      return fresh.copyWith(filter: selectedFilter);
-    });
+    ref.invalidateSelf();
+    await future;
   }
 
   Future<UsageState> _fetchUsageData(String uid) async {

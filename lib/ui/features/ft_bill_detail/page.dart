@@ -96,9 +96,10 @@ class _BillDetailPageState extends ConsumerState<BillDetailPage> {
     await ref.read(billDetailProvider.notifier).init(widget.bill);
     if (!mounted) return;
 
-    ref
-      ..invalidate(usageProvider)
-      ..invalidate(dashboardProvider);
+    await Future.wait([
+      ref.read(usageProvider.notifier).refresh(),
+      ref.read(dashboardProvider.notifier).refresh(),
+    ]);
   }
 }
 
@@ -313,7 +314,7 @@ class _PaidToggleCard extends ConsumerWidget {
             GestureDetector(
               onTap: () async {
                 await ref.read(billDetailProvider.notifier).togglePaid(bill);
-                ref.invalidate(usageProvider);
+                await ref.read(usageProvider.notifier).refresh();
               },
               child: Container(
                 width: 44.r,
@@ -483,15 +484,17 @@ class _ReadingRow extends ConsumerWidget {
           warning: 'This will also remove the associated bill entry.',
         ),
         onDismissed: (_) async {
-          final success = await ref
-              .read(billDetailProvider.notifier)
-              .deleteReading(reading, bill);
+          final billDetailNotifier = ref.read(billDetailProvider.notifier);
+          final usageNotifier = ref.read(usageProvider.notifier);
+          final dashboardNotifier = ref.read(dashboardProvider.notifier);
+
+          final success = await billDetailNotifier.deleteReading(reading, bill);
 
           if (success) {
-            ref
-              ..invalidate(usageProvider)
-              ..invalidate(dashboardProvider);
-            await ref.read(usageProvider.future);
+            await Future.wait([
+              usageNotifier.refresh(),
+              dashboardNotifier.refresh(),
+            ]);
           }
         },
         child: GestureDetector(

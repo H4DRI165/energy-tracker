@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:energy_tracker/extensions/tariff_type_extension.dart';
-import 'package:energy_tracker/services/notifiers/user_profile_notifier.dart';
+import 'package:energy_tracker/services/notifier/user_profile_notifier.dart';
 import 'package:energy_tracker/theme/theme.dart';
 import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_notifier.dart';
 import 'package:flutter/material.dart';

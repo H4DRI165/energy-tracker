@@ -24,11 +24,6 @@ class ErrorView extends StatelessWidget {
             message,
             style: AppTextStyles.bodyMd,
           ),
-          SizedBox(height: 8.h),
-          Text(
-            'Check your connection and try again',
-            style: AppTextStyles.bodySm,
-          ),
           SizedBox(height: 20.h),
           TextButton(
             onPressed: onRetry,

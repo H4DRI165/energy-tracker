@@ -86,7 +86,9 @@ class _BodyContent extends ConsumerWidget {
     final state = ref.watch(usageProvider).value;
     final notifier = ref.read(usageProvider.notifier);
 
-    if (state == null) return const SizedBox.shrink();
+    if (state == null) {
+      return const SizedBox.shrink();
+    }
 
     return RefreshIndicator(
       color: AppColors.accent,
