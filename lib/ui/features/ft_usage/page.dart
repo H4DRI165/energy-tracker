@@ -83,10 +83,14 @@ class _BodyContent extends ConsumerWidget {
   const _BodyContent();
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(usageProvider).value;
+    final asyncState = ref.watch(usageProvider);
     final notifier = ref.read(usageProvider.notifier);
 
-    if (state == null) return const SizedBox.shrink();
+    final state = asyncState.asData?.value;
+
+    if (state == null) {
+      return const SizedBox.shrink();
+    }
 
     return RefreshIndicator(
       color: AppColors.accent,

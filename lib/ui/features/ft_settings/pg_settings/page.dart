@@ -283,8 +283,7 @@ class _TariffAndBudgetTiles extends ConsumerWidget {
 
             Navigator.pop(context);
 
-            ref.invalidate(dashboardProvider);
-            unawaited(ref.read(dashboardProvider.future));
+            await ref.read(dashboardProvider.notifier).refresh();
           },
         ),
       ),

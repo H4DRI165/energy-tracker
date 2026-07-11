@@ -27,8 +27,11 @@ class BillHistoryList extends StatelessWidget {
             ),
             Row(
               children: [
-                Icon(Icons.swipe_left_rounded,
-                    size: 14.r, color: AppColors.text3),
+                Icon(
+                  Icons.swipe_left_rounded,
+                  size: 14.r,
+                  color: AppColors.text3,
+                ),
                 SizedBox(width: 4.w),
                 Text(
                   'Swipe to delete history',
@@ -114,34 +117,44 @@ class _BillHistoryTile extends ConsumerWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.delete_outline_rounded,
-                color: AppColors.danger, size: 22.r),
+            Icon(
+              Icons.delete_outline_rounded,
+              color: AppColors.danger,
+              size: 22.r,
+            ),
             SizedBox(height: 4.h),
-            Text('Delete',
-                style: AppTextStyles.caption.copyWith(color: AppColors.danger)),
+            Text(
+              'Delete',
+              style: AppTextStyles.caption.copyWith(color: AppColors.danger),
+            ),
           ],
         ),
       ),
       confirmDismiss: (_) => ConfirmDialog.show(
         context,
         title: 'Delete ${bill.monthYear}?',
-        message: 'This will permanently delete all readings and bill '
+        message:
+            'This will permanently delete all readings and bill '
             'records for ${bill.monthYear}.',
         confirmLabel: 'Delete',
         confirmColor: AppColors.danger,
-        warning: 'This action cannot be undone. All meter readings '
+        warning:
+            'This action cannot be undone. All meter readings '
             'for this month will be lost.',
       ),
       onDismissed: (_) async {
+        final usageNotifier = ref.read(usageProvider.notifier);
+        final dashboardNotifier = ref.read(dashboardProvider.notifier);
+
         try {
-          await ref.read(usageProvider.notifier).deleteMonth(bill);
-          ref.invalidate(dashboardProvider);
-          await ref.read(dashboardProvider.future);
+          await usageNotifier.deleteMonth(bill);
+          await dashboardNotifier.refresh();
         } on Exception {
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                  content: Text('Failed to delete. Please try again.')),
+                content: Text('Failed to delete. Please try again.'),
+              ),
             );
           }
         }
@@ -161,37 +174,49 @@ class _BillHistoryTile extends ConsumerWidget {
                 width: 36.r,
                 height: 36.r,
                 decoration: BoxDecoration(
-                    color: iconBg, borderRadius: BorderRadius.circular(10.r)),
+                  color: iconBg,
+                  borderRadius: BorderRadius.circular(10.r),
+                ),
                 child: Center(
-                    child: Text('📅', style: TextStyle(fontSize: 14.sp))),
+                  child: Text('📅', style: TextStyle(fontSize: 14.sp)),
+                ),
               ),
               SizedBox(width: 12.w),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(bill.monthYear,
-                        style: AppTextStyles.bodyMd
-                            .copyWith(fontWeight: FontWeight.w600)),
+                    Text(
+                      bill.monthYear,
+                      style: AppTextStyles.bodyMd.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     SizedBox(height: 4.h),
-                    Text('${bill.kwh.toStringAsFixed(0)} kWh',
-                        style: AppTextStyles.caption),
+                    Text(
+                      '${bill.kwh.toStringAsFixed(0)} kWh',
+                      style: AppTextStyles.caption,
+                    ),
                     SizedBox(height: 4.h),
                     Container(
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 2.w, vertical: 2.h),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 2.w,
+                        vertical: 2.h,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.surface3,
                         borderRadius: BorderRadius.circular(6.r),
                         border: Border.all(
-                            color: AppColors.text3.withValues(alpha: 0.3)),
+                          color: AppColors.text3.withValues(alpha: 0.3),
+                        ),
                       ),
                       child: Text(
                         bill.tariffType.label,
                         style: AppTextStyles.caption.copyWith(
-                            color: AppColors.text2,
-                            fontSize: 9.sp,
-                            height: 1.2),
+                          color: AppColors.text2,
+                          fontSize: 9.sp,
+                          height: 1.2,
+                        ),
                       ),
                     ),
                   ],
@@ -200,16 +225,22 @@ class _BillHistoryTile extends ConsumerWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text('RM ${bill.amount.toStringAsFixed(2)}',
-                      style: AppTextStyles.bodyMd
-                          .copyWith(fontWeight: FontWeight.w700)),
+                  Text(
+                    'RM ${bill.amount.toStringAsFixed(2)}',
+                    style: AppTextStyles.bodyMd.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                   SizedBox(height: 2.h),
                   PaidBadge(isPaid: bill.isPaid),
                 ],
               ),
               SizedBox(width: 8.w),
-              Icon(Icons.chevron_left_rounded,
-                  size: 16.r, color: AppColors.text3),
+              Icon(
+                Icons.chevron_left_rounded,
+                size: 16.r,
+                color: AppColors.text3,
+              ),
             ],
           ),
         ),

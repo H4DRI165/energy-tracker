@@ -60,7 +60,8 @@ class DashboardPage extends ConsumerWidget {
                           ),
                           SizedBox(height: 12.h),
                           FilledButton(
-                            onPressed: () => ref.invalidate(dashboardProvider),
+                            onPressed: () =>
+                                ref.read(dashboardProvider.notifier).refresh(),
                             child: const Text('Retry'),
                           ),
                         ],
