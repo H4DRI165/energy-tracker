@@ -21,7 +21,7 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
     final uid = ref.watch(currentUidProvider).value;
     if (uid == null) return const UsageState();
 
-    final selectedFilter = state.asData?.value.filter ?? UsageFilter.monthly;
+    final selectedFilter = state.value?.filter ?? UsageFilter.monthly;
     final fresh = await _fetchUsageData(uid);
     return fresh.copyWith(filter: selectedFilter);
   }
