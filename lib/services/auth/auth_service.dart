@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/models/user_profile.dart';
 import 'package:energy_tracker/services/notifier/app_user_notifier.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService {
@@ -37,6 +38,10 @@ class AuthService {
     _lastUid = uid;
     _uidInitialized = true;
     _uidController.add(uid);
+
+    unawaited(
+      FirebaseCrashlytics.instance.setUserIdentifier(uid ?? ''),
+    );
   }
 
   Stream<User?> get authStateChanges => _auth.authStateChanges();
