@@ -47,6 +47,12 @@ class AppLogger {
     Map<String, Object> keys,
   ) async {
     try {
+      // Reset well-known keys to avoid stale values from prior reports.
+      await FirebaseCrashlytics.instance.setCustomKey('firebase_code', '');
+      await FirebaseCrashlytics.instance.setCustomKey('firebase_auth_code', '');
+      await FirebaseCrashlytics.instance.setCustomKey('screen', '');
+      await FirebaseCrashlytics.instance.setCustomKey('uid', '');
+
       for (final entry in keys.entries) {
         await FirebaseCrashlytics.instance.setCustomKey(entry.key, entry.value);
       }
@@ -93,6 +99,19 @@ String mapFirebaseAuthError(String code) {
       return 'Too many attempts. Please try again later.';
     case 'network-request-failed':
       return 'No internet connection. Please check your network.';
+    case 'wrong-password':
+    case 'invalid-credential':
+      return 'Incorrect email or password.';
+    case 'email-already-in-use':
+      return 'An account already exists with this email.';
+    case 'weak-password':
+      return 'Password is too weak. Please use a stronger password.';
+    case 'operation-not-allowed':
+      return 'This sign-in method is not enabled.';
+    case 'expired-action-code':
+      return 'This link has expired. Please request a new one.';
+    case 'invalid-action-code':
+      return 'This link is invalid. Please request a new one.';
     default:
       return 'Something went wrong. Please try again.';
   }

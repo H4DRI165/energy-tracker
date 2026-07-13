@@ -297,7 +297,9 @@ class BillDetailNotifier extends Notifier<BillDetailPageState>
       );
 
       if (!committed) {
-        state = previousState.copyWith(errorMessage: mapFirebaseError(e.code));
+        state = state.copyWith(
+          errorMessage: 'Reading deleted, but failed to refresh the bill.',
+        );
         return false;
       }
       state = state.copyWith(errorMessage: mapFirebaseError(e.code));

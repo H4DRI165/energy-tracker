@@ -13,7 +13,11 @@ mixin LoggableNotifier<T> {
     StackTrace stackTrace, {
     Map<String, Object?>? context,
   }) {
-    final uid = ref.read(currentUidProvider).value;
+    String? uid;
+    if (ref.mounted) {
+      uid = ref.read(currentUidProvider).value;
+    }
+
     AppLogger.error(
       message,
       error,
@@ -21,8 +25,10 @@ mixin LoggableNotifier<T> {
       keys: {
         'screen': screenName,
         'uid': ?uid,
-        if (error is FirebaseException) 'firebase_code': error.code,
-        if (error is FirebaseAuthException) 'firebase_auth_code': error.code,
+        if (error is FirebaseAuthException)
+          'firebase_auth_code': error.code
+        else if (error is FirebaseException)
+          'firebase_code': error.code,
         ...?context,
       },
     );

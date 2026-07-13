@@ -74,12 +74,8 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState>
         st,
       );
       return DashboardPageState(errorMessage: mapFirebaseError(e.code));
-    } on Exception catch (e, st) {
-      logError(
-        'Failed to load user profile',
-        e,
-        st,
-      );
+    } on Object catch (e, st) {
+      logError('Failed to load user profile', e, st);
       return const DashboardPageState(errorMessage: 'Failed to load profile.');
     }
   }
@@ -197,18 +193,10 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState>
         weeklyUsage: weeklyUsage,
       );
     } on FirebaseException catch (e, st) {
-      logError(
-        'Failed to load usage data (Firebase)',
-        e,
-        st,
-      );
+      logError('Failed to load usage data (Firebase)', e, st);
       return DashboardPageState(errorMessage: mapFirebaseError(e.code));
-    } on Exception catch (e, st) {
-      logError(
-        'Failed to load usage data',
-        e,
-        st,
-      );
+    } on Object catch (e, st) {
+      logError('Failed to load usage data', e, st);
       return const DashboardPageState(
         errorMessage: 'Failed to load usage data.',
       );

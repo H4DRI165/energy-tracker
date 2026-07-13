@@ -77,11 +77,19 @@ class LoginNotifier extends Notifier<LoginPageState>
     try {
       await _authService.signInWithGoogle();
     } on FirebaseAuthException catch (e, st) {
-      logError(
-        'Failed to sign in with Google (Firebase Auth)',
-        e,
-        st,
-      );
+      const expectedCodes = {
+        'popup-closed-by-user',
+        'cancelled-by-user',
+        'account-exists-with-different-credential',
+      };
+
+      if (!expectedCodes.contains(e.code)) {
+        logError(
+          'Failed to sign in with Google (Firebase Auth)',
+          e,
+          st,
+        );
+      }
 
       if (ref.mounted) {
         state = state.copyWith(authError: mapFirebaseAuthError(e.code));

@@ -242,6 +242,15 @@ class UsageNotifier extends AsyncNotifier<UsageState>
       // Re-fetch on error to ensure UI reflects actual server state
       state = const AsyncLoading();
       state = await AsyncValue.guard(() => _fetchUsageData(uid));
+    } on Exception catch (e, st) {
+      logError(
+        'Failed to delete month',
+        e,
+        st,
+        context: {'bill_id': bill.id, 'month_year': bill.monthYear},
+      );
+      state = const AsyncLoading();
+      state = await AsyncValue.guard(() => _fetchUsageData(uid));
     }
   }
 }
