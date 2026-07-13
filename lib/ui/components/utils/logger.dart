@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 
 class AppLogger {
@@ -7,7 +10,12 @@ class AppLogger {
       if (error != null) debugPrint('   Error: $error');
       if (stack != null) debugPrint('   Stack: $stack');
     }
-    // TODO(dev): integrate with Firebase Crashlytics
-    // FirebaseCrashlytics.instance.recordError(error, stack, reason: message);
+    unawaited(
+      FirebaseCrashlytics.instance.recordError(
+        error,
+        stack,
+        reason: message,
+      ),
+    );
   }
 }
