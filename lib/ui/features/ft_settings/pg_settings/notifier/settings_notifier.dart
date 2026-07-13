@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/services/app_info.dart';
 import 'package:energy_tracker/services/auth/providers/current_uid_provider.dart';
+import 'package:energy_tracker/ui/components/logging/notifier/loggable_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_settings/pg_settings/notifier/settings_state.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,9 +16,13 @@ final appVersionProvider = FutureProvider<String>((ref) async {
   return appInfo.fullVersion;
 });
 
-class SettingsNotifier extends AsyncNotifier<SettingsPageState> {
+class SettingsNotifier extends AsyncNotifier<SettingsPageState>
+    with LoggableNotifier<SettingsPageState> {
   FirebaseAuth get _auth => FirebaseAuth.instance;
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;
+
+  @override
+  String get screenName => 'SettingPage';
 
   @override
   Future<SettingsPageState> build() async {
@@ -154,7 +159,8 @@ class SettingsNotifier extends AsyncNotifier<SettingsPageState> {
     try {
       await _auth.signOut();
       return true;
-    } on Exception catch (_) {
+    } on Exception catch (e, st) {
+      logError('Failed to sign out', e, st);
       _updateState(
         (s) => s.copyWith(
           isSigningOut: false,
@@ -172,18 +178,28 @@ class SettingsNotifier extends AsyncNotifier<SettingsPageState> {
   Future<bool> _updateFirestore(Map<String, dynamic> data) async {
     try {
       final uid = ref.read(currentUidProvider).value;
-
       if (uid == null) return false;
+
       await _firestore.collection('users').doc(uid).set(
-        {
-          ...data,
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
+        {...data, 'updatedAt': FieldValue.serverTimestamp()},
         SetOptions(merge: true),
       );
-
       return true;
-    } on Exception catch (_) {
+    } on FirebaseException catch (e, st) {
+      logError(
+        'Failed to update settings (Firebase)',
+        e,
+        st,
+        context: {'fields': data.keys.join(',')},
+      );
+      return false;
+    } on Exception catch (e, st) {
+      logError(
+        'Failed to update settings',
+        e,
+        st,
+        context: {'fields': data.keys.join(',')},
+      );
       return false;
     }
   }

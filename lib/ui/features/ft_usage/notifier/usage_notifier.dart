@@ -4,6 +4,7 @@ import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 import 'package:energy_tracker/models/bill_record.dart';
 import 'package:energy_tracker/services/auth/providers/current_uid_provider.dart';
 import 'package:energy_tracker/services/notifier/user_profile_notifier.dart';
+import 'package:energy_tracker/ui/components/logging/notifier/loggable_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_usage/notifier/usage_state.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -13,8 +14,12 @@ final AsyncNotifierProvider<UsageNotifier, UsageState> usageProvider =
       UsageNotifier.new,
     );
 
-class UsageNotifier extends AsyncNotifier<UsageState> {
+class UsageNotifier extends AsyncNotifier<UsageState>
+    with LoggableNotifier<UsageState> {
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;
+
+  @override
+  String get screenName => 'UsagePage';
 
   @override
   Future<UsageState> build() async {
@@ -34,69 +39,65 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
   Future<UsageState> _fetchUsageData(String uid) async {
     final now = DateTime.now();
 
-    try {
-      // Fetch readings for the past 12 months
-      final startOf12MonthsAgo = DateTime(now.year - 1, now.month);
+    // Fetch readings for the past 12 months
+    final startOf12MonthsAgo = DateTime(now.year - 1, now.month);
 
-      final results = await Future.wait([
-        _firestore
-            .collection('users')
-            .doc(uid)
-            .collection('readings')
-            .where(
-              'date',
-              isGreaterThanOrEqualTo: Timestamp.fromDate(startOf12MonthsAgo),
-            )
-            .orderBy('date', descending: false)
-            .get(),
-        _firestore
-            .collection('users')
-            .doc(uid)
-            .collection('bills')
-            .orderBy('date', descending: true)
-            .limit(12)
-            .get(),
-      ]);
-      final readingsSnap = results[0];
-      final billsSnap = results[1];
+    final results = await Future.wait([
+      _firestore
+          .collection('users')
+          .doc(uid)
+          .collection('readings')
+          .where(
+            'date',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(startOf12MonthsAgo),
+          )
+          .orderBy('date', descending: false)
+          .get(),
+      _firestore
+          .collection('users')
+          .doc(uid)
+          .collection('bills')
+          .orderBy('date', descending: true)
+          .limit(12)
+          .get(),
+    ]);
+    final readingsSnap = results[0];
+    final billsSnap = results[1];
 
-      final billHistory = _buildBillHistory(billsSnap.docs);
-      // Current month data
-      final currentMonthReadings = readingsSnap.docs.where((doc) {
-        final date = (doc.data()['date'] as Timestamp).toDate();
-        return date.year == now.year && date.month == now.month;
-      }).toList();
+    final billHistory = _buildBillHistory(billsSnap.docs);
+    // Current month data
+    final currentMonthReadings = readingsSnap.docs.where((doc) {
+      final date = (doc.data()['date'] as Timestamp).toDate();
+      return date.year == now.year && date.month == now.month;
+    }).toList();
 
-      final currentKwh = currentMonthReadings.fold<double>(0, (total, doc) {
-        return total + ((doc.data()['kwh'] as num?)?.toDouble() ?? 0);
-      });
+    final currentKwh = currentMonthReadings.fold<double>(0, (total, doc) {
+      return total + ((doc.data()['kwh'] as num?)?.toDouble() ?? 0);
+    });
 
-      // Derive this month's tariff from its actual readings, same rule as
-      // the dashboard: most-recent-reading wins, fall back to live tariff
-      // only when there's no data yet.
-      final liveTariffType = ref.read(tariffTypeProvider);
-      final currentTariffType = currentMonthReadings.isEmpty
-          ? liveTariffType
-          : TariffTypeX.fromValue(
-              currentMonthReadings.last.data()['tariffType'] as String? ??
-                  TariffType.domestic.value,
-            );
+    // Derive this month's tariff from its actual readings, same rule as
+    // the dashboard: most-recent-reading wins, fall back to live tariff
+    // only when there's no data yet.
+    final liveTariffType = ref.read(tariffTypeProvider);
+    final currentTariffType = currentMonthReadings.isEmpty
+        ? liveTariffType
+        : TariffTypeX.fromValue(
+            currentMonthReadings.last.data()['tariffType'] as String? ??
+                TariffType.domestic.value,
+          );
 
-      final monthlyData = _buildMonthlyData(readingsSnap.docs, now);
-      final currentBill = TariffRates.calculate(currentKwh, currentTariffType);
-      final currentMonthLabel = DateFormat('MMMM yyyy').format(now);
+    final monthlyData = _buildMonthlyData(readingsSnap.docs, now);
+    final currentBill = TariffRates.calculate(currentKwh, currentTariffType);
+    final currentMonthLabel = DateFormat('MMMM yyyy').format(now);
 
-      return UsageState(
-        monthlyData: monthlyData,
-        billHistory: billHistory,
-        currentKwh: currentKwh,
-        currentBill: currentBill,
-        currentTariffType: currentTariffType,
-        currentMonthLabel: currentMonthLabel,
-      );
-    } on FirebaseException catch (e) {
-      throw Exception('Failed to load usage: ${e.message}');
-    }
+    return UsageState(
+      monthlyData: monthlyData,
+      billHistory: billHistory,
+      currentKwh: currentKwh,
+      currentBill: currentBill,
+      currentTariffType: currentTariffType,
+      currentMonthLabel: currentMonthLabel,
+    );
   }
 
   void setFilter(UsageFilter filter) {
@@ -231,8 +232,14 @@ class UsageNotifier extends AsyncNotifier<UsageState> {
               .toList(),
         ),
       );
-    } on FirebaseException catch (_) {
-      // Re-fetch on error
+    } on FirebaseException catch (e, st) {
+      logError(
+        'Failed to delete month (Firebase)',
+        e,
+        st,
+        context: {'bill_id': bill.id, 'month_year': bill.monthYear},
+      );
+      // Re-fetch on error to ensure UI reflects actual server state
       state = const AsyncLoading();
       state = await AsyncValue.guard(() => _fetchUsageData(uid));
     }

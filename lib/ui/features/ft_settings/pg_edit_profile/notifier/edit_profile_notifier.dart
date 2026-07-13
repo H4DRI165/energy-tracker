@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/services/auth/providers/current_uid_provider.dart';
-import 'package:energy_tracker/ui/components/utils/logger.dart';
+import 'package:energy_tracker/ui/components/logging/app_logger.dart';
+import 'package:energy_tracker/ui/components/logging/notifier/loggable_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_settings/pg_edit_profile/notifier/edit_profile_state.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,8 +15,12 @@ editProfileProvider =
       EditProfileNotifier.new,
     );
 
-class EditProfileNotifier extends AsyncNotifier<EditProfilePageState> {
+class EditProfileNotifier extends AsyncNotifier<EditProfilePageState>
+    with LoggableNotifier<EditProfilePageState> {
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;
+
+  @override
+  String get screenName => 'EditProfilePage';
 
   String _originalFullName = '';
   String _originalTnbAccountNo = '';
@@ -143,8 +148,12 @@ class EditProfileNotifier extends AsyncNotifier<EditProfilePageState> {
 
       try {
         await user.updateDisplayName(current.fullName.trim());
-      } on Exception catch (e) {
-        AppLogger.error('Failed to sync displayName to FirebaseAuth', e);
+      } on Exception catch (e, st) {
+        logError(
+          'Failed to sync displayName to FirebaseAuth',
+          e,
+          st,
+        );
       }
 
       _originalFullName = current.fullName.trim();
@@ -157,12 +166,31 @@ class EditProfileNotifier extends AsyncNotifier<EditProfilePageState> {
         ),
       );
       return true;
-    } on FirebaseException catch (e) {
+    } on FirebaseException catch (e, st) {
+      logError(
+        'Failed to save profile (Firebase)',
+        e,
+        st,
+        context: {
+          'full_name_length': current.fullName.trim().length,
+          'has_tnb_account': current.tnbAccountNo.trim().isNotEmpty,
+        },
+      );
       state = state.whenData(
-        (s) => s.copyWith(isSaving: false, errorMessage: _mapError(e.code)),
+        (s) =>
+            s.copyWith(isSaving: false, errorMessage: mapFirebaseError(e.code)),
       );
       return false;
-    } on Exception catch (_) {
+    } on Exception catch (e, st) {
+      logError(
+        'Failed to save profile',
+        e,
+        st,
+        context: {
+          'full_name_length': current.fullName.trim().length,
+          'has_tnb_account': current.tnbAccountNo.trim().isNotEmpty,
+        },
+      );
       state = state.whenData(
         (s) => s.copyWith(
           isSaving: false,
@@ -170,17 +198,6 @@ class EditProfileNotifier extends AsyncNotifier<EditProfilePageState> {
         ),
       );
       return false;
-    }
-  }
-
-  String _mapError(String code) {
-    switch (code) {
-      case 'permission-denied':
-        return 'Permission denied. Please try again.';
-      case 'network-request-failed':
-        return 'No internet connection.';
-      default:
-        return 'Failed to save. Please try again.';
     }
   }
 }

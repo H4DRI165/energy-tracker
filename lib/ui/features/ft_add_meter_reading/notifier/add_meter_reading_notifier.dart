@@ -8,6 +8,8 @@ import 'package:energy_tracker/services/auth/providers/current_uid_provider.dart
 import 'package:energy_tracker/services/billing/bill_recalculation_service.dart';
 import 'package:energy_tracker/services/billing/reading_chain_service.dart';
 import 'package:energy_tracker/services/notifier/user_profile_notifier.dart';
+import 'package:energy_tracker/ui/components/logging/app_logger.dart';
+import 'package:energy_tracker/ui/components/logging/notifier/loggable_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_add_meter_reading/notifier/add_meter_reading_state.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -17,7 +19,8 @@ addReadingProvider =
       AddReadingNotifier.new,
     );
 
-class AddReadingNotifier extends Notifier<AddReadingPageState> {
+class AddReadingNotifier extends Notifier<AddReadingPageState>
+    with LoggableNotifier<AddReadingPageState> {
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;
   late final ReadingChainService _chainService = ReadingChainService(
     _firestore,
@@ -27,6 +30,9 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
   );
   int _loadRequestId = 0;
   DateTime? _editingDate;
+
+  @override
+  String get screenName => 'AddReadingPage';
 
   @override
   AddReadingPageState build() {
@@ -141,7 +147,30 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
           nextDate: next?.date,
         ),
       );
-    } on Exception catch (_) {
+    } on FirebaseException catch (e, st) {
+      logError(
+        'Failed to load surrounding readings (Firebase)',
+        e,
+        st,
+        context: {
+          'selected_date': selectedDate.toIso8601String(),
+          'is_editing': _editingDate != null,
+        },
+      );
+
+      if (requestId == _loadRequestId) {
+        state = state.copyWith(isLoadingLastReading: false);
+      }
+    } on Exception catch (e, st) {
+      logError(
+        'Failed to load surrounding readings',
+        e,
+        st,
+        context: {
+          'selected_date': selectedDate.toIso8601String(),
+          'is_editing': _editingDate != null,
+        },
+      );
       if (requestId == _loadRequestId) {
         state = state.copyWith(isLoadingLastReading: false);
       }
@@ -303,10 +332,35 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
 
       state = state.copyWith(isSaving: false);
       return true;
-    } on FirebaseException catch (e) {
-      state = state.copyWith(isSaving: false, errorMessage: _mapError(e.code));
+    } on FirebaseException catch (e, st) {
+      logError(
+        'Failed to save reading (Firebase)',
+        e,
+        st,
+        context: {
+          'reading_value': state.currentReading,
+          'kwh': state.usageKwh,
+          'date': date.toIso8601String(),
+          'tariff_type': tariffType.value,
+        },
+      );
+      state = state.copyWith(
+        isSaving: false,
+        errorMessage: mapFirebaseError(e.code),
+      );
       return false;
-    } on Exception catch (_) {
+    } on Exception catch (e, st) {
+      logError(
+        'Failed to save reading',
+        e,
+        st,
+        context: {
+          'reading_value': state.currentReading,
+          'kwh': state.usageKwh,
+          'date': date.toIso8601String(),
+          'tariff_type': tariffType.value,
+        },
+      );
       state = state.copyWith(
         isSaving: false,
         errorMessage: 'Failed to save reading. Please try again.',
@@ -346,26 +400,36 @@ class AddReadingNotifier extends Notifier<AddReadingPageState> {
 
       state = state.copyWith(isSaving: false);
       return true;
-    } on FirebaseException catch (e) {
-      state = state.copyWith(isSaving: false, errorMessage: _mapError(e.code));
+    } on FirebaseException catch (e, st) {
+      logError(
+        'Failed to update reading (Firebase)',
+        e,
+        st,
+        context: {
+          'reading_value': state.currentReading,
+          'kwh': state.usageKwh,
+        },
+      );
+      state = state.copyWith(
+        isSaving: false,
+        errorMessage: mapFirebaseError(e.code),
+      );
       return false;
-    } on Exception catch (_) {
+    } on Exception catch (e, st) {
+      logError(
+        'Failed to update reading',
+        e,
+        st,
+        context: {
+          'reading_value': state.currentReading,
+          'kwh': state.usageKwh,
+        },
+      );
       state = state.copyWith(
         isSaving: false,
         errorMessage: 'Failed to update reading. Please try again.',
       );
       return false;
-    }
-  }
-
-  String _mapError(String code) {
-    switch (code) {
-      case 'permission-denied':
-        return 'Permission denied. Please check your account.';
-      case 'network-request-failed':
-        return 'No internet connection. Please check your network.';
-      default:
-        return 'Failed to save reading. Please try again.';
     }
   }
 }

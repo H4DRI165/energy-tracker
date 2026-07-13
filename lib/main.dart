@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:energy_tracker/app.dart';
 import 'package:energy_tracker/firebase_options.dart';
+import 'package:energy_tracker/services/observers/crashlytics_provider_observer.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
@@ -13,12 +16,13 @@ Future<void> main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  FlutterError.onError = (errorDetails) {
-    FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
+  FlutterError.onError = (details) {
+    unawaited(FirebaseCrashlytics.instance.recordFlutterFatalError(details));
   };
-
   PlatformDispatcher.instance.onError = (error, stack) {
-    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+    unawaited(
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true),
+    );
     return true;
   };
 
@@ -27,7 +31,12 @@ Future<void> main() async {
     !kDebugMode,
   );
 
-  runApp(const ProviderScope(child: MainApp()));
+  runApp(
+    const ProviderScope(
+      observers: [CrashlyticsProviderObserver()],
+      child: MainApp(),
+    ),
+  );
 }
 
 class MainApp extends StatelessWidget {

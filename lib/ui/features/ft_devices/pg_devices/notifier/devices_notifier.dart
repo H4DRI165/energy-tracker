@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/models/appliance.dart';
 import 'package:energy_tracker/services/auth/providers/current_uid_provider.dart';
+import 'package:energy_tracker/ui/components/logging/app_logger.dart';
+import 'package:energy_tracker/ui/components/logging/notifier/loggable_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_devices/pg_devices/notifier/devices_state.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -11,8 +13,12 @@ final NotifierProvider<DevicesNotifier, DevicesPageState> devicesProvider =
       DevicesNotifier.new,
     );
 
-class DevicesNotifier extends Notifier<DevicesPageState> {
+class DevicesNotifier extends Notifier<DevicesPageState>
+    with LoggableNotifier<DevicesPageState> {
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;
+
+  @override
+  String get screenName => 'AppliancePage';
 
   @override
   DevicesPageState build() {
@@ -50,12 +56,16 @@ class DevicesNotifier extends Notifier<DevicesPageState> {
           .toList();
 
       state = state.copyWith(isLoading: false, appliances: appliances);
-    } on FirebaseException catch (e) {
+    } on FirebaseException catch (e, st) {
+      logError(
+        'Failed to load appliances (Firebase)',
+        e,
+        st,
+      );
       if (!ref.mounted) return;
-
       state = state.copyWith(
         isLoading: false,
-        errorMessage: 'Failed to load appliances: ${e.message}',
+        errorMessage: mapFirebaseError(e.code),
       );
     }
   }
@@ -78,7 +88,17 @@ class DevicesNotifier extends Notifier<DevicesPageState> {
         appliances: state.appliances.where((a) => a.id != id).toList(),
       );
       return true;
-    } on FirebaseException catch (_) {
+    } on FirebaseException catch (e, st) {
+      logError(
+        'Failed to delete appliance (Firebase)',
+        e,
+        st,
+        context: {'appliance_id': id},
+      );
+
+      if (!ref.mounted) return false;
+
+      state = state.copyWith(errorMessage: mapFirebaseError(e.code));
       return false;
     }
   }
