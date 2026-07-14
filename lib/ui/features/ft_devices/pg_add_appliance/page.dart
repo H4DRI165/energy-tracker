@@ -8,7 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
-class AddAppliancePage extends ConsumerStatefulWidget {
+class AddAppliancePage extends ConsumerWidget {
   const AddAppliancePage({
     this.appliance,
     super.key,
@@ -17,13 +17,8 @@ class AddAppliancePage extends ConsumerStatefulWidget {
   final Appliance? appliance;
 
   @override
-  ConsumerState<AddAppliancePage> createState() => _AddAppliancePageState();
-}
-
-class _AddAppliancePageState extends ConsumerState<AddAppliancePage> {
-  @override
-  Widget build(BuildContext context) {
-    final isEdit = widget.appliance != null;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isEdit = appliance != null;
 
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
@@ -36,7 +31,7 @@ class _AddAppliancePageState extends ConsumerState<AddAppliancePage> {
               _Header(isEdit: isEdit),
               _BodyContent(
                 isEdit: isEdit,
-                appliance: widget.appliance,
+                appliance: appliance,
               ),
             ],
           ),

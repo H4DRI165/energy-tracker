@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/models/appliance.dart';
 import 'package:energy_tracker/services/auth/providers/current_uid_provider.dart';
+import 'package:energy_tracker/ui/components/logging/notifier/loggable_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_devices/pg_add_appliance/notifier/add_appliance_state.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -10,9 +11,13 @@ addApplianceProvider =
       AddApplianceNotifier.new,
     );
 
-class AddApplianceNotifier extends Notifier<AddAppliancePageState> {
+class AddApplianceNotifier extends Notifier<AddAppliancePageState>
+    with LoggableNotifier<AddAppliancePageState> {
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;
   Appliance? _editing;
+
+  @override
+  String get screenName => 'AddAppliancePage';
 
   @override
   AddAppliancePageState build() => const AddAppliancePageState();
@@ -92,14 +97,36 @@ class AddApplianceNotifier extends Notifier<AddAppliancePageState> {
       if (!ref.mounted) return true;
       state = state.copyWith(isSaving: false);
       return true;
-    } on FirebaseException catch (e) {
+    } on FirebaseException catch (e, st) {
+      logError(
+        'Failed to save appliance (Firebase)',
+        e,
+        st,
+        context: {
+          if (_editing != null) 'appliance_id': _editing!.id,
+          'category': state.category,
+          'wattage': state.wattage,
+          'daily_hours': state.dailyHours,
+        },
+      );
       if (!ref.mounted) return false;
       state = state.copyWith(
         isSaving: false,
         errorMessage: _mapError(e.code),
       );
       return false;
-    } on Exception catch (_) {
+    } on Exception catch (e, st) {
+      logError(
+        'Failed to save appliance',
+        e,
+        st,
+        context: {
+          if (_editing != null) 'appliance_id': _editing!.id,
+          'category': state.category,
+          'wattage': state.wattage,
+          'daily_hours': state.dailyHours,
+        },
+      );
       if (!ref.mounted) return false;
       state = state.copyWith(
         isSaving: false,

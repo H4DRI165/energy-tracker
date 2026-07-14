@@ -3,6 +3,8 @@ import 'package:energy_tracker/constants/tariff_rates.dart';
 import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 import 'package:energy_tracker/services/auth/providers/current_uid_provider.dart';
 import 'package:energy_tracker/services/notifier/user_profile_notifier.dart';
+import 'package:energy_tracker/ui/components/logging/app_logger.dart';
+import 'package:energy_tracker/ui/components/logging/notifier/loggable_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_state.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -14,9 +16,13 @@ final dashboardProvider =
       DashboardNotifier.new,
     );
 
-class DashboardNotifier extends AsyncNotifier<DashboardPageState> {
+class DashboardNotifier extends AsyncNotifier<DashboardPageState>
+    with LoggableNotifier<DashboardPageState> {
   FirebaseAuth get _auth => FirebaseAuth.instance;
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;
+
+  @override
+  String get screenName => 'DashboardPage';
 
   @override
   Future<DashboardPageState> build() async {
@@ -61,11 +67,15 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState> {
       final budget = rawBudget is num ? rawBudget.toDouble() : 150.0;
 
       return DashboardPageState(userName: firstName, monthlyBudget: budget);
-    } on FirebaseException catch (e) {
-      return DashboardPageState(
-        errorMessage: 'Failed to load profile: ${e.message}',
+    } on FirebaseException catch (e, st) {
+      logError(
+        'Failed to load user profile (Firebase)',
+        e,
+        st,
       );
-    } on Object catch (_) {
+      return DashboardPageState(errorMessage: mapFirebaseError(e.code));
+    } on Object catch (e, st) {
+      logError('Failed to load user profile', e, st);
       return const DashboardPageState(errorMessage: 'Failed to load profile.');
     }
   }
@@ -182,11 +192,11 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState> {
         projectedBill: projectedBill,
         weeklyUsage: weeklyUsage,
       );
-    } on FirebaseException catch (e) {
-      return DashboardPageState(
-        errorMessage: 'Failed to load usage data: ${e.message}',
-      );
-    } on Exception catch (_) {
+    } on FirebaseException catch (e, st) {
+      logError('Failed to load usage data (Firebase)', e, st);
+      return DashboardPageState(errorMessage: mapFirebaseError(e.code));
+    } on Object catch (e, st) {
+      logError('Failed to load usage data', e, st);
       return const DashboardPageState(
         errorMessage: 'Failed to load usage data.',
       );

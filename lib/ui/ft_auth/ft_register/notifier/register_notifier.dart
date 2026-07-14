@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/theme/app_colors.dart';
-import 'package:energy_tracker/ui/components/utils/logger.dart';
+import 'package:energy_tracker/ui/components/logging/app_logger.dart';
+import 'package:energy_tracker/ui/components/logging/notifier/loggable_notifier.dart';
 import 'package:energy_tracker/ui/ft_auth/ft_register/notifier/register_state.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -11,9 +12,13 @@ final NotifierProvider<RegisterNotifier, RegisterPageState> registerProvider =
       RegisterNotifier.new,
     );
 
-class RegisterNotifier extends Notifier<RegisterPageState> {
+class RegisterNotifier extends Notifier<RegisterPageState>
+    with LoggableNotifier<RegisterPageState> {
   FirebaseAuth get _auth => FirebaseAuth.instance;
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;
+
+  @override
+  String get screenName => 'RegisterPage';
 
   @override
   RegisterPageState build() => RegisterPageState();
@@ -195,19 +200,18 @@ class RegisterNotifier extends Notifier<RegisterPageState> {
         'isGuest': false,
       });
       userDocWritten = true;
-      shouldRollback = false;
 
       // TODO(dev): enable when want to test email verification flow
       // await user.sendEmailVerification();
-    } on FirebaseAuthException catch (e) {
-      if (ref.mounted) {
-        state = state.copyWith(
-          authError: _getFirebaseErrorMessage(e.code),
-        );
-      }
-    } on Exception catch (e, stack) {
-      AppLogger.error('Registration error: ', e, stack);
 
+      shouldRollback = false;
+    } on FirebaseAuthException catch (e, st) {
+      logError('Failed to register (Firebase Auth)', e, st);
+      if (ref.mounted) {
+        state = state.copyWith(authError: mapFirebaseAuthError(e.code));
+      }
+    } on Exception catch (e, st) {
+      logError('Failed to register', e, st);
       if (ref.mounted) {
         state = state.copyWith(
           authError: 'Registration failed. Please try again.',
@@ -216,36 +220,33 @@ class RegisterNotifier extends Notifier<RegisterPageState> {
     } finally {
       if (shouldRollback && createdUser != null) {
         if (userDocWritten) {
-          await _firestore.collection('users').doc(createdUser.uid).delete();
+          try {
+            await _firestore.collection('users').doc(createdUser.uid).delete();
+          } on Exception catch (e, st) {
+            logError(
+              'Failed to rollback Firestore user doc',
+              e,
+              st,
+              context: {'orphaned_uid': createdUser.uid},
+            );
+          }
         }
         try {
           await createdUser.delete();
-        } on Exception catch (_) {}
+        } on Exception catch (e, st) {
+          logError(
+            'Failed to rollback orphaned auth user after registration failure',
+            e,
+            st,
+            context: {'orphaned_uid': createdUser.uid},
+          );
+        }
         await _auth.signOut();
       }
 
       if (ref.mounted) {
         state = state.copyWith(isLoading: false);
       }
-    }
-  }
-
-  String _getFirebaseErrorMessage(String code) {
-    switch (code) {
-      case 'email-already-in-use':
-        return 'This email is already registered. Try signing in instead.';
-      case 'invalid-email':
-        return 'Please enter a valid email address.';
-      case 'operation-not-allowed':
-        return 'Email registration is not enabled. Please contact support.';
-      case 'weak-password':
-        return 'Password is too weak. Please choose a stronger password.';
-      case 'network-request-failed':
-        return 'No internet connection. Please check your network.';
-      case 'too-many-requests':
-        return 'Too many attempts. Please try again later.';
-      default:
-        return 'Registration failed. Please try again.';
     }
   }
 }

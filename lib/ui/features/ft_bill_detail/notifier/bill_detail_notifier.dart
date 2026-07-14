@@ -7,7 +7,8 @@ import 'package:energy_tracker/models/reading_record.dart';
 import 'package:energy_tracker/services/auth/providers/current_uid_provider.dart';
 import 'package:energy_tracker/services/billing/bill_recalculation_service.dart';
 import 'package:energy_tracker/services/billing/reading_chain_service.dart';
-import 'package:energy_tracker/ui/components/utils/logger.dart';
+import 'package:energy_tracker/ui/components/logging/app_logger.dart';
+import 'package:energy_tracker/ui/components/logging/notifier/loggable_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_bill_detail/notifier/bill_detail_state.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -18,7 +19,8 @@ billDetailProvider =
       BillDetailNotifier.new,
     );
 
-class BillDetailNotifier extends Notifier<BillDetailPageState> {
+class BillDetailNotifier extends Notifier<BillDetailPageState>
+    with LoggableNotifier<BillDetailPageState> {
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;
   late final ReadingChainService _chainService = ReadingChainService(
     _firestore,
@@ -28,19 +30,15 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
   );
 
   @override
+  String get screenName => 'BillDetailPage';
+
+  @override
   BillDetailPageState build() {
     return const BillDetailPageState();
   }
 
   Future<void> init(BillRecord bill) async {
-    BillRecord? freshBill;
-    try {
-      freshBill = await _loadBill(bill.id);
-    } on Exception catch (e, st) {
-      AppLogger.error('Failed to load fresh bill ${bill.id}', e, st);
-      freshBill = null;
-    }
-
+    final freshBill = await _loadBill(bill.id);
     final resolvedBill = freshBill ?? bill;
 
     state = state.copyWith(
@@ -48,11 +46,7 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
       isPaid: resolvedBill.isPaid,
     );
 
-    try {
-      await _loadReadings(resolvedBill);
-    } on Exception catch (e, st) {
-      AppLogger.error('Failed to load readings for ${resolvedBill.id}', e, st);
-    }
+    await _loadReadings(resolvedBill);
   }
 
   Future<void> _loadReadings(BillRecord bill) async {
@@ -100,10 +94,27 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
       }).toList();
 
       state = state.copyWith(isLoading: false, readings: readings);
-    } on FirebaseException catch (e) {
+    } on FirebaseException catch (e, st) {
+      logError(
+        'Failed to load readings (Firebase)',
+        e,
+        st,
+        context: {'bill_id': bill.id},
+      );
       state = state.copyWith(
         isLoading: false,
-        errorMessage: 'Failed to load readings: ${e.message}',
+        errorMessage: mapFirebaseError(e.code),
+      );
+    } on Exception catch (e, st) {
+      logError(
+        'Failed to load readings',
+        e,
+        st,
+        context: {'bill_id': bill.id},
+      );
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'Failed to load readings. Please try again.',
       );
     }
   }
@@ -138,7 +149,20 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
         date: (data['date'] as Timestamp).toDate(),
       );
     } on FirebaseException catch (e, st) {
-      AppLogger.error('Firestore error loading bill $billId', e, st);
+      logError(
+        'Failed to load bill (Firebase)',
+        e,
+        st,
+        context: {'bill_id': billId},
+      );
+      return null;
+    } on Exception catch (e, st) {
+      logError(
+        'Failed to load bill',
+        e,
+        st,
+        context: {'bill_id': billId},
+      );
       return null;
     }
   }
@@ -172,10 +196,27 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
       await batch.commit();
 
       state = state.copyWith(isUpdatingPaid: false, isPaid: newIsPaid);
-    } on FirebaseException catch (e) {
+    } on FirebaseException catch (e, st) {
+      logError(
+        'Failed to toggle paid status (Firebase)',
+        e,
+        st,
+        context: {'bill_id': bill.id, 'new_is_paid': newIsPaid},
+      );
       state = state.copyWith(
         isUpdatingPaid: false,
-        errorMessage: 'Failed to update payment status: ${e.message}',
+        errorMessage: mapFirebaseError(e.code),
+      );
+    } on Exception catch (e, st) {
+      logError(
+        'Failed to toggle paid status',
+        e,
+        st,
+        context: {'bill_id': bill.id, 'new_is_paid': newIsPaid},
+      );
+      state = state.copyWith(
+        isUpdatingPaid: false,
+        errorMessage: 'Failed to update payment status. Please try again.',
       );
     }
   }
@@ -245,18 +286,57 @@ class BillDetailNotifier extends Notifier<BillDetailPageState> {
       }
 
       return true;
+    } on FirebaseException catch (e, st) {
+      _logDeleteFailure(
+        e,
+        st,
+        reading,
+        bill,
+        committed: committed,
+        firebaseCode: e.code,
+      );
+
+      if (!committed) {
+        state = state.copyWith(
+          errorMessage: 'Reading deleted, but failed to refresh the bill.',
+        );
+        return false;
+      }
+      state = state.copyWith(errorMessage: mapFirebaseError(e.code));
+      return true;
     } on Exception catch (e, st) {
+      _logDeleteFailure(e, st, reading, bill, committed: committed);
+
       if (!committed) {
         state = previousState;
-        AppLogger.error('Failed to delete reading ${reading.id}', e, st);
         return false;
       }
 
-      AppLogger.error('Failed to refresh bill after deleting reading', e, st);
       state = state.copyWith(
         errorMessage: 'Reading deleted, but failed to refresh the bill.',
       );
       return true;
     }
+  }
+
+  void _logDeleteFailure(
+    Object error,
+    StackTrace stackTrace,
+    ReadingRecord reading,
+    BillRecord bill, {
+    required bool committed,
+    String? firebaseCode,
+  }) {
+    final suffix = firebaseCode != null ? ' (Firebase)' : '';
+    final message = committed
+        ? 'Failed to refresh bill after deleting reading$suffix'
+        : 'Failed to delete reading$suffix';
+
+    logError(
+      message,
+      error,
+      stackTrace,
+      context: {'reading_id': reading.id, 'bill_id': bill.id},
+    );
   }
 }
