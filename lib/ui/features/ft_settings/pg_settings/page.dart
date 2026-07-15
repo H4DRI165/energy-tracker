@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:energy_tracker/app.dart';
+import 'package:energy_tracker/services/notifier/user_profile_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_settings/pg_settings/notifier/notifier.dart';
 import 'package:energy_tracker/ui/features/ft_settings/pg_settings/widgets/widgets.dart';
@@ -266,6 +267,7 @@ class _TariffAndBudgetTiles extends ConsumerWidget {
         backgroundColor: Colors.transparent,
         isScrollControlled: true,
         builder: (_) => BudgetSheet(
+          tariffType: ref.read(tariffTypeProvider),
           current: state.monthlyBudget,
           onSave: (value) async {
             final saved = await ref
