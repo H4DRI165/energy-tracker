@@ -18,9 +18,9 @@ Future<void> main() async {
   );
 
   await FirebaseAppCheck.instance.activate(
-    providerAndroid: kReleaseMode
-        ? const AndroidPlayIntegrityProvider()
-        : const AndroidDebugProvider(),
+    providerAndroid: kDebugMode
+        ? const AndroidDebugProvider()
+        : const AndroidPlayIntegrityProvider(),
   );
 
   FlutterError.onError = (details) {
