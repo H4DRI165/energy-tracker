@@ -23,14 +23,16 @@ class QuickActions extends StatelessWidget {
             onTap: onAddReading,
           ),
         ),
-        SizedBox(width: 8.w),
-        Expanded(
-          child: _QuickActionTile(
-            icon: '📄',
-            label: 'Scan Bill',
-            onTap: onScanBill,
-          ),
-        ),
+
+        // TODO(dev): implement bill scanner in future
+        // SizedBox(width: 8.w),
+        // Expanded(
+        //   child: _QuickActionTile(
+        //     icon: '📄',
+        //     label: 'Scan Bill',
+        //     onTap: onScanBill,
+        //   ),
+        // ),
       ],
     );
   }
@@ -70,8 +72,9 @@ class _QuickActionTile extends StatelessWidget {
                 SizedBox(height: 6.h),
                 Text(
                   label,
-                  style: AppTextStyles.bodySm
-                      .copyWith(fontWeight: FontWeight.w600),
+                  style: AppTextStyles.bodySm.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ),
