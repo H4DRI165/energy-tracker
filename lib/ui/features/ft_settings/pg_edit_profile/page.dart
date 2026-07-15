@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:energy_tracker/app.dart';
 import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_settings/pg_edit_profile/notifier/notifier.dart';
@@ -343,52 +344,143 @@ class _AvatarSection extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    return Center(
-      child: Stack(
-        children: [
-          Container(
-            width: 88.r,
-            height: 88.r,
-            decoration: BoxDecoration(
-              gradient: AppColors.primaryGradient,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.accent.withValues(alpha: 0.30),
-                  blurRadius: 24,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: Center(
-              child: Text(
-                state.initials,
-                style: AppTextStyles.titleLg.copyWith(
-                  color: Colors.black,
-                  fontSize: 28.sp,
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 0,
-            right: 0,
-            child: Container(
-              width: 28.r,
-              height: 28.r,
+    final hasAnyImage =
+        state.localPhotoFile != null || state.displayPhotoUrl != null;
+
+    return GestureDetector(
+      onTap: () => ref.read(editProfileProvider.notifier).pickAvatar(),
+      child: Center(
+        child: Stack(
+          children: [
+            Container(
+              width: 88.r,
+              height: 88.r,
               decoration: BoxDecoration(
-                color: AppColors.surface2,
+                gradient: hasAnyImage ? null : AppColors.primaryGradient,
+                color: hasAnyImage ? AppColors.surface2 : null,
                 shape: BoxShape.circle,
-                border: Border.all(color: AppColors.border, width: 2),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.accent.withValues(alpha: 0.30),
+                    blurRadius: 24,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
               ),
-              child: Icon(
-                Icons.camera_alt_outlined,
-                size: 14.r,
-                color: AppColors.text2,
+              child: ClipOval(child: _AvatarImage(state: state)),
+            ),
+
+            if (state.isSaving && state.localPhotoFile != null)
+              Positioned.fill(
+                child: Container(
+                  decoration: const BoxDecoration(
+                    color: Colors.black45,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: SizedBox(
+                      width: 22.r,
+                      height: 22.r,
+                      child: const CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+            Positioned(
+              bottom: 0,
+              right: 0,
+              child: Container(
+                width: 28.r,
+                height: 28.r,
+                decoration: BoxDecoration(
+                  color: AppColors.surface2,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.border, width: 2),
+                ),
+                child: Icon(
+                  Icons.camera_alt_outlined,
+                  size: 14.r,
+                  color: AppColors.text2,
+                ),
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AvatarImage extends StatelessWidget {
+  const _AvatarImage({required this.state});
+  final EditProfilePageState state;
+
+  @override
+  Widget build(BuildContext context) {
+    // preview from XFile bytes
+    if (state.localPhotoFile != null) {
+      return FutureBuilder<Uint8List>(
+        future: state.localPhotoFile!.readAsBytes(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done ||
+              !snapshot.hasData) {
+            return const Center(
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            );
+          }
+          return Image.memory(
+            snapshot.data!,
+            fit: BoxFit.cover,
+            width: 88,
+            height: 88,
+          );
+        },
+      );
+    }
+
+    if (state.displayPhotoUrl != null) {
+      return CachedNetworkImage(
+        imageUrl: state.displayPhotoUrl!,
+        fit: BoxFit.cover,
+        width: 88,
+        height: 88,
+        placeholder: (_, _) => const Center(
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(strokeWidth: 2),
           ),
-        ],
+        ),
+        errorWidget: (_, _, _) => _InitialsFallback(state.initials),
+      );
+    }
+
+    // 3. No photo -> initials
+    return _InitialsFallback(state.initials);
+  }
+}
+
+class _InitialsFallback extends StatelessWidget {
+  const _InitialsFallback(this.initials);
+  final String initials;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Text(
+        initials,
+        style: AppTextStyles.titleLg.copyWith(
+          color: Colors.black,
+          fontSize: 28.sp,
+        ),
       ),
     );
   }

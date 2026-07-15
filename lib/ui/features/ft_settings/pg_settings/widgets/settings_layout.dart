@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:energy_tracker/theme/theme.dart';
 import 'package:energy_tracker/ui/features/ft_settings/pg_settings/notifier/settings_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_settings/pg_settings/notifier/settings_state.dart';
@@ -15,20 +16,22 @@ class UserProfileCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final (initials, fullName, email, tnbAccountNo) = ref.watch(
-      settingsProvider.select((async) {
-        final s = async.maybeWhen(
-          data: (state) => state,
-          orElse: () => null,
+    final (initials, fullName, email, tnbAccountNo, displayPhotoUrl) = ref
+        .watch(
+          settingsProvider.select((async) {
+            final s = async.maybeWhen(
+              data: (state) => state,
+              orElse: () => null,
+            );
+            return (
+              s?.initials ?? '?',
+              s?.fullName ?? '',
+              s?.email ?? '',
+              s?.tnbAccountNo ?? '',
+              s?.displayPhotoUrl,
+            );
+          }),
         );
-        return (
-          s?.initials ?? '?',
-          s?.fullName ?? '',
-          s?.email ?? '',
-          s?.tnbAccountNo ?? '',
-        );
-      }),
-    );
 
     return GestureDetector(
       onTap: onTap,
@@ -49,14 +52,46 @@ class UserProfileCard extends ConsumerWidget {
               width: 52.r,
               height: 52.r,
               decoration: BoxDecoration(
-                gradient: AppColors.primaryGradient,
+                gradient: displayPhotoUrl == null
+                    ? AppColors.primaryGradient
+                    : null,
+                color: displayPhotoUrl == null ? null : AppColors.surface2,
                 borderRadius: BorderRadius.circular(18.r),
               ),
-              child: Center(
-                child: Text(
-                  initials,
-                  style: AppTextStyles.titleMd.copyWith(color: Colors.black),
-                ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(18.r),
+                child: displayPhotoUrl != null
+                    ? CachedNetworkImage(
+                        imageUrl: displayPhotoUrl,
+                        fit: BoxFit.cover,
+                        width: 52.r,
+                        height: 52.r,
+                        placeholder: (_, _) => Center(
+                          child: SizedBox(
+                            width: 16.r,
+                            height: 16.r,
+                            child: const CircularProgressIndicator(
+                              strokeWidth: 2,
+                            ),
+                          ),
+                        ),
+                        errorWidget: (_, _, _) => Center(
+                          child: Text(
+                            initials,
+                            style: AppTextStyles.titleMd.copyWith(
+                              color: Colors.black,
+                            ),
+                          ),
+                        ),
+                      )
+                    : Center(
+                        child: Text(
+                          initials,
+                          style: AppTextStyles.titleMd.copyWith(
+                            color: Colors.black,
+                          ),
+                        ),
+                      ),
               ),
             ),
             SizedBox(width: 14.w),

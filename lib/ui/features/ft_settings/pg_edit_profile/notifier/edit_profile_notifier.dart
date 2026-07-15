@@ -4,7 +4,9 @@ import 'package:energy_tracker/ui/components/logging/app_logger.dart';
 import 'package:energy_tracker/ui/components/logging/notifier/loggable_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_settings/pg_edit_profile/notifier/edit_profile_state.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 
 final AsyncNotifierProvider<EditProfileNotifier, EditProfilePageState>
 editProfileProvider =
@@ -47,6 +49,8 @@ class EditProfileNotifier extends AsyncNotifier<EditProfilePageState>
     final data = doc.data()!;
     final fullName = data['fullName'] as String? ?? authName;
     final tnbAccountNo = data['tnbAccountNo'] as String? ?? '';
+    final photoUrl = data['photoUrl'] as String?;
+    final photoUpdatedAt = data['photoUpdatedAt'] as Timestamp?;
 
     _originalFullName = fullName;
     _originalTnbAccountNo = tnbAccountNo;
@@ -56,6 +60,8 @@ class EditProfileNotifier extends AsyncNotifier<EditProfilePageState>
       fullName: fullName,
       email: email,
       tnbAccountNo: tnbAccountNo,
+      photoUrl: photoUrl,
+      photoVersion: photoUpdatedAt?.millisecondsSinceEpoch,
     );
   }
 
@@ -67,7 +73,8 @@ class EditProfileNotifier extends AsyncNotifier<EditProfilePageState>
         successMessage: null,
         hasChanges:
             value.trim() != _originalFullName ||
-            s.tnbAccountNo.trim() != _originalTnbAccountNo,
+            s.tnbAccountNo.trim() != _originalTnbAccountNo ||
+            s.localPhotoFile != null,
       ),
     );
   }
@@ -80,9 +87,33 @@ class EditProfileNotifier extends AsyncNotifier<EditProfilePageState>
         successMessage: null,
         hasChanges:
             s.fullName.trim() != _originalFullName ||
-            value.trim() != _originalTnbAccountNo,
+            value.trim() != _originalTnbAccountNo ||
+            s.localPhotoFile != null,
       ),
     );
+  }
+
+  void setLocalPhoto(XFile file) {
+    final current = state.value;
+    if (current == null) return;
+
+    state = AsyncData(
+      current.copyWith(
+        localPhotoFile: file,
+        successMessage: null,
+        hasChanges: true,
+      ),
+    );
+  }
+
+  Future<void> pickAvatar() async {
+    final picked = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+      maxWidth: 1024,
+    );
+    if (picked == null) return;
+    setLocalPhoto(picked);
   }
 
   Future<bool> save() async {
@@ -137,14 +168,30 @@ class EditProfileNotifier extends AsyncNotifier<EditProfilePageState>
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) throw Exception('Session expired.');
 
-      await _firestore.collection('users').doc(user.uid).set(
-        {
-          'fullName': current.fullName.trim(),
-          'tnbAccountNo': current.tnbAccountNo.trim(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
+      String? newPhotoUrl;
+      int? newPhotoVersion;
+
+      // Upload profile picture first
+      if (current.localPhotoFile != null) {
+        final ref = FirebaseStorage.instance.ref(
+          'users/${user.uid}/profile.jpg',
+        );
+        final bytes = await current.localPhotoFile!.readAsBytes();
+        await ref.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
+        newPhotoUrl = await ref.getDownloadURL();
+        newPhotoVersion = DateTime.now().millisecondsSinceEpoch;
+      }
+
+      await _firestore.collection('users').doc(user.uid).set({
+        'fullName': current.fullName.trim(),
+        'tnbAccountNo': current.tnbAccountNo.trim(),
+        'updatedAt': FieldValue.serverTimestamp(),
+        'photoUrl': ?newPhotoUrl,
+        if (newPhotoVersion != null)
+          'photoUpdatedAt': Timestamp.fromMillisecondsSinceEpoch(
+            newPhotoVersion,
+          ),
+      }, SetOptions(merge: true));
 
       try {
         await user.updateDisplayName(current.fullName.trim());
@@ -163,6 +210,10 @@ class EditProfileNotifier extends AsyncNotifier<EditProfilePageState>
         (s) => s.copyWith(
           isSaving: false,
           successMessage: 'Profile updated successfully.',
+          photoUrl: newPhotoUrl ?? s.photoUrl,
+          photoVersion: newPhotoVersion ?? s.photoVersion,
+          localPhotoFile: null,
+          hasChanges: false,
         ),
       );
       return true;

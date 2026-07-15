@@ -1,3 +1,5 @@
+import 'package:image_picker/image_picker.dart';
+
 class EditProfilePageState {
   const EditProfilePageState({
     this.isLoading = true,
@@ -10,6 +12,10 @@ class EditProfilePageState {
     this.tnbAccountError,
     this.successMessage,
     this.errorMessage,
+    this.photoUrl,
+    this.localPhotoFile,
+    this.isUploadingPhoto = false,
+    this.photoVersion,
   });
 
   final bool isLoading;
@@ -22,7 +28,14 @@ class EditProfilePageState {
   final String? tnbAccountError;
   final String? successMessage;
   final String? errorMessage;
+  final String? photoUrl;
+  final XFile? localPhotoFile;
+  final bool isUploadingPhoto;
+  final int? photoVersion;
   static const Object _unset = Object();
+
+  String? get displayPhotoUrl =>
+      photoUrl == null ? null : '$photoUrl?v=$photoVersion';
 
   String get initials {
     final parts = fullName
@@ -51,6 +64,10 @@ class EditProfilePageState {
     Object? tnbAccountError = _unset,
     Object? successMessage = _unset,
     Object? errorMessage = _unset,
+    Object? photoUrl = _unset,
+    Object? localPhotoFile = _unset,
+    bool? isUploadingPhoto,
+    Object? photoVersion = _unset,
   }) {
     return EditProfilePageState(
       isLoading: isLoading ?? this.isLoading,
@@ -71,6 +88,16 @@ class EditProfilePageState {
       errorMessage: identical(errorMessage, _unset)
           ? this.errorMessage
           : errorMessage as String?,
+      photoUrl: identical(photoUrl, _unset)
+          ? this.photoUrl
+          : photoUrl as String?,
+      localPhotoFile: identical(localPhotoFile, _unset)
+          ? this.localPhotoFile
+          : localPhotoFile as XFile?,
+      isUploadingPhoto: isUploadingPhoto ?? this.isUploadingPhoto,
+      photoVersion: identical(photoVersion, _unset)
+          ? this.photoVersion
+          : photoVersion as int?,
     );
   }
 }
