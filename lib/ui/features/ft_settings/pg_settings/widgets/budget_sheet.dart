@@ -4,11 +4,13 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class BudgetSheet extends StatefulWidget {
   const BudgetSheet({
+    required this.tariffType,
     required this.current,
     required this.onSave,
     super.key,
   });
 
+  final TariffType tariffType;
   final double current;
   final ValueChanged<double> onSave;
 
@@ -29,6 +31,11 @@ class _BudgetSheetState extends State<BudgetSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final estimatedKwh = TariffRates.estimateKwhFromBudget(
+      _budget,
+      widget.tariffType,
+    );
+
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -79,8 +86,9 @@ class _BudgetSheetState extends State<BudgetSheet> {
                   ],
                 ),
                 borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-                border:
-                    Border.all(color: AppColors.accent.withValues(alpha: 0.2)),
+                border: Border.all(
+                  color: AppColors.accent.withValues(alpha: 0.2),
+                ),
               ),
               child: Column(
                 children: [
@@ -91,14 +99,16 @@ class _BudgetSheetState extends State<BudgetSheet> {
                   SizedBox(height: 6.h),
                   Text(
                     'RM ${_budget.toStringAsFixed(0)}',
-                    style: AppTextStyles.displayLg
-                        .copyWith(color: AppColors.accent),
+                    style: AppTextStyles.displayLg.copyWith(
+                      color: AppColors.accent,
+                    ),
                   ),
                   SizedBox(height: 4.h),
                   Text(
-                    '≈ ${(_budget / 0.3).toStringAsFixed(0)}–'
-                    '${(_budget / 0.25).toStringAsFixed(0)} kWh estimated',
-                    style: AppTextStyles.caption,
+                    '≈ ${estimatedKwh.toStringAsFixed(0)} kWh estimated',
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.warn,
+                    ),
                   ),
                 ],
               ),
@@ -131,8 +141,9 @@ class _BudgetSheetState extends State<BudgetSheet> {
             SizedBox(height: 16.h),
             Text(
               'Quick Select',
-              style:
-                  AppTextStyles.caption.copyWith(fontWeight: FontWeight.w600),
+              style: AppTextStyles.caption.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
             SizedBox(height: 8.h),
             Wrap(
@@ -159,8 +170,10 @@ class _BudgetSheetState extends State<BudgetSheet> {
                   ),
                   backgroundColor: AppColors.surface2,
                   showCheckmark: false,
-                  padding:
-                      EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 12.w,
+                    vertical: 8.h,
+                  ),
                 );
               }).toList(),
             ),
@@ -170,8 +183,9 @@ class _BudgetSheetState extends State<BudgetSheet> {
               decoration: BoxDecoration(
                 color: AppColors.warn.withValues(alpha: 0.06),
                 borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-                border:
-                    Border.all(color: AppColors.warn.withValues(alpha: 0.2)),
+                border: Border.all(
+                  color: AppColors.warn.withValues(alpha: 0.2),
+                ),
               ),
               child: Row(
                 children: [
@@ -185,8 +199,9 @@ class _BudgetSheetState extends State<BudgetSheet> {
                     child: Text(
                       'Average Malaysian household spends '
                       'RM 120–180/month on electricity',
-                      style:
-                          AppTextStyles.caption.copyWith(color: AppColors.warn),
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.warn,
+                      ),
                     ),
                   ),
                 ],

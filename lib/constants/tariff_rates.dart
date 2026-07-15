@@ -61,9 +61,10 @@ class TariffRates {
     return switch (tariffType) {
       TariffType.domestic =>
         domesticGenerationLow + domesticCapacityRate + domesticNetworkRate,
-      TariffType.commercial => commercialGenerationRate +
-          commercialCapacityRate +
-          commercialNetworkRate,
+      TariffType.commercial =>
+        commercialGenerationRate +
+            commercialCapacityRate +
+            commercialNetworkRate,
     };
   }
 
@@ -80,14 +81,43 @@ class TariffRates {
 
   static double ringReferenceKwh(TariffType tariffType) =>
       tariffType == TariffType.domestic
-          ? domesticRingReferenceKwh
-          : commercialRingReferenceKwh;
+      ? domesticRingReferenceKwh
+      : commercialRingReferenceKwh;
 
   /// Whether AFA applies for a given tariff type and monthly kWh.
   /// Commercial: always applies regardless of usage.
   /// Domestic: exempt at or below 600 kWh.
   static bool afaApplies(TariffType tariffType, double kwh) =>
       tariffType == TariffType.commercial || kwh > 600;
+
+  static double estimateKwhFromBudget(
+    double budget,
+    TariffType tariffType, {
+    double afaSenPerKwh = 0,
+  }) {
+    if (budget <= 0) return 0;
+
+    double low = 0;
+    double high = 3000;
+
+    for (var i = 0; i < 50; i++) {
+      final mid = (low + high) / 2;
+
+      final bill = calculate(
+        mid,
+        tariffType,
+        afaSenPerKwh: afaSenPerKwh,
+      );
+
+      if (bill < budget) {
+        low = mid;
+      } else {
+        high = mid;
+      }
+    }
+
+    return (low + high) / 2;
+  }
 
   // =========================================================================
   // Domestic — post-1 July 2025 TNB restructuring
@@ -125,38 +155,42 @@ class TariffRates {
   /// EEI band range label for the info card grouped display.
   /// Groups adjacent bands with the same colour into human-readable ranges.
   static List<({String range, String rebateRange, bool isHighUsage})>
-      get eeiBandGroups => [
-            (
-              range: '1–200 kWh',
-              rebateRange: _senLabel(_eeiBands[0].rebateSen),
-              isHighUsage: false
-            ),
-            (
-              range: '201–300 kWh',
-              rebateRange: '${_senLabel(_eeiBands[2].rebateSen)}–'
-                  '${_senLabel(_eeiBands[1].rebateSen)}',
-              isHighUsage: false
-            ),
-            (
-              range: '301–500 kWh',
-              rebateRange: '${_senLabel(_eeiBands[6].rebateSen)}–'
-                  '${_senLabel(_eeiBands[3].rebateSen)}',
-              isHighUsage: false
-            ),
-            (
-              range: '501–700 kWh',
-              rebateRange: '${_senLabel(_eeiBands[10].rebateSen)}–'
-                  '${_senLabel(_eeiBands[7].rebateSen)}',
-              isHighUsage: true
-            ),
-            (
-              range: '701–1000 kWh',
-              rebateRange: '${_senLabel(_eeiBands[16].rebateSen)}–'
-                  '${_senLabel(_eeiBands[11].rebateSen)}',
-              isHighUsage: true
-            ),
-            (range: '1001+ kWh', rebateRange: 'No rebate', isHighUsage: true),
-          ];
+  get eeiBandGroups => [
+    (
+      range: '1–200 kWh',
+      rebateRange: _senLabel(_eeiBands[0].rebateSen),
+      isHighUsage: false,
+    ),
+    (
+      range: '201–300 kWh',
+      rebateRange:
+          '${_senLabel(_eeiBands[2].rebateSen)}–'
+          '${_senLabel(_eeiBands[1].rebateSen)}',
+      isHighUsage: false,
+    ),
+    (
+      range: '301–500 kWh',
+      rebateRange:
+          '${_senLabel(_eeiBands[6].rebateSen)}–'
+          '${_senLabel(_eeiBands[3].rebateSen)}',
+      isHighUsage: false,
+    ),
+    (
+      range: '501–700 kWh',
+      rebateRange:
+          '${_senLabel(_eeiBands[10].rebateSen)}–'
+          '${_senLabel(_eeiBands[7].rebateSen)}',
+      isHighUsage: true,
+    ),
+    (
+      range: '701–1000 kWh',
+      rebateRange:
+          '${_senLabel(_eeiBands[16].rebateSen)}–'
+          '${_senLabel(_eeiBands[11].rebateSen)}',
+      isHighUsage: true,
+    ),
+    (range: '1001+ kWh', rebateRange: 'No rebate', isHighUsage: true),
+  ];
 
   static String _senLabel(double sen) =>
       '${sen.toStringAsFixed(sen.truncateToDouble() == sen ? 0 : 1)} sen';
@@ -250,7 +284,8 @@ class TariffRates {
     double kwtbb,
     double sst,
     double total,
-  }) _domesticCharges(double kwh, {double afaSenPerKwh = domesticAfaDefault}) {
+  })
+  _domesticCharges(double kwh, {double afaSenPerKwh = domesticAfaDefault}) {
     final gen = kwh > 1500 ? domesticGenerationHigh : domesticGenerationLow;
     final energy = kwh * gen;
     final afa = kwh > 600 ? kwh * (afaSenPerKwh / 100) : 0.0;
@@ -457,8 +492,10 @@ class TariffRates {
   }) {
     return switch (tariffType) {
       TariffType.domestic => calculateDomestic(kwh, afaSenPerKwh: afaSenPerKwh),
-      TariffType.commercial =>
-        calculateCommercial(kwh, afaSenPerKwh: afaSenPerKwh),
+      TariffType.commercial => calculateCommercial(
+        kwh,
+        afaSenPerKwh: afaSenPerKwh,
+      ),
     };
   }
 
@@ -469,15 +506,17 @@ class TariffRates {
   }) {
     return switch (tariffType) {
       TariffType.domestic => domesticBreakdown(kwh, afaSenPerKwh: afaSenPerKwh),
-      TariffType.commercial =>
-        commercialBreakdown(kwh, afaSenPerKwh: afaSenPerKwh),
+      TariffType.commercial => commercialBreakdown(
+        kwh,
+        afaSenPerKwh: afaSenPerKwh,
+      ),
     };
   }
 
   static double minChargeFor(TariffType tariffType) => switch (tariffType) {
-        TariffType.domestic => 0,
-        TariffType.commercial => 0,
-      };
+    TariffType.domestic => 0,
+    TariffType.commercial => 0,
+  };
 
   // =========================================================================
   // Commercial LV (Tariff B) — UNCHANGED, old 2-tier structure
@@ -524,7 +563,8 @@ class TariffRates {
     double net,
     double kwtbb,
     double total,
-  }) _commercialCharges(
+  })
+  _commercialCharges(
     double kwh, {
     double afaSenPerKwh = commercialAfaDefault,
   }) {
