@@ -21,6 +21,9 @@ exports.checkBudgetOnBillUpdate = functions.onDocumentWritten(
       const user = userDoc.data();
       if (!user?.fcmToken || !user?.monthlyBudget) return;
 
+      const alert80Enabled = user.alert80Enabled !== false; // default true
+      const alert100Enabled = user.alert100Enabled !== false; // default true
+
       const usedAmount = bill.amount;
       const budgetAmount = user.monthlyBudget;
       const percentUsed = (usedAmount / budgetAmount) * 100;
@@ -46,19 +49,23 @@ exports.checkBudgetOnBillUpdate = functions.onDocumentWritten(
         updates.alert100Sent = false;
       }
 
-      const shouldAlert100 = percentUsed >= 100 && !alert100Sent;
+      const shouldAlert100 =
+      alert100Enabled && percentUsed >= 100 && !alert100Sent;
       const shouldAlert80 =
-            percentUsed >= 80 && percentUsed < 100 && !alert80Sent;
+      alert80Enabled &&
+      percentUsed >= 80 &&
+      percentUsed < 100 &&
+      !alert80Sent;
 
       if (shouldAlert100 || shouldAlert80) {
         const title = shouldAlert100 ?
-                "🚨 Budget Exceeded!" :
-                "⚠️ 80% Budget Reached";
+        "🚨 Budget Exceeded!" :
+        "⚠️ 80% Budget Reached";
         const usedStr = usedAmount.toFixed(2);
         const budgetStr = budgetAmount.toFixed(2);
         const body =
-                `You've used RM ${usedStr} of your RM ${budgetStr} ` +
-                "monthly target.";
+        `You've used RM ${usedStr} of your RM ${budgetStr} ` +
+        "monthly target.";
 
         await admin.messaging().send({
           token: user.fcmToken,
@@ -85,9 +92,9 @@ exports.sendMonthlyReadingReminder = onSchedule(
     async () => {
       const now = new Date();
       const currentMonthId =
-            `${now.getFullYear()}-` +
-            `${String(now.getMonth() + 1).padStart(2, "0")}`;
-        // e.g. "2026-07"
+      `${now.getFullYear()}-` +
+      `${String(now.getMonth() + 1).padStart(2, "0")}`;
+      // e.g. "2026-07"
 
       const usersSnap = await admin.firestore().collection("users").get();
 
@@ -118,7 +125,7 @@ exports.sendMonthlyReadingReminder = onSchedule(
         notification: {
           title: "📅 Don't forget your meter reading!",
           body: "The month is almost over — log your reading to " +
-                    "keep your usage tracking accurate.",
+          "keep your usage tracking accurate.",
         },
         data: {type: "reading_reminder"},
         android: {notification: {channelId: "budget_alerts"}},

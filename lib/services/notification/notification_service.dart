@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:energy_tracker/ui/routes/routes.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -16,6 +19,17 @@ class NotificationService {
     importance: Importance.high,
   );
 
+  void _handleNotificationTap(String? payload) {
+    switch (payload) {
+      case 'budget_alert':
+        unawaited(appRouter.push(AppRoutes.dashboard));
+      case 'reading_reminder':
+        unawaited(appRouter.push(AppRoutes.addReading));
+      default:
+        break;
+    }
+  }
+
   Future<void> init() async {
     await _requestPermission();
     await _initLocalNotifications();
@@ -25,11 +39,7 @@ class NotificationService {
   }
 
   Future<void> _requestPermission() async {
-    final settings = await _fcm.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
+    final settings = await _fcm.requestPermission();
     debugPrint('Notification permission: ${settings.authorizationStatus}');
   }
 
@@ -44,7 +54,7 @@ class NotificationService {
       ),
       onDidReceiveNotificationResponse: (response) {
         debugPrint('Notification tapped, payload: ${response.payload}');
-        // TODO: use go_router to navigate based on response.payload
+        _handleNotificationTap(response.payload);
       },
     );
 
