@@ -17,7 +17,7 @@ class NotificationPrefsSheet extends ConsumerWidget {
       decoration: BoxDecoration(
         color: AppColors.surface2,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
-        border: Border(
+        border: const Border(
           top: BorderSide(color: AppColors.border),
           left: BorderSide(color: AppColors.border),
           right: BorderSide(color: AppColors.border),
