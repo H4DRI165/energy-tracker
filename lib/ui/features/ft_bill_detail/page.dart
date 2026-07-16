@@ -11,11 +11,11 @@ import 'package:go_router/go_router.dart';
 
 class BillDetailPage extends ConsumerStatefulWidget {
   const BillDetailPage({
-    required this.bill,
+    required this.billId,
     super.key,
   });
 
-  final BillRecord bill;
+  final String billId;
 
   @override
   ConsumerState<BillDetailPage> createState() => _BillDetailPageState();
@@ -26,7 +26,7 @@ class _BillDetailPageState extends ConsumerState<BillDetailPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      unawaited(ref.read(billDetailProvider.notifier).init(widget.bill));
+      unawaited(ref.read(billDetailProvider.notifier).init(widget.billId));
     });
   }
 
@@ -93,7 +93,7 @@ class _BillDetailPageState extends ConsumerState<BillDetailPage> {
     await context.push(AppRoutes.addReading, extra: r);
     if (!mounted) return;
 
-    await ref.read(billDetailProvider.notifier).init(widget.bill);
+    await ref.read(billDetailProvider.notifier).init(widget.billId);
     if (!mounted) return;
 
     await Future.wait([

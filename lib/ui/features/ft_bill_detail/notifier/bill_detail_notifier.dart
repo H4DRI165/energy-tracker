@@ -37,16 +37,23 @@ class BillDetailNotifier extends Notifier<BillDetailPageState>
     return const BillDetailPageState();
   }
 
-  Future<void> init(BillRecord bill) async {
-    final freshBill = await _loadBill(bill.id);
-    final resolvedBill = freshBill ?? bill;
+  Future<void> init(String billId) async {
+    final freshBill = await _loadBill(billId);
+
+    if (freshBill == null) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'Bill not found.',
+      );
+      return;
+    }
 
     state = state.copyWith(
-      bill: resolvedBill,
-      isPaid: resolvedBill.isPaid,
+      bill: freshBill,
+      isPaid: freshBill.isPaid,
     );
 
-    await _loadReadings(resolvedBill);
+    await _loadReadings(freshBill);
   }
 
   Future<void> _loadReadings(BillRecord bill) async {
