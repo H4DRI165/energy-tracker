@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:energy_tracker/constants/tariff_rates.dart';
 import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 import 'package:energy_tracker/models/bill_record.dart';
 import 'package:energy_tracker/models/reading_record.dart';
@@ -18,6 +19,27 @@ billDetailProvider =
     NotifierProvider.autoDispose<BillDetailNotifier, BillDetailPageState>(
       BillDetailNotifier.new,
     );
+
+extension ReadingRecordListX on List<ReadingRecord> {
+  // sum of all kwh to get tier
+  Map<String, String> cumulativeTierLabels() {
+    final sorted = [...this]..sort((a, b) => a.date.compareTo(b.date));
+    var runningKwh = 0.0;
+    final labels = <String, String>{};
+
+    for (final r in sorted) {
+      runningKwh += r.kwh;
+      if (r.tariffType == TariffType.domestic) {
+        final band = TariffRates.getEeiBand(runningKwh);
+        labels[r.id] = band.number == 0 ? 'No rebate' : band.label;
+      } else {
+        final tier = TariffRates.getTier(runningKwh, r.tariffType);
+        labels[r.id] = TariffRates.getTierPriceKwhLabel(tier, r.tariffType);
+      }
+    }
+    return labels;
+  }
+}
 
 class BillDetailNotifier extends Notifier<BillDetailPageState>
     with LoggableNotifier<BillDetailPageState> {

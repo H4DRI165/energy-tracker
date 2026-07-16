@@ -358,6 +358,7 @@ class _ReadingsSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(billDetailProvider);
+    final tierLabels = state.readings.cumulativeTierLabels();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -412,6 +413,7 @@ class _ReadingsSection extends ConsumerWidget {
               children: state.readings.asMap().entries.map((entry) {
                 return _ReadingRow(
                   reading: entry.value,
+                  tierLabel: tierLabels[entry.value.id]!,
                   bill: bill,
                   isFirst: entry.key == 0,
                   isLast: entry.key == state.readings.length - 1,
@@ -428,6 +430,7 @@ class _ReadingsSection extends ConsumerWidget {
 class _ReadingRow extends ConsumerWidget {
   const _ReadingRow({
     required this.reading,
+    required this.tierLabel,
     required this.bill,
     required this.isFirst,
     required this.isLast,
@@ -435,6 +438,7 @@ class _ReadingRow extends ConsumerWidget {
   });
 
   final ReadingRecord reading;
+  final String tierLabel;
   final BillRecord bill;
   final bool isFirst;
   final bool isLast;
@@ -542,7 +546,7 @@ class _ReadingRow extends ConsumerWidget {
                         style: AppTextStyles.caption,
                       ),
                       Text(
-                        reading.tierLabel,
+                        tierLabel,
                         style: AppTextStyles.caption,
                       ),
                       if (reading.notes.isNotEmpty) ...[
