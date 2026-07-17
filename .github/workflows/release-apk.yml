@@ -48,10 +48,20 @@ jobs:
       - name: Write firebase_options.dart
         run: echo "${{ secrets.FIREBASE_OPTIONS_DART_BASE64 }}" | base64 -d > lib/firebase_options.dart
 
+      - name: Write release keystore
+        run: echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > android/release.keystore
+
+      - name: Write key.properties
+        run: |
+          cat <<EOF > android/key.properties
+          storePassword=${{ secrets.KEYSTORE_PASSWORD }}
+          keyPassword=${{ secrets.KEY_PASSWORD }}
+          keyAlias=${{ secrets.KEY_ALIAS }}
+          storeFile=../release.keystore
+          EOF
+
       # NOTE: no .env step — add one back (with an ENV_FILE_BASE64 secret)
       # only if you start using flutter_dotenv in code.
-      # NOTE: no keystore/signing step — app will be debug-signed for now.
-      # Add release signing later once you have a production keystore.
 
       # --- Build ---
 
