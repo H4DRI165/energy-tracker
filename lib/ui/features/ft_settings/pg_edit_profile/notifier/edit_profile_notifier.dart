@@ -164,6 +164,9 @@ class EditProfileNotifier extends AsyncNotifier<EditProfilePageState>
 
     state = state.whenData((s) => s.copyWith(isSaving: true));
 
+    String? uploadedPath;
+    final oldPhotoUrl = current.photoUrl;
+
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) throw Exception('Session expired.');
@@ -171,15 +174,14 @@ class EditProfileNotifier extends AsyncNotifier<EditProfilePageState>
       String? newPhotoUrl;
       int? newPhotoVersion;
 
-      // Upload profile picture first
       if (current.localPhotoFile != null) {
-        final ref = FirebaseStorage.instance.ref(
-          'users/${user.uid}/profile.jpg',
-        );
+        newPhotoVersion = DateTime.now().millisecondsSinceEpoch;
+        uploadedPath = 'users/${user.uid}/profile_$newPhotoVersion.jpg';
+
+        final ref = FirebaseStorage.instance.ref(uploadedPath);
         final bytes = await current.localPhotoFile!.readAsBytes();
         await ref.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
         newPhotoUrl = await ref.getDownloadURL();
-        newPhotoVersion = DateTime.now().millisecondsSinceEpoch;
       }
 
       await _firestore.collection('users').doc(user.uid).set({
@@ -192,6 +194,14 @@ class EditProfileNotifier extends AsyncNotifier<EditProfilePageState>
             newPhotoVersion,
           ),
       }, SetOptions(merge: true));
+
+      if (newPhotoUrl != null && oldPhotoUrl != null) {
+        try {
+          await FirebaseStorage.instance.refFromURL(oldPhotoUrl).delete();
+        } on FirebaseException catch (e, st) {
+          logError('Failed to delete previous avatar', e, st);
+        }
+      }
 
       try {
         await user.updateDisplayName(current.fullName.trim());
@@ -218,6 +228,18 @@ class EditProfileNotifier extends AsyncNotifier<EditProfilePageState>
       );
       return true;
     } on FirebaseException catch (e, st) {
+      if (uploadedPath != null) {
+        try {
+          await FirebaseStorage.instance.ref(uploadedPath).delete();
+        } on FirebaseException catch (cleanupError, cleanupSt) {
+          logError(
+            'Failed to clean up orphaned avatar upload',
+            cleanupError,
+            cleanupSt,
+          );
+        }
+      }
+
       logError(
         'Failed to save profile (Firebase)',
         e,
@@ -233,6 +255,18 @@ class EditProfileNotifier extends AsyncNotifier<EditProfilePageState>
       );
       return false;
     } on Exception catch (e, st) {
+      if (uploadedPath != null) {
+        try {
+          await FirebaseStorage.instance.ref(uploadedPath).delete();
+        } on FirebaseException catch (cleanupError, cleanupSt) {
+          logError(
+            'Failed to clean up orphaned avatar upload',
+            cleanupError,
+            cleanupSt,
+          );
+        }
+      }
+
       logError(
         'Failed to save profile',
         e,

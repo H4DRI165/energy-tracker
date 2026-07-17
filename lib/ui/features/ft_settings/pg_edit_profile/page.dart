@@ -421,11 +421,29 @@ class _AvatarImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // preview from XFile bytes
     if (state.localPhotoFile != null) {
       return FutureBuilder<Uint8List>(
         future: state.localPhotoFile!.readAsBytes(),
         builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return state.displayPhotoUrl != null
+                ? CachedNetworkImage(
+                    imageUrl: state.displayPhotoUrl!,
+                    fit: BoxFit.cover,
+                    width: 88,
+                    height: 88,
+                    placeholder: (_, _) => const Center(
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                    errorWidget: (_, _, _) => _InitialsFallback(state.initials),
+                  )
+                : _InitialsFallback(state.initials);
+          }
+
           if (snapshot.connectionState != ConnectionState.done ||
               !snapshot.hasData) {
             return const Center(
@@ -436,6 +454,7 @@ class _AvatarImage extends StatelessWidget {
               ),
             );
           }
+
           return Image.memory(
             snapshot.data!,
             fit: BoxFit.cover,
@@ -463,7 +482,6 @@ class _AvatarImage extends StatelessWidget {
       );
     }
 
-    // 3. No photo -> initials
     return _InitialsFallback(state.initials);
   }
 }

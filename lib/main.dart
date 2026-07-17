@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:energy_tracker/app.dart';
 import 'package:energy_tracker/firebase_options.dart';
 import 'package:energy_tracker/services/auth/providers/current_uid_provider.dart';
-import 'package:energy_tracker/services/notification/providers/notification_service_provider.dart';
+import 'package:energy_tracker/services/notification/notifier/notification_service_provider.dart';
 import 'package:energy_tracker/services/observers/crashlytics_provider_observer.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -62,8 +62,18 @@ class MainApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.listen<AsyncValue<String?>>(currentUidProvider, (previous, next) {
-      final uid = next.value;
-      if (uid != null) {
+      final previousUid = previous?.value;
+      final nextUid = next.value;
+
+      // Logout, or switching to a different account on this device —
+      // detach the token from whoever it belonged to before.
+      if (previousUid != null && previousUid != nextUid) {
+        unawaited(
+          ref.read(notificationServiceProvider).detachToken(previousUid),
+        );
+      }
+
+      if (nextUid != null) {
         unawaited(ref.read(notificationServiceProvider).init());
       }
     });

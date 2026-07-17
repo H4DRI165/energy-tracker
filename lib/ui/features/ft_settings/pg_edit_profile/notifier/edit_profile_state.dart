@@ -34,8 +34,18 @@ class EditProfilePageState {
   final int? photoVersion;
   static const Object _unset = Object();
 
-  String? get displayPhotoUrl =>
-      photoUrl == null ? null : '$photoUrl?v=$photoVersion';
+  String? get displayPhotoUrl {
+    if (photoUrl == null || photoVersion == null) return photoUrl;
+    final uri = Uri.parse(photoUrl!);
+    return uri
+        .replace(
+          queryParameters: {
+            ...uri.queryParameters,
+            'v': '$photoVersion',
+          },
+        )
+        .toString();
+  }
 
   String get initials {
     final parts = fullName

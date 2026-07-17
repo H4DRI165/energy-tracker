@@ -19,6 +19,8 @@ class NotificationService {
     importance: Importance.high,
   );
 
+  bool _initialized = false;
+
   void _handleNotificationTap(String? payload) {
     switch (payload) {
       case 'budget_alert':
@@ -31,11 +33,26 @@ class NotificationService {
   }
 
   Future<void> init() async {
-    await _requestPermission();
-    await _initLocalNotifications();
-    _listenForegroundMessages();
-    _listenTokenRefresh();
+    if (!_initialized) {
+      await _requestPermission();
+      await _initLocalNotifications();
+      _listenForegroundMessages();
+      _listenTokenRefresh();
+      _listenNotificationTaps();
+      _initialized = true;
+    }
+
     await _saveTokenToFirestore();
+  }
+
+  Future<void> detachToken(String uid) async {
+    try {
+      await FirebaseFirestore.instance.collection('users').doc(uid).update({
+        'fcmToken': FieldValue.delete(),
+      });
+    } on FirebaseException catch (e) {
+      debugPrint('Failed to detach FCM token for $uid: ${e.code}');
+    }
   }
 
   Future<void> _requestPermission() async {
@@ -93,14 +110,32 @@ class NotificationService {
 
   void _listenTokenRefresh() {
     _fcm.onTokenRefresh.listen((newToken) async {
-      debugPrint('FCM token refreshed: $newToken');
+      debugPrint('FCM token refreshed');
       await _updateTokenInFirestore(newToken);
     });
   }
 
+  void _listenNotificationTaps() {
+    // App was backgrounded, user tapped the notification to return
+    FirebaseMessaging.onMessageOpenedApp.listen((message) {
+      debugPrint('Notification opened app: ${message.messageId}');
+      _handleNotificationTap(message.data['type'] as String?);
+    });
+
+    // App was fully terminated, user tapped notification to launch it
+    unawaited(
+      _fcm.getInitialMessage().then((message) {
+        if (message != null) {
+          debugPrint('App launched from notification: ${message.messageId}');
+          _handleNotificationTap(message.data['type'] as String?);
+        }
+      }),
+    );
+  }
+
   Future<void> _saveTokenToFirestore() async {
     final token = await _fcm.getToken();
-    debugPrint('FCM TOKEN: $token');
+    debugPrint('FCM token retrieved: ${token != null}');
     if (token != null) {
       await _updateTokenInFirestore(token);
     }
@@ -114,11 +149,4 @@ class NotificationService {
       SetOptions(merge: true),
     );
   }
-
-  /// Call this when app opens from a terminated state via notification tap
-  Future<RemoteMessage?> getInitialMessage() => _fcm.getInitialMessage();
-
-  /// Call this to listen for taps while app is backgrounded
-  Stream<RemoteMessage> get onMessageOpenedApp =>
-      FirebaseMessaging.onMessageOpenedApp;
 }

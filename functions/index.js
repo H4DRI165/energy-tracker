@@ -12,73 +12,75 @@ exports.checkBudgetOnBillUpdate = functions.onDocumentWritten(
     "users/{uid}/bills/{billId}",
     async (event) => {
       const uid = event.params.uid;
-      const billId = event.params.billId; // e.g. "2026-07"
       const bill = event.data.after?.data();
-      if (!bill) return; // doc deleted entirely, nothing to check
+      if (!bill) return;
+
+      const beforeBill = event.data.before?.data();
+      if (beforeBill && beforeBill.amount === bill.amount) return;
 
       const userRef = admin.firestore().collection("users").doc(uid);
       const userDoc = await userRef.get();
       const user = userDoc.data();
       if (!user?.fcmToken || !user?.monthlyBudget) return;
 
-      const alert80Enabled = user.alert80Enabled !== false; // default true
-      const alert100Enabled = user.alert100Enabled !== false; // default true
+      const alert80Enabled = user.alert80Enabled !== false;
+      const alert100Enabled = user.alert100Enabled !== false;
 
       const usedAmount = bill.amount;
       const budgetAmount = user.monthlyBudget;
       const percentUsed = (usedAmount / budgetAmount) * 100;
 
-      // Reset flags if this is a new month vs last time we alerted
-      const lastAlertedMonth = user.lastAlertedMonth;
-      let alert80Sent = user.alert80Sent || false;
-      let alert100Sent = user.alert100Sent || false;
-      if (lastAlertedMonth !== billId) {
-        alert80Sent = false;
-        alert100Sent = false;
-      }
+      const billRef = event.data.after.ref;
 
-      // If usage dropped back below a threshold (edit/delete),
-      // un-flag it so a future re-crossing fires again
-      const updates = {lastAlertedMonth: billId};
-      if (percentUsed < 80 && alert80Sent) {
-        alert80Sent = false;
-        updates.alert80Sent = false;
-      }
-      if (percentUsed < 100 && alert100Sent) {
-        alert100Sent = false;
-        updates.alert100Sent = false;
-      }
+      // Reserve the alert tier atomically, before sending anything.
+      // This is what makes concurrent/retried invocations safe.
+      const reservation = await admin.firestore().runTransaction(async (tx) => {
+        const snap = await tx.get(billRef);
+        const previousTier = snap.data()?.alertTierSent || 0;
 
-      const shouldAlert100 =
-      alert100Enabled && percentUsed >= 100 && !alert100Sent;
-      const shouldAlert80 =
-      alert80Enabled &&
-      percentUsed >= 80 &&
-      percentUsed < 100 &&
-      !alert80Sent;
+        let currentTier = 0;
+        if (percentUsed >= 100) currentTier = 100;
+        else if (percentUsed >= 80) currentTier = 80;
 
-      if (shouldAlert100 || shouldAlert80) {
-        const title = shouldAlert100 ?
-        "🚨 Budget Exceeded!" :
-        "⚠️ 80% Budget Reached";
-        const usedStr = usedAmount.toFixed(2);
-        const budgetStr = budgetAmount.toFixed(2);
-        const body =
-        `You've used RM ${usedStr} of your RM ${budgetStr} ` +
-        "monthly target.";
+        if (currentTier === 0) {
+          if (previousTier !== 0) tx.update(billRef, {alertTierSent: 0});
+          return {shouldSend: false};
+        }
 
-        await admin.messaging().send({
-          token: user.fcmToken,
-          notification: {title, body},
-          data: {type: "budget_alert"},
-          android: {notification: {channelId: "budget_alerts"}},
-        });
+        if (currentTier <= previousTier) {
+        // Dropped back or stayed at/below a tier we've already
+        // alerted for — not a new crossing, do nothing.
+          return {shouldSend: false};
+        }
 
-        if (shouldAlert100) updates.alert100Sent = true;
-        if (shouldAlert80) updates.alert80Sent = true;
-      }
+        const crossed100 = previousTier < 100 && currentTier >= 100;
+        const sendTier100 = alert100Enabled && crossed100;
+        const sendTier80 = alert80Enabled && !sendTier100;
 
-      await userRef.update(updates);
+        // Reserve immediately — before send() is ever called.
+        tx.update(billRef, {alertTierSent: currentTier});
+
+        if (!sendTier100 && !sendTier80) return {shouldSend: false};
+        return {shouldSend: true, isExceeded: sendTier100};
+      });
+
+      if (!reservation.shouldSend) return;
+
+      const title = reservation.isExceeded ?
+      "🚨 Budget Exceeded!" :
+      "⚠️ 80% Budget Reached";
+      const usedStr = usedAmount.toFixed(2);
+      const budgetStr = budgetAmount.toFixed(2);
+      const body =
+      `You've used RM ${usedStr} of your RM ${budgetStr} ` +
+      "monthly target.";
+
+      await admin.messaging().send({
+        token: user.fcmToken,
+        notification: {title, body},
+        data: {type: "budget_alert"},
+        android: {notification: {channelId: "budget_alerts"}},
+      });
     },
 );
 
@@ -93,12 +95,13 @@ exports.sendMonthlyReadingReminder = onSchedule(
       const now = new Date();
       const currentMonthId =
       `${now.getFullYear()}-` +
-      `${String(now.getMonth() + 1).padStart(2, "0")}`;
-      // e.g. "2026-07"
+      `${String(now.getMonth() + 1).padStart(2, "0")}`;// e.g. "2026-07"
 
       const usersSnap = await admin.firestore().collection("users").get();
 
       const tokens = [];
+      const uidByToken = new Map();
+
       for (const doc of usersSnap.docs) {
         const user = doc.data();
         if (!user.fcmToken) continue;
@@ -114,14 +117,13 @@ exports.sendMonthlyReadingReminder = onSchedule(
 
         if (!billDoc.exists) {
           tokens.push(user.fcmToken);
+          uidByToken.set(user.fcmToken, doc.id);
         }
       }
 
       if (tokens.length === 0) return;
 
-      // sendEachForMulticast handles up to 500 tokens per call
-      await admin.messaging().sendEachForMulticast({
-        tokens,
+      const message = {
         notification: {
           title: "📅 Don't forget your meter reading!",
           body: "The month is almost over — log your reading to " +
@@ -129,6 +131,59 @@ exports.sendMonthlyReadingReminder = onSchedule(
         },
         data: {type: "reading_reminder"},
         android: {notification: {channelId: "budget_alerts"}},
-      });
+      };
+
+      // sendEachForMulticast rejects payloads over 500 tokens —
+      // split into chunks and send each batch separately.
+      const BATCH_SIZE = 500;
+      const batches = [];
+      for (let i = 0; i < tokens.length; i += BATCH_SIZE) {
+        batches.push(tokens.slice(i, i + BATCH_SIZE));
+      }
+
+      const batchResults = await Promise.all(
+          batches.map((batchTokens) =>
+            admin.messaging().sendEachForMulticast({
+              tokens: batchTokens,
+              ...message,
+            }).then((result) => ({result, batchTokens})),
+          ),
+      );
+
+      let totalSuccess = 0;
+      let totalFailure = 0;
+      const staleUids = [];
+
+      for (const {result, batchTokens} of batchResults) {
+        totalSuccess += result.successCount;
+        totalFailure += result.failureCount;
+
+        result.responses.forEach((res, i) => {
+          if (
+            !res.success &&
+          (res.error?.code === "messaging/registration-token-not-registered" ||
+            res.error?.code === "messaging/invalid-registration-token")
+          ) {
+            const uid = uidByToken.get(batchTokens[i]);
+            if (uid) staleUids.push(uid);
+          }
+        });
+      }
+
+      console.log(
+          `Monthly reminder sent: ${totalSuccess} succeeded, ` +
+      `${totalFailure} failed, ${staleUids.length} stale tokens found.`,
+      );
+
+      if (staleUids.length > 0) {
+        const cleanupBatch = admin.firestore().batch();
+        staleUids.forEach((uid) => {
+          cleanupBatch.update(
+              admin.firestore().collection("users").doc(uid),
+              {fcmToken: admin.firestore.FieldValue.delete()},
+          );
+        });
+        await cleanupBatch.commit();
+      }
     },
 );
