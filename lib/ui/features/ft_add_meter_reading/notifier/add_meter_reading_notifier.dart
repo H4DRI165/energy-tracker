@@ -30,6 +30,7 @@ class AddReadingNotifier extends Notifier<AddReadingPageState>
   );
   int _loadRequestId = 0;
   DateTime? _editingDate;
+  String? _editingReadingId;
 
   @override
   String get screenName => 'AddReadingPage';
@@ -43,6 +44,7 @@ class AddReadingNotifier extends Notifier<AddReadingPageState>
 
   void initForEdit(ReadingRecord reading) {
     _editingDate = reading.date;
+    _editingReadingId = reading.id;
 
     state = state.copyWith(
       selectedDate: reading.date,
@@ -53,6 +55,24 @@ class AddReadingNotifier extends Notifier<AddReadingPageState>
     unawaited(
       Future.microtask(() => _loadSurroundingReadings(reading.date)),
     );
+  }
+
+  DateTime _cutoffFor(DateTime selectedDate) {
+    final now = DateTime.now();
+    final isToday =
+        selectedDate.year == now.year &&
+        selectedDate.month == now.month &&
+        selectedDate.day == now.day;
+    return isToday
+        ? now
+        : DateTime(
+            selectedDate.year,
+            selectedDate.month,
+            selectedDate.day,
+            23,
+            59,
+            59,
+          );
   }
 
   Future<void> _loadSurroundingReadings(DateTime selectedDate) async {
@@ -86,21 +106,7 @@ class AddReadingNotifier extends Notifier<AddReadingPageState>
           isGreaterThan: Timestamp.fromDate(_editingDate!),
         );
       } else {
-        final now = DateTime.now();
-        final isToday =
-            selectedDate.year == now.year &&
-            selectedDate.month == now.month &&
-            selectedDate.day == now.day;
-        final cutoff = isToday
-            ? now
-            : DateTime(
-                selectedDate.year,
-                selectedDate.month,
-                selectedDate.day,
-                23,
-                59,
-                59,
-              );
+        final cutoff = _cutoffFor(selectedDate);
         final startOfNextDay = DateTime(
           selectedDate.year,
           selectedDate.month,
@@ -120,9 +126,12 @@ class AddReadingNotifier extends Notifier<AddReadingPageState>
       final results = await Future.wait([
         beforeQuery.orderBy('date', descending: true).limit(1).get(),
         nextQuery.orderBy('date').limit(1).get(),
+        _loadMonthToDateKwhBefore(uid, selectedDate),
       ]);
-      final beforeSnap = results[0];
-      final nextSnap = results[1];
+
+      final beforeSnap = results[0] as QuerySnapshot<Map<String, dynamic>>;
+      final nextSnap = results[1] as QuerySnapshot<Map<String, dynamic>>;
+      final monthToDateBefore = results[2] as double;
 
       final before = beforeSnap.docs.isEmpty
           ? null
@@ -139,6 +148,7 @@ class AddReadingNotifier extends Notifier<AddReadingPageState>
         lastReadingDate: before?.date,
         nextReading: next?.reading,
         nextReadingDate: next?.date,
+        monthToDateKwhBeforeThisReading: monthToDateBefore,
         readingError: _validateReading(
           reading: state.currentReading,
           lastReading: before?.reading ?? 0,
@@ -175,6 +185,29 @@ class AddReadingNotifier extends Notifier<AddReadingPageState>
         state = state.copyWith(isLoadingLastReading: false);
       }
     }
+  }
+
+  Future<double> _loadMonthToDateKwhBefore(
+    String uid,
+    DateTime selectedDate,
+  ) async {
+    final startOfMonth = DateTime(selectedDate.year, selectedDate.month);
+    final cutoff = _editingDate ?? _cutoffFor(selectedDate);
+
+    final snap = await _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('readings')
+        .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
+        .where('date', isLessThan: Timestamp.fromDate(cutoff))
+        .get();
+
+    return snap.docs
+        .where((d) => d.id != _editingReadingId)
+        .fold<double>(
+          0,
+          (total, d) => total + ((d.data()['kwh'] as num?)?.toDouble() ?? 0),
+        );
   }
 
   ({double reading, DateTime date, String id}) _parse(

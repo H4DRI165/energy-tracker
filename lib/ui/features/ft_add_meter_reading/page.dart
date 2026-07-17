@@ -275,7 +275,7 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
           ref.read(usageProvider.notifier).refresh(),
           ref.read(dashboardProvider.notifier).refresh(),
         ]);
-        
+
         if (mounted) {
           context.pop();
         }
@@ -579,11 +579,14 @@ class _AutoCalcCard extends ConsumerWidget {
     final hasUsage = ref.watch(addReadingProvider.select((s) => s.hasUsage));
     if (!hasUsage) return const SizedBox.shrink();
 
-    final usageKwh = ref.watch(
-      addReadingProvider.select((s) => s.usageKwh),
+    final usageKwh = ref.watch(addReadingProvider.select((s) => s.usageKwh));
+    final cumulativeKwh = ref.watch(
+      addReadingProvider.select((s) => s.cumulativeKwh),
     );
-    final estimatedBill = TariffRates.calculate(usageKwh, tariffType);
-    final eeiBand = TariffRates.getEeiBand(usageKwh);
+    final incrementalCost = ref.watch(
+      addReadingProvider.select((s) => s.incrementalCost(tariffType)),
+    );
+    final eeiBand = TariffRates.getEeiBand(cumulativeKwh);
 
     return Column(
       children: [
@@ -612,9 +615,15 @@ class _AutoCalcCard extends ConsumerWidget {
               ),
               SizedBox(height: 8.h),
               _CalcRow(
-                label: 'Estimated bill',
-                value: 'RM ${estimatedBill.toStringAsFixed(2)}',
-                valueColor: AppColors.accent,
+                label: 'Total usage this month',
+                value: '${cumulativeKwh.toStringAsFixed(0)} kWh',
+                valueColor: AppColors.text,
+              ),
+              SizedBox(height: 8.h),
+              _CalcRow(
+                label: 'Est. cost added',
+                value: 'RM ${incrementalCost.toStringAsFixed(0)}',
+                valueColor: AppColors.text,
               ),
               SizedBox(height: 10.h),
               const Divider(color: AppColors.border, height: 1),
@@ -630,12 +639,11 @@ class _AutoCalcCard extends ConsumerWidget {
                   ),
                   _BandBadge(
                     tariffType: tariffType,
-                    usageKwh: usageKwh,
+                    cumulativeKwh: cumulativeKwh,
                   ),
                 ],
               ),
-              if (tariffType == TariffType.domestic && usageKwh > 0) ...[
-                SizedBox(height: 6.h),
+              if (tariffType == TariffType.domestic && cumulativeKwh > 0) ...[
                 Text(
                   eeiBand.description,
                   style: AppTextStyles.caption.copyWith(color: AppColors.text3),
@@ -653,16 +661,16 @@ class _AutoCalcCard extends ConsumerWidget {
 class _BandBadge extends StatelessWidget {
   const _BandBadge({
     required this.tariffType,
-    required this.usageKwh,
+    required this.cumulativeKwh,
   });
 
   final TariffType tariffType;
-  final double usageKwh;
+  final double cumulativeKwh;
 
   @override
   Widget build(BuildContext context) {
     if (tariffType == TariffType.domestic) {
-      final band = TariffRates.getEeiBand(usageKwh);
+      final band = TariffRates.getEeiBand(cumulativeKwh);
       return Container(
         padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
         decoration: BoxDecoration(
@@ -676,7 +684,7 @@ class _BandBadge extends StatelessWidget {
       );
     }
 
-    final tier = TariffRates.getTier(usageKwh, TariffType.commercial);
+    final tier = TariffRates.getTier(cumulativeKwh, TariffType.commercial);
     final color = TariffRates.getTierColor(tier, TariffType.commercial);
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
