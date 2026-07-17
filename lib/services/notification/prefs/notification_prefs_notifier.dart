@@ -2,15 +2,24 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/services/auth/providers/current_uid_provider.dart';
-import 'package:energy_tracker/services/notification/notification_prefs_state.dart';
+import 'package:energy_tracker/services/notification/prefs/notification_prefs_state.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+final NotifierProvider<NotificationPrefsNotifier, NotificationPrefsState>
+notificationPrefsProvider =
+    NotifierProvider.autoDispose<
+      NotificationPrefsNotifier,
+      NotificationPrefsState
+    >(
+      NotificationPrefsNotifier.new,
+    );
 
 class NotificationPrefsNotifier extends Notifier<NotificationPrefsState> {
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;
 
   @override
   NotificationPrefsState build() {
-    ref.watch(currentUidProvider);
+    ref.watch(currentUidProvider.select((s) => s.value));
     unawaited(_load());
     return const NotificationPrefsState();
   }

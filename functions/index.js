@@ -36,6 +36,9 @@ exports.checkBudgetOnBillUpdate = functions.onDocumentWritten(
       // This is what makes concurrent/retried invocations safe.
       const reservation = await admin.firestore().runTransaction(async (tx) => {
         const snap = await tx.get(billRef);
+        if (snap.data()?.amount !== bill.amount) {
+          return {shouldSend: false};
+        }
         const previousTier = snap.data()?.alertTierSent || 0;
 
         let currentTier = 0;
@@ -54,14 +57,20 @@ exports.checkBudgetOnBillUpdate = functions.onDocumentWritten(
         }
 
         const crossed100 = previousTier < 100 && currentTier >= 100;
+        const crossed80 = previousTier < 80 && currentTier >= 80;
         const sendTier100 = alert100Enabled && crossed100;
-        const sendTier80 = alert80Enabled && !sendTier100;
+        const sendTier80 = alert80Enabled && crossed80 && !sendTier100;
 
         // Reserve immediately — before send() is ever called.
         tx.update(billRef, {alertTierSent: currentTier});
 
         if (!sendTier100 && !sendTier80) return {shouldSend: false};
-        return {shouldSend: true, isExceeded: sendTier100};
+        return {
+          shouldSend: true,
+          isExceeded: sendTier100,
+          reservedTier: currentTier,
+          previousTier,
+        };
       });
 
       if (!reservation.shouldSend) return;
@@ -75,12 +84,26 @@ exports.checkBudgetOnBillUpdate = functions.onDocumentWritten(
       `You've used RM ${usedStr} of your RM ${budgetStr} ` +
       "monthly target.";
 
-      await admin.messaging().send({
-        token: user.fcmToken,
-        notification: {title, body},
-        data: {type: "budget_alert"},
-        android: {notification: {channelId: "budget_alerts"}},
-      });
+      try {
+        await admin.messaging().send({
+          token: user.fcmToken,
+          notification: {title, body},
+          data: {type: "budget_alert"},
+          android: {notification: {channelId: "budget_alerts"}},
+        });
+      } catch (err) {
+        console.error("Failed to send budget alert, releasing reservation",
+            err,
+        );
+        // Roll back the reservation so a future write can retry — but only
+        // if nothing newer has already advanced past our reservation.
+        await admin.firestore().runTransaction(async (tx) => {
+          const snap = await tx.get(billRef);
+          if (snap.data()?.alertTierSent === reservation.reservedTier) {
+            tx.update(billRef, {alertTierSent: reservation.previousTier});
+          }
+        });
+      }
     },
 );
 
@@ -175,9 +198,15 @@ exports.sendMonthlyReadingReminder = onSchedule(
       `${totalFailure} failed, ${staleUids.length} stale tokens found.`,
       );
 
-      if (staleUids.length > 0) {
+      const CLEANUP_BATCH_SIZE = 500;
+      const cleanupChunks = [];
+      for (let i = 0; i < staleUids.length; i += CLEANUP_BATCH_SIZE) {
+        cleanupChunks.push(staleUids.slice(i, i + CLEANUP_BATCH_SIZE));
+      }
+
+      for (const chunk of cleanupChunks) {
         const cleanupBatch = admin.firestore().batch();
-        staleUids.forEach((uid) => {
+        chunk.forEach((uid) => {
           cleanupBatch.update(
               admin.firestore().collection("users").doc(uid),
               {fcmToken: admin.firestore.FieldValue.delete()},

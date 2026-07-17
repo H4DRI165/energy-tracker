@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:energy_tracker/app.dart';
 import 'package:energy_tracker/firebase_options.dart';
 import 'package:energy_tracker/services/auth/providers/current_uid_provider.dart';
-import 'package:energy_tracker/services/notification/notifier/notification_service_provider.dart';
+import 'package:energy_tracker/services/notification/service/provider/notification_service_provider.dart';
 import 'package:energy_tracker/services/observers/crashlytics_provider_observer.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';

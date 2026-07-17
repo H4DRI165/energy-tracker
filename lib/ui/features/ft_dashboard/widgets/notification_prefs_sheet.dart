@@ -1,5 +1,5 @@
 import 'package:energy_tracker/app.dart';
-import 'package:energy_tracker/services/notification/notifier/notification_prefs_provider.dart';
+import 'package:energy_tracker/services/notification/prefs/notification_prefs_notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';

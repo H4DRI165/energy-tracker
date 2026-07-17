@@ -51,7 +51,7 @@ class NotificationService {
         'fcmToken': FieldValue.delete(),
       });
     } on FirebaseException catch (e) {
-      debugPrint('Failed to detach FCM token for $uid: ${e.code}');
+      debugPrint('Failed to detach FCM token: ${e.code}');
     }
   }
 
