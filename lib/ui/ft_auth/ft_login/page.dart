@@ -36,12 +36,13 @@ class _LoginPageState extends ConsumerState<LoginPage>
       curve: Curves.easeOut,
     );
 
-    _slideIn = Tween<Offset>(
-      begin: const Offset(0, 0.04),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
+    _slideIn =
+        Tween<Offset>(
+          begin: const Offset(0, 0.04),
+          end: Offset.zero,
+        ).animate(
+          CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+        );
   }
 
   @override
@@ -52,41 +53,47 @@ class _LoginPageState extends ConsumerState<LoginPage>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bg,
-      resizeToAvoidBottomInset: true,
-      body: SafeArea(
-        child: FadeTransition(
-          opacity: _fadeIn,
-          child: SlideTransition(
-            position: _slideIn,
-            child: Column(
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      behavior: HitTestBehavior.opaque,
+      child: Scaffold(
+        backgroundColor: AppColors.bg,
+        resizeToAvoidBottomInset: true,
+        body: SafeArea(
+          child: FadeTransition(
+            opacity: _fadeIn,
+            child: SlideTransition(
+              position: _slideIn,
+              child: Column(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      keyboardDismissBehavior:
+                          ScrollViewKeyboardDismissBehavior.onDrag,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppDimensions.screenPaddingH,
+                        vertical: AppDimensions.screenPaddingV,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SizedBox(height: 8.h),
+                          const _Header(),
+                          SizedBox(height: 32.h),
+                          const _BodyContent(),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Padding(
                     padding: EdgeInsets.symmetric(
                       horizontal: AppDimensions.screenPaddingH,
-                      vertical: AppDimensions.screenPaddingV,
+                      vertical: 16.h,
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(height: 8.h),
-                        const _Header(),
-                        SizedBox(height: 32.h),
-                        const _BodyContent(),
-                      ],
-                    ),
+                    child: const _RegisterAccountRow(),
                   ),
-                ),
-                Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: AppDimensions.screenPaddingH,
-                    vertical: 16.h,
-                  ),
-                  child: const _RegisterAccountRow(),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -232,8 +239,9 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
                 Expanded(
                   child: Text(
                     state.authError!,
-                    style:
-                        AppTextStyles.bodySm.copyWith(color: AppColors.danger),
+                    style: AppTextStyles.bodySm.copyWith(
+                      color: AppColors.danger,
+                    ),
                   ),
                 ),
               ],
@@ -278,8 +286,9 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
                     SizedBox(width: 10.w),
                     Text(
                       'Continue with Google',
-                      style:
-                          AppTextStyles.bodyLg.copyWith(color: AppColors.text),
+                      style: AppTextStyles.bodyLg.copyWith(
+                        color: AppColors.text,
+                      ),
                     ),
                   ],
                 ),
