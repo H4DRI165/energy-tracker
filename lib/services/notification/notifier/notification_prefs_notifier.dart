@@ -10,6 +10,7 @@ class NotificationPrefsNotifier extends Notifier<NotificationPrefsState> {
 
   @override
   NotificationPrefsState build() {
+    ref.watch(currentUidProvider);
     unawaited(_load());
     return const NotificationPrefsState();
   }

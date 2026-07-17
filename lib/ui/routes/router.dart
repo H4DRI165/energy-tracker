@@ -152,8 +152,9 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) {
         final billId = state.pathParameters['billId'];
         if (billId == null) {
-          return const Scaffold(
-            body: Center(child: Text('Invalid navigation.')),
+           return Scaffold(
+            appBar: AppBar(),
+            body: const Center(child: Text('Invalid navigation.')),
           );
         }
         return BillDetailPage(billId: billId);

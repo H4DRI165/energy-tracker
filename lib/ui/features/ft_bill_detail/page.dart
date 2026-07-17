@@ -45,47 +45,50 @@ class _BillDetailPageState extends ConsumerState<BillDetailPage> {
       }
     });
 
-    if (state.bill == null) {
-      return const SizedBox.shrink();
-    }
+    final isReady = state.bill != null && !state.isLoading;
 
     return Scaffold(
       backgroundColor: AppColors.bg,
+      appBar: isReady
+          ? null
+          : AppBar(backgroundColor: AppColors.bg, elevation: 0),
       body: SafeArea(
         child: Column(
           children: [
-            _Header(bill: state.bill!),
-            Expanded(
-              child: state.isLoading
-                  ? const Center(
-                      child: CircularProgressIndicator(color: AppColors.accent),
-                    )
-                  : state.errorMessage != null
-                  ? Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(16.r),
-                        child: Text(
-                          state.errorMessage!,
-                          style: AppTextStyles.bodyMd.copyWith(
-                            color: AppColors.danger,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    )
-                  : SingleChildScrollView(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: AppDimensions.screenPaddingH,
-                        vertical: 8.h,
-                      ),
-                      child: _BodyContent(
-                        onEditReading: _handleEditReading,
-                      ),
-                    ),
-            ),
+            if (isReady) _Header(bill: state.bill!),
+            Expanded(child: _buildBody(state)),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildBody(BillDetailPageState state) {
+    if (state.errorMessage != null) {
+      return Center(
+        child: Padding(
+          padding: EdgeInsets.all(16.r),
+          child: Text(
+            state.errorMessage!,
+            style: AppTextStyles.bodyMd.copyWith(color: AppColors.danger),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+
+    if (state.bill == null || state.isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.accent),
+      );
+    }
+
+    return SingleChildScrollView(
+      padding: EdgeInsets.symmetric(
+        horizontal: AppDimensions.screenPaddingH,
+        vertical: 8.h,
+      ),
+      child: _BodyContent(onEditReading: _handleEditReading),
     );
   }
 
