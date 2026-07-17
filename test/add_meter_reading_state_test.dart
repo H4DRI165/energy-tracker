@@ -26,21 +26,27 @@ void main() {
     expect(state.usageKwh, 200);
     expect(state.hasUsage, isTrue);
     expect(state.currentTier(TariffType.commercial), 1);
-    expect(state.estimatedBill(TariffType.commercial), closeTo(100.62976, 0.000001));
-  });
-
-  test('never reports negative usage and blocks saving with a validation error', () {
-    final state = AddReadingPageState(
-      isLoadingLastReading: false,
-      lastReading: 700,
-      lastReadingDate: DateTime(2026, 6),
-      currentReading: 500,
-      readingError: 'Meter reading cannot decrease',
+    expect(
+      state.incrementalCost(TariffType.commercial),
+      closeTo(100.62976, 0.000001),
     );
-
-    expect(state.usageKwh, 0);
-    expect(state.canSave, isFalse);
   });
+
+  test(
+    'never reports negative usage and blocks saving with a validation error',
+    () {
+      final state = AddReadingPageState(
+        isLoadingLastReading: false,
+        lastReading: 700,
+        lastReadingDate: DateTime(2026, 6),
+        currentReading: 500,
+        readingError: 'Meter reading cannot decrease',
+      );
+
+      expect(state.usageKwh, 0);
+      expect(state.canSave, isFalse);
+    },
+  );
 
   test('uses domestic EEI bands for the current tier', () {
     final state = AddReadingPageState(

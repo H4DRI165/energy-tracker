@@ -11,11 +11,11 @@ import 'package:go_router/go_router.dart';
 
 class BillDetailPage extends ConsumerStatefulWidget {
   const BillDetailPage({
-    required this.bill,
+    required this.billId,
     super.key,
   });
 
-  final BillRecord bill;
+  final String billId;
 
   @override
   ConsumerState<BillDetailPage> createState() => _BillDetailPageState();
@@ -26,7 +26,7 @@ class _BillDetailPageState extends ConsumerState<BillDetailPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      unawaited(ref.read(billDetailProvider.notifier).init(widget.bill));
+      unawaited(ref.read(billDetailProvider.notifier).init(widget.billId));
     });
   }
 
@@ -45,47 +45,50 @@ class _BillDetailPageState extends ConsumerState<BillDetailPage> {
       }
     });
 
-    if (state.bill == null) {
-      return const SizedBox.shrink();
-    }
+    final isReady = state.bill != null && !state.isLoading;
 
     return Scaffold(
       backgroundColor: AppColors.bg,
+      appBar: isReady
+          ? null
+          : AppBar(backgroundColor: AppColors.bg, elevation: 0),
       body: SafeArea(
         child: Column(
           children: [
-            _Header(bill: state.bill!),
-            Expanded(
-              child: state.isLoading
-                  ? const Center(
-                      child: CircularProgressIndicator(color: AppColors.accent),
-                    )
-                  : state.errorMessage != null
-                  ? Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(16.r),
-                        child: Text(
-                          state.errorMessage!,
-                          style: AppTextStyles.bodyMd.copyWith(
-                            color: AppColors.danger,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    )
-                  : SingleChildScrollView(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: AppDimensions.screenPaddingH,
-                        vertical: 8.h,
-                      ),
-                      child: _BodyContent(
-                        onEditReading: _handleEditReading,
-                      ),
-                    ),
-            ),
+            if (isReady) _Header(bill: state.bill!),
+            Expanded(child: _buildBody(state)),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildBody(BillDetailPageState state) {
+    if (state.errorMessage != null) {
+      return Center(
+        child: Padding(
+          padding: EdgeInsets.all(16.r),
+          child: Text(
+            state.errorMessage!,
+            style: AppTextStyles.bodyMd.copyWith(color: AppColors.danger),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+
+    if (state.bill == null || state.isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.accent),
+      );
+    }
+
+    return SingleChildScrollView(
+      padding: EdgeInsets.symmetric(
+        horizontal: AppDimensions.screenPaddingH,
+        vertical: 8.h,
+      ),
+      child: _BodyContent(onEditReading: _handleEditReading),
     );
   }
 
@@ -93,7 +96,7 @@ class _BillDetailPageState extends ConsumerState<BillDetailPage> {
     await context.push(AppRoutes.addReading, extra: r);
     if (!mounted) return;
 
-    await ref.read(billDetailProvider.notifier).init(widget.bill);
+    await ref.read(billDetailProvider.notifier).init(widget.billId);
     if (!mounted) return;
 
     await Future.wait([
@@ -358,6 +361,7 @@ class _ReadingsSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(billDetailProvider);
+    final tierLabels = state.readings.cumulativeTierLabels();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -412,6 +416,7 @@ class _ReadingsSection extends ConsumerWidget {
               children: state.readings.asMap().entries.map((entry) {
                 return _ReadingRow(
                   reading: entry.value,
+                  tierLabel: tierLabels[entry.value.id]!,
                   bill: bill,
                   isFirst: entry.key == 0,
                   isLast: entry.key == state.readings.length - 1,
@@ -428,6 +433,7 @@ class _ReadingsSection extends ConsumerWidget {
 class _ReadingRow extends ConsumerWidget {
   const _ReadingRow({
     required this.reading,
+    required this.tierLabel,
     required this.bill,
     required this.isFirst,
     required this.isLast,
@@ -435,6 +441,7 @@ class _ReadingRow extends ConsumerWidget {
   });
 
   final ReadingRecord reading;
+  final String tierLabel;
   final BillRecord bill;
   final bool isFirst;
   final bool isLast;
@@ -542,7 +549,7 @@ class _ReadingRow extends ConsumerWidget {
                         style: AppTextStyles.caption,
                       ),
                       Text(
-                        reading.tierLabel,
+                        tierLabel,
                         style: AppTextStyles.caption,
                       ),
                       if (reading.notes.isNotEmpty) ...[

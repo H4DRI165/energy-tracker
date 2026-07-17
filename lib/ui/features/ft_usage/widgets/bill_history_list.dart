@@ -160,7 +160,7 @@ class _BillHistoryTile extends ConsumerWidget {
         }
       },
       child: GestureDetector(
-        onTap: () => context.push(AppRoutes.billDetail, extra: bill),
+        onTap: () => context.push('${AppRoutes.billDetail}/${bill.id}'),
         child: Container(
           padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
           decoration: BoxDecoration(

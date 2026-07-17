@@ -12,6 +12,8 @@ class SettingsPageState {
     this.isDarkMode = true,
     this.isSigningOut = false,
     this.errorMessage,
+    this.photoUrl,
+    this.photoVersion,
   });
 
   final bool isLoading;
@@ -26,6 +28,22 @@ class SettingsPageState {
   final bool isDarkMode;
   final bool isSigningOut;
   final String? errorMessage;
+  final String? photoUrl;
+  final int? photoVersion;
+  static const Object _unset = Object();
+
+  String? get displayPhotoUrl {
+    if (photoUrl == null || photoVersion == null) return photoUrl;
+    final uri = Uri.parse(photoUrl!);
+    return uri
+        .replace(
+          queryParameters: {
+            ...uri.queryParameters,
+            'v': '$photoVersion',
+          },
+        )
+        .toString();
+  }
 
   String get initials {
     final parts = fullName
@@ -56,8 +74,6 @@ class SettingsPageState {
 
   String get formattedBudget => 'RM ${monthlyBudget.toStringAsFixed(0)}';
 
-  static const Object _unset = Object();
-
   SettingsPageState copyWith({
     bool? isLoading,
     String? fullName,
@@ -71,6 +87,8 @@ class SettingsPageState {
     bool? isDarkMode,
     bool? isSigningOut,
     Object? errorMessage = _unset,
+    Object? photoUrl = _unset,
+    Object? photoVersion = _unset,
   }) {
     return SettingsPageState(
       isLoading: isLoading ?? this.isLoading,
@@ -88,6 +106,12 @@ class SettingsPageState {
       errorMessage: identical(errorMessage, _unset)
           ? this.errorMessage
           : errorMessage as String?,
+      photoUrl: identical(photoUrl, _unset)
+          ? this.photoUrl
+          : photoUrl as String?,
+      photoVersion: identical(photoVersion, _unset)
+          ? this.photoVersion
+          : photoVersion as int?,
     );
   }
 }

@@ -122,43 +122,50 @@ class _Header extends ConsumerWidget {
             ),
           ),
           SizedBox(width: 12.w),
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Container(
-                width: AppDimensions.iconBtnSize,
-                height: AppDimensions.iconBtnSize,
-                decoration: BoxDecoration(
-                  color: isAlert
-                      ? AppColors.danger.withValues(alpha: 0.10)
-                      : AppColors.surface2,
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-                  border: isAlert
-                      ? Border.all(
-                          color: AppColors.danger.withValues(alpha: 0.20),
-                        )
-                      : Border.all(color: AppColors.border),
-                ),
-                child: Icon(
-                  Icons.notifications_outlined,
-                  size: 20.r,
-                  color: AppColors.text2,
-                ),
-              ),
-              if (state.hasUnreadNotifications)
-                Positioned(
-                  top: -2,
-                  right: -2,
-                  child: Container(
-                    width: 8.r,
-                    height: 8.r,
-                    decoration: const BoxDecoration(
-                      color: AppColors.danger,
-                      shape: BoxShape.circle,
-                    ),
+          GestureDetector(
+            onTap: () => showModalBottomSheet<void>(
+              context: context,
+              backgroundColor: Colors.transparent,
+              builder: (_) => const NotificationPrefsSheet(),
+            ),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  width: AppDimensions.iconBtnSize,
+                  height: AppDimensions.iconBtnSize,
+                  decoration: BoxDecoration(
+                    color: isAlert
+                        ? AppColors.danger.withValues(alpha: 0.10)
+                        : AppColors.surface2,
+                    borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+                    border: isAlert
+                        ? Border.all(
+                            color: AppColors.danger.withValues(alpha: 0.20),
+                          )
+                        : Border.all(color: AppColors.border),
+                  ),
+                  child: Icon(
+                    Icons.notifications_outlined,
+                    size: 20.r,
+                    color: AppColors.text2,
                   ),
                 ),
-            ],
+                if (state.hasUnreadNotifications)
+                  Positioned(
+                    top: -2,
+                    right: -2,
+                    child: Container(
+                      width: 8.r,
+                      height: 8.r,
+                      decoration: const BoxDecoration(
+                        color: AppColors.danger,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ],
       ),

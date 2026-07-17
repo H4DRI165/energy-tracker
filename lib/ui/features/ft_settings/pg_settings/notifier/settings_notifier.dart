@@ -54,6 +54,8 @@ class SettingsNotifier extends AsyncNotifier<SettingsPageState>
     }
 
     final data = doc.data()!;
+    final photoUpdatedAt = data['photoUpdatedAt'] as Timestamp?;
+
     return SettingsPageState(
       fullName: data['fullName'] as String? ?? authName,
       email: authEmail,
@@ -63,6 +65,8 @@ class SettingsNotifier extends AsyncNotifier<SettingsPageState>
       budgetAlertsEnabled: data['budgetAlertsEnabled'] as bool? ?? true,
       billRemindersEnabled: data['billRemindersEnabled'] as bool? ?? true,
       monthlySummaryEnabled: data['monthlySummaryEnabled'] as bool? ?? false,
+      photoUrl: data['photoUrl'] as String?,
+      photoVersion: photoUpdatedAt?.millisecondsSinceEpoch,
     );
   }
 

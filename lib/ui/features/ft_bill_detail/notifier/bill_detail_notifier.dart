@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:energy_tracker/constants/tariff_rates.dart';
 import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 import 'package:energy_tracker/models/bill_record.dart';
 import 'package:energy_tracker/models/reading_record.dart';
@@ -18,6 +19,27 @@ billDetailProvider =
     NotifierProvider.autoDispose<BillDetailNotifier, BillDetailPageState>(
       BillDetailNotifier.new,
     );
+
+extension ReadingRecordListX on List<ReadingRecord> {
+  // sum of all kwh to get tier
+  Map<String, String> cumulativeTierLabels() {
+    final sorted = [...this]..sort((a, b) => a.date.compareTo(b.date));
+    var runningKwh = 0.0;
+    final labels = <String, String>{};
+
+    for (final r in sorted) {
+      runningKwh += r.kwh;
+      if (r.tariffType == TariffType.domestic) {
+        final band = TariffRates.getEeiBand(runningKwh);
+        labels[r.id] = band.number == 0 ? 'No rebate' : band.label;
+      } else {
+        final tier = TariffRates.getTier(runningKwh, r.tariffType);
+        labels[r.id] = TariffRates.getTierPriceKwhLabel(tier, r.tariffType);
+      }
+    }
+    return labels;
+  }
+}
 
 class BillDetailNotifier extends Notifier<BillDetailPageState>
     with LoggableNotifier<BillDetailPageState> {
@@ -37,16 +59,23 @@ class BillDetailNotifier extends Notifier<BillDetailPageState>
     return const BillDetailPageState();
   }
 
-  Future<void> init(BillRecord bill) async {
-    final freshBill = await _loadBill(bill.id);
-    final resolvedBill = freshBill ?? bill;
+  Future<void> init(String billId) async {
+    final freshBill = await _loadBill(billId);
+
+    if (freshBill == null) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'Bill not found.',
+      );
+      return;
+    }
 
     state = state.copyWith(
-      bill: resolvedBill,
-      isPaid: resolvedBill.isPaid,
+      bill: freshBill,
+      isPaid: freshBill.isPaid,
     );
 
-    await _loadReadings(resolvedBill);
+    await _loadReadings(freshBill);
   }
 
   Future<void> _loadReadings(BillRecord bill) async {
