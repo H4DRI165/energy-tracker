@@ -21,6 +21,8 @@ Built for portfolio demonstration — install and test without any setup require
 - **Tariff Calculator** — Live bill breakdown for domestic and commercial LV tariffs
 - **Usage Analytics** — Monthly/yearly charts and history tracking
 - **Onboarding** — Tariff type selection and budget setup
+- **Push Notifications** — Budget threshold alerts (80% / 100%) and end-of-month meter reading reminders, with per-user toggle controls
+- **Crash Reporting** — Automatic crash and error capture across the app via Firebase Crashlytics
 
 ---
 
@@ -32,9 +34,44 @@ Built for portfolio demonstration — install and test without any setup require
 | State Management | Riverpod |
 | Auth | Firebase Authentication |
 | Database | Cloud Firestore |
+| Backend Logic | Cloud Functions (Node.js) |
+| Push Notifications | Firebase Cloud Messaging, flutter_local_notifications |
 | Analytics | Firebase Analytics |
 | Crash Reporting | Firebase Crashlytics |
+| App Integrity | Firebase App Check |
 | Storage | Firebase Storage |
+
+---
+
+## 🔔 Push Notifications
+
+Notifications are driven by Cloud Functions reacting to Firestore writes and a scheduled job, rather than sent client-side — so alerts reach a device even if the app isn't open.
+
+### Budget alerts (80% / 100%)
+- A Firestore trigger fires whenever a monthly bill document is written (created, edited, or affected by a reading deletion)
+- Alert state is reserved **atomically inside a Firestore transaction before sending**, so concurrent or retried function invocations can't deliver duplicate notifications
+- Alert tier (0 / 80 / 100) is tracked per bill document, not per user — editing a past month's bill can never reset or duplicate the current month's alert state
+- If delivery to FCM fails after the tier is reserved, the reservation is safely rolled back so a later update can retry
+- Each user can independently toggle 80%/100% alerts on or off from the dashboard
+
+### End-of-month reading reminder
+- A scheduled Cloud Function runs monthly, checking which users haven't yet logged a meter reading for the current month
+- Sends are batched to respect FCM's 500-token-per-call limit
+- Dead tokens (uninstalled app, cleared data) are detected from the delivery response and automatically cleaned up from Firestore
+
+### On-device handling
+- Foreground messages are rendered via `flutter_local_notifications` on a dedicated high-importance Android channel
+- Background and terminated-state notification taps are routed to the correct screen (dashboard or add-reading) via `onMessageOpenedApp` and `getInitialMessage()`
+- FCM tokens are attached on login and detached on logout/account switch, so a shared device never delivers one account's alerts to another
+- A dedicated white silhouette icon is used for the Android status bar/notification tray, separate from the full-color app launcher icon, per Android's notification icon guidelines
+
+---
+
+## 🩺 Reliability & Observability
+
+- **Firebase Crashlytics** captures both fatal Flutter errors (`FlutterError.onError`) and uncaught platform-level errors (`PlatformDispatcher.instance.onError`), with crash collection disabled in debug builds
+- **Firebase App Check** (Play Integrity in release, debug provider in development) helps guard backend resources against abuse
+- All Cloud Functions are code-reviewed via automated PR review (CodeRabbit) covering correctness, idempotency, and Firestore write-limit edge cases before merge
 
 ---
 
