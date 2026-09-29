@@ -252,7 +252,10 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
         GradientButton(
           label: 'Sign In',
           isLoading: state.isLoading,
-          onTap: ref.read(loginProvider.notifier).login,
+          onTap: () async {
+            FocusScope.of(context).unfocus();
+             unawaited(ref.read(loginProvider.notifier).login());
+          },
         ),
         SizedBox(height: 20.h),
         const AppDivider(middleText: 'or continue with'),

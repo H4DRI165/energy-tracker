@@ -369,6 +369,7 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
   }
 
   Future<void> _handleRegister() async {
+    FocusScope.of(context).unfocus();
     final notifier = ref.read(registerProvider.notifier);
     await notifier.register();
 
