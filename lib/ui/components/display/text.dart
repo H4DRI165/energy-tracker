@@ -157,6 +157,7 @@ class AppTextFloatingLabelField extends StatelessWidget {
                 controller: controller,
                 focusNode: focusNode,
                 decoration: InputDecoration(
+                  hintFadeDuration: const Duration(milliseconds: 200),
                   floatingLabelBehavior:
                       border ==
                           AppFormFieldBorder.outlinedWithAlwaysFloatingLabel
