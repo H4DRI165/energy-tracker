@@ -53,6 +53,8 @@ class _LoginPageState extends ConsumerState<LoginPage>
 
   @override
   Widget build(BuildContext context) {
+    final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
+
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       behavior: HitTestBehavior.opaque,
@@ -85,13 +87,14 @@ class _LoginPageState extends ConsumerState<LoginPage>
                       ),
                     ),
                   ),
-                  Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: AppDimensions.screenPaddingH,
-                      vertical: 16.h,
+                  if (!keyboardOpen)
+                    Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppDimensions.screenPaddingH,
+                        vertical: 16.h,
+                      ),
+                      child: const _RegisterAccountRow(),
                     ),
-                    child: const _RegisterAccountRow(),
-                  ),
                 ],
               ),
             ),

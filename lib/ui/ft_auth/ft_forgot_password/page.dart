@@ -51,6 +51,8 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage>
 
   @override
   Widget build(BuildContext context) {
+    final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
+
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       behavior: HitTestBehavior.opaque,
@@ -82,13 +84,14 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage>
                       ),
                     ),
                   ),
-                  Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: AppDimensions.screenPaddingH,
-                      vertical: 24,
+                  if (!keyboardOpen)
+                    Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppDimensions.screenPaddingH,
+                        vertical: 24,
+                      ),
+                      child: _BackToLoginRow(),
                     ),
-                    child: _BackToLoginRow(),
-                  ),
                 ],
               ),
             ),
