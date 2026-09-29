@@ -190,7 +190,7 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
         AppTextFloatingLabelField(
           controller: _fullNameController,
           labelText: 'Full Name',
-          hintText: 'Enter your full name',
+          hintText: 'e.g. Ahmad Faiz bin Ali',
           border: AppFormFieldBorder.roundedOutlined,
           prefixIcon: Icon(
             Icons.person_outline,
@@ -210,7 +210,7 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
           controller: _emailController,
           keyboardType: TextInputType.emailAddress,
           labelText: 'Email Address',
-          hintText: 'Enter your email',
+          hintText: 'name@example.com',
           border: AppFormFieldBorder.roundedOutlined,
           prefixIcon: Icon(
             Icons.email_outlined,
@@ -244,7 +244,7 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
         AppTextFloatingLabelField(
           controller: _passwordController,
           labelText: 'Password',
-          hintText: 'Create a strong password',
+          hintText: 'At least 8 characters, with a number',
           border: AppFormFieldBorder.roundedOutlined,
           prefixIcon: Icon(
             Icons.lock_outlined,
@@ -279,7 +279,6 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
         AppTextFloatingLabelField(
           controller: _confirmedPasswordController,
           labelText: 'Confirm Password',
-          hintText: 'Confirm your password',
           border: AppFormFieldBorder.roundedOutlined,
           prefixIcon: Icon(
             Icons.lock_outline,
