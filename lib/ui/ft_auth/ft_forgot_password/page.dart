@@ -30,14 +30,17 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage>
 
     unawaited(_animationController.forward());
 
-    _fadeIn =
-        CurvedAnimation(parent: _animationController, curve: Curves.easeOut);
-    _slideIn = Tween<Offset>(
-      begin: const Offset(0, 0.04),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+    _fadeIn = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOut,
     );
+    _slideIn =
+        Tween<Offset>(
+          begin: const Offset(0, 0.04),
+          end: Offset.zero,
+        ).animate(
+          CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+        );
   }
 
   @override
@@ -48,40 +51,46 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bg,
-      resizeToAvoidBottomInset: true,
-      body: SafeArea(
-        child: FadeTransition(
-          opacity: _fadeIn,
-          child: SlideTransition(
-            position: _slideIn,
-            child: Column(
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      behavior: HitTestBehavior.opaque,
+      child: Scaffold(
+        backgroundColor: AppColors.bg,
+        resizeToAvoidBottomInset: true,
+        body: SafeArea(
+          child: FadeTransition(
+            opacity: _fadeIn,
+            child: SlideTransition(
+              position: _slideIn,
+              child: Column(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      keyboardDismissBehavior:
+                          ScrollViewKeyboardDismissBehavior.onDrag,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppDimensions.screenPaddingH,
+                        vertical: AppDimensions.screenPaddingV,
+                      ),
+                      child: const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _Header(),
+                          SizedBox(height: 32),
+                          _BodyContent(),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Padding(
                     padding: EdgeInsets.symmetric(
                       horizontal: AppDimensions.screenPaddingH,
-                      vertical: AppDimensions.screenPaddingV,
+                      vertical: 24,
                     ),
-                    child: const Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _Header(),
-                        SizedBox(height: 32),
-                        _BodyContent(),
-                      ],
-                    ),
+                    child: _BackToLoginRow(),
                   ),
-                ),
-                Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: AppDimensions.screenPaddingH,
-                    vertical: 24,
-                  ),
-                  child: _BackToLoginRow(),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -164,7 +173,7 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
           controller: _emailController,
           keyboardType: TextInputType.emailAddress,
           labelText: 'Email',
-          hintText: 'Enter your email',
+          hintText: 'name@example.com',
           border: AppFormFieldBorder.roundedOutlined,
           prefixIcon: Icon(
             Icons.email_outlined,
@@ -187,7 +196,8 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
         SizedBox(height: 20.h),
         const _InfoCard(
           icon: Icons.info_outline_rounded,
-          text: "Check your spam folder if you don't "
+          text:
+              "Check your spam folder if you don't "
               'see the email within a few minutes.',
         ),
       ],

@@ -91,10 +91,10 @@ class Appliance {
   }
 
   Map<String, dynamic> toMap() => {
-        'name': name,
-        'category': category,
-        'wattage': wattage,
-        'dailyHours': dailyHours,
-        'createdAt': createdAt,
-      };
+    'name': name,
+    'category': category,
+    'wattage': wattage,
+    'dailyHours': dailyHours,
+    'createdAt': createdAt,
+  };
 }

@@ -81,8 +81,9 @@ class ConfirmDialog extends StatelessWidget {
                   Expanded(
                     child: Text(
                       warning!,
-                      style:
-                          AppTextStyles.caption.copyWith(color: AppColors.warn),
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.warn,
+                      ),
                     ),
                   ),
                 ],

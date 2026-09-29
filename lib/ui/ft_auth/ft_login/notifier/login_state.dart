@@ -38,8 +38,9 @@ class LoginPageState {
       passwordError: identical(passwordError, _unset)
           ? this.passwordError
           : passwordError as String?,
-      authError:
-          identical(authError, _unset) ? this.authError : authError as String?,
+      authError: identical(authError, _unset)
+          ? this.authError
+          : authError as String?,
     );
   }
 }

@@ -29,7 +29,9 @@ class SavingTipsCard extends StatelessWidget {
             style: AppTextStyles.bodyMd.copyWith(fontWeight: FontWeight.w700),
           ),
           SizedBox(height: 10.h),
-          ...(_tips.take(2).map(
+          ...(_tips
+              .take(2)
+              .map(
                 (tip) => Padding(
                   padding: EdgeInsets.only(bottom: 8.h),
                   child: Row(

@@ -25,11 +25,11 @@ class BudgetAlertBanner extends ConsumerWidget {
     final title = isExceeded ? 'Budget Exceeded!' : '80% Budget Reached';
     final subtitle = isExceeded
         ? 'RM ${state.estimatedBill.toStringAsFixed(2)} used — RM '
-            '${(state.estimatedBill - state.monthlyBudget).toStringAsFixed(2)} '
-            'over your target.'
+              '${(state.estimatedBill - state.monthlyBudget).toStringAsFixed(2)} '
+              'over your target.'
         : 'RM ${state.estimatedBill.toStringAsFixed(0)} used of RM '
-            '${state.monthlyBudget.toStringAsFixed(0)} target. '
-            '${state.daysLeft} days left.';
+              '${state.monthlyBudget.toStringAsFixed(0)} target. '
+              '${state.daysLeft} days left.';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),

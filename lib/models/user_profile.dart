@@ -12,19 +12,19 @@ class UserProfile {
   });
 
   factory UserProfile.fromDoc(Map<String, dynamic> data) => UserProfile(
-        fullName: _readString(data['fullName']),
-        tariffType: TariffTypeX.fromValue(
-          _readString(data['tariffType'], fallback: TariffType.domestic.value),
-        ),
-        monthlyBudget: _readDouble(data['monthlyBudget']),
-        tnbAccountNo: _readString(data['tnbAccountNo']),
-        monthlySummaryEnabled: _readBool(
-          data['monthlySummaryEnabled'],
-          fallback: true,
-        ),
-        isGuest: _readBool(data['isGuest']),
-        onboardingCompleted: _readBool(data['onboardingCompleted']),
-      );
+    fullName: _readString(data['fullName']),
+    tariffType: TariffTypeX.fromValue(
+      _readString(data['tariffType'], fallback: TariffType.domestic.value),
+    ),
+    monthlyBudget: _readDouble(data['monthlyBudget']),
+    tnbAccountNo: _readString(data['tnbAccountNo']),
+    monthlySummaryEnabled: _readBool(
+      data['monthlySummaryEnabled'],
+      fallback: true,
+    ),
+    isGuest: _readBool(data['isGuest']),
+    onboardingCompleted: _readBool(data['onboardingCompleted']),
+  );
 
   static String _readString(dynamic value, {String fallback = ''}) =>
       value is String ? value : fallback;

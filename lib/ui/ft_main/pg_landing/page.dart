@@ -40,15 +40,16 @@ class _LandingPageState extends State<LandingPage>
       curve: const Interval(0, 0.4, curve: Curves.easeOut),
     );
 
-    _heroSlide = Tween<Offset>(
-      begin: const Offset(0, 0.06),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.1, 0.55, curve: Curves.easeOut),
-      ),
-    );
+    _heroSlide =
+        Tween<Offset>(
+          begin: const Offset(0, 0.06),
+          end: Offset.zero,
+        ).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: const Interval(0.1, 0.55, curve: Curves.easeOut),
+          ),
+        );
 
     _heroFade = CurvedAnimation(
       parent: _controller,
@@ -242,8 +243,9 @@ class _LandingPageState extends State<LandingPage>
                                 height: 14.r,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 1.5,
-                                  color:
-                                      AppColors.accent.withValues(alpha: 0.6),
+                                  color: AppColors.accent.withValues(
+                                    alpha: 0.6,
+                                  ),
                                 ),
                               ),
                               SizedBox(width: 10.w),

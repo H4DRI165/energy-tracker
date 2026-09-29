@@ -5,8 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final tariffCalculatorProvider =
     NotifierProvider<TariffCalculatorNotifier, TariffCalculatorState>(
-  TariffCalculatorNotifier.new,
-);
+      TariffCalculatorNotifier.new,
+    );
 
 class TariffCalculatorNotifier extends Notifier<TariffCalculatorState> {
   @override

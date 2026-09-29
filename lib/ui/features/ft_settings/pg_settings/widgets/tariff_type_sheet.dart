@@ -67,7 +67,8 @@ class TariffTypeSheet extends StatelessWidget {
                             title: 'Switch Tariff Type?',
                             message: 'Switch to ${tariff.label}?',
                             confirmLabel: 'Switch',
-                            warning: 'This will affect how your bill is '
+                            warning:
+                                'This will affect how your bill is '
                                 'calculated going forward.',
                           );
 
@@ -83,8 +84,9 @@ class TariffTypeSheet extends StatelessWidget {
                       color: isSelected
                           ? AppColors.accent.withValues(alpha: 0.06)
                           : AppColors.surface2,
-                      borderRadius:
-                          BorderRadius.circular(AppDimensions.radiusMd),
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.radiusMd,
+                      ),
                       border: Border.all(
                         color: isSelected
                             ? AppColors.accent.withValues(alpha: 0.3)

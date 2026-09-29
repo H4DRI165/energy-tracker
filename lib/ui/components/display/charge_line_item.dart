@@ -18,8 +18,8 @@ class ChargeLineItemRow extends StatelessWidget {
     final amountColor = isRebate
         ? AppColors.accent
         : isLevy
-            ? AppColors.text2
-            : AppColors.text;
+        ? AppColors.text2
+        : AppColors.text;
 
     return Padding(
       padding: EdgeInsets.only(bottom: 12.h),

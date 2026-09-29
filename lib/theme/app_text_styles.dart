@@ -10,139 +10,139 @@ abstract class AppTextStyles {
 
   /// App name — Lato 800, 40px
   static TextStyle get displayXl => GoogleFonts.lato(
-        fontSize: 40.sp,
-        fontWeight: FontWeight.w800,
-        color: AppColors.text,
-        height: 1,
-      );
+    fontSize: 40.sp,
+    fontWeight: FontWeight.w800,
+    color: AppColors.text,
+    height: 1,
+  );
 
   /// Section number — Lato 800, 36px
   static TextStyle get displayLg => GoogleFonts.lato(
-        fontSize: 36.sp,
-        fontWeight: FontWeight.w800,
-        color: AppColors.text,
-        height: 1,
-      );
+    fontSize: 36.sp,
+    fontWeight: FontWeight.w800,
+    color: AppColors.text,
+    height: 1,
+  );
 
   /// Card headline — Lato 800, 26px
   static TextStyle get displayMd => GoogleFonts.lato(
-        fontSize: 26.sp,
-        fontWeight: FontWeight.w800,
-        color: AppColors.text,
-        height: 1.1,
-      );
+    fontSize: 26.sp,
+    fontWeight: FontWeight.w800,
+    color: AppColors.text,
+    height: 1.1,
+  );
 
   /// Screen title / nav — Lato 700, 22px
   static TextStyle get titleLg => GoogleFonts.lato(
-        fontSize: 22.sp,
-        fontWeight: FontWeight.w700,
-        color: AppColors.text,
-        height: 1.2,
-      );
+    fontSize: 22.sp,
+    fontWeight: FontWeight.w700,
+    color: AppColors.text,
+    height: 1.2,
+  );
 
   /// Card title — Lato 700, 18px
   static TextStyle get titleMd => GoogleFonts.lato(
-        fontSize: 18.sp,
-        fontWeight: FontWeight.w700,
-        color: AppColors.text,
-        height: 1.2,
-      );
+    fontSize: 18.sp,
+    fontWeight: FontWeight.w700,
+    color: AppColors.text,
+    height: 1.2,
+  );
 
   /// Section label / overline — Lato 700, 11px, 3px spacing, UPPERCASE
   static TextStyle get overline => GoogleFonts.lato(
-        fontSize: 11.sp,
-        fontWeight: FontWeight.w700,
-        color: AppColors.accent,
-        letterSpacing: 3,
-        height: 1,
-      ).copyWith(decoration: TextDecoration.none);
+    fontSize: 11.sp,
+    fontWeight: FontWeight.w700,
+    color: AppColors.accent,
+    letterSpacing: 3,
+    height: 1,
+  ).copyWith(decoration: TextDecoration.none);
 
   /// Nav label overline — Lato 600, 9px
   static TextStyle get navLabel => GoogleFonts.lato(
-        fontSize: 9.sp,
-        fontWeight: FontWeight.w600,
-        color: AppColors.text3,
-        letterSpacing: 0.5,
-        height: 1,
-      );
+    fontSize: 9.sp,
+    fontWeight: FontWeight.w600,
+    color: AppColors.text3,
+    letterSpacing: 0.5,
+    height: 1,
+  );
 
   // ─── Body (DM Sans) ────────────────────────────────────────────────────────
 
   /// Body large — DM Sans 400, 15px
   static TextStyle get bodyLg => GoogleFonts.dmSans(
-        fontSize: 15.sp,
-        fontWeight: FontWeight.w400,
-        color: AppColors.text,
-        height: 1.5,
-      );
+    fontSize: 15.sp,
+    fontWeight: FontWeight.w400,
+    color: AppColors.text,
+    height: 1.5,
+  );
 
   /// Body default — DM Sans 400, 13px
   static TextStyle get bodyMd => GoogleFonts.dmSans(
-        fontSize: 13.sp,
-        fontWeight: FontWeight.w400,
-        color: AppColors.text,
-        height: 1.5,
-      );
+    fontSize: 13.sp,
+    fontWeight: FontWeight.w400,
+    color: AppColors.text,
+    height: 1.5,
+  );
 
   /// Body small — DM Sans 400, 12px
   static TextStyle get bodySm => GoogleFonts.dmSans(
-        fontSize: 12.sp,
-        fontWeight: FontWeight.w400,
-        color: AppColors.text2,
-        height: 1.4,
-      );
+    fontSize: 12.sp,
+    fontWeight: FontWeight.w400,
+    color: AppColors.text2,
+    height: 1.4,
+  );
 
   /// Caption / meta — DM Sans 400, 11px
   static TextStyle get caption => GoogleFonts.dmSans(
-        fontSize: 11.sp,
-        fontWeight: FontWeight.w400,
-        color: AppColors.text2,
-        height: 1.3,
-      );
+    fontSize: 11.sp,
+    fontWeight: FontWeight.w400,
+    color: AppColors.text2,
+    height: 1.3,
+  );
 
   /// Label (input labels, section keys) — DM Sans 600, 12px
   static TextStyle get label => GoogleFonts.dmSans(
-        fontSize: 12.sp,
-        fontWeight: FontWeight.w600,
-        color: AppColors.text2,
-        letterSpacing: 0.5,
-        height: 1,
-      );
+    fontSize: 12.sp,
+    fontWeight: FontWeight.w600,
+    color: AppColors.text2,
+    letterSpacing: 0.5,
+    height: 1,
+  );
 
   /// Button text — Lato 700, 15px, 0.5px spacing
   static TextStyle get button => GoogleFonts.lato(
-        fontSize: 15.sp,
-        fontWeight: FontWeight.w700,
-        color: Colors.black,
-        letterSpacing: 0.5,
-        height: 1,
-      );
+    fontSize: 15.sp,
+    fontWeight: FontWeight.w700,
+    color: Colors.black,
+    letterSpacing: 0.5,
+    height: 1,
+  );
 
   /// Tag / badge text — DM Sans 600, 11px
   static TextStyle get tag => GoogleFonts.dmSans(
-        fontSize: 11.sp,
-        fontWeight: FontWeight.w600,
-        height: 1,
-      );
+    fontSize: 11.sp,
+    fontWeight: FontWeight.w600,
+    height: 1,
+  );
 
   // ─── Numeric display (Lato — for meter readings, RM amounts) ───────────────
 
   /// Large kWh / RM reading — Lato 800, 44px
   static TextStyle get meterXl => GoogleFonts.lato(
-        fontSize: 44.sp,
-        fontWeight: FontWeight.w800,
-        color: AppColors.accent,
-        letterSpacing: 4,
-        height: 1,
-      );
+    fontSize: 44.sp,
+    fontWeight: FontWeight.w800,
+    color: AppColors.accent,
+    letterSpacing: 4,
+    height: 1,
+  );
 
   /// Medium stat number — Lato 700, 20px
   static TextStyle get statMd => GoogleFonts.lato(
-        fontSize: 20.sp,
-        fontWeight: FontWeight.w700,
-        color: AppColors.text,
-        height: 1,
-      );
+    fontSize: 20.sp,
+    fontWeight: FontWeight.w700,
+    color: AppColors.text,
+    height: 1,
+  );
 
   static TextStyle muted(TextStyle base) =>
       base.copyWith(color: AppColors.text2);

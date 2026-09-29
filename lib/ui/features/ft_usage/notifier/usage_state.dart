@@ -111,12 +111,12 @@ class UsageState {
 
   @override
   int get hashCode => Object.hash(
-        filter,
-        Object.hashAll(monthlyData),
-        Object.hashAll(billHistory),
-        currentKwh,
-        currentBill,
-        currentTariffType,
-        currentMonthLabel,
-      );
+    filter,
+    Object.hashAll(monthlyData),
+    Object.hashAll(billHistory),
+    currentKwh,
+    currentBill,
+    currentTariffType,
+    currentMonthLabel,
+  );
 }

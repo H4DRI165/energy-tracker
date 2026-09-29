@@ -165,7 +165,7 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
           controller: _emailController,
           keyboardType: TextInputType.emailAddress,
           labelText: 'Email',
-          hintText: 'Enter your email',
+          hintText: 'name@example.com',
           border: AppFormFieldBorder.roundedOutlined,
           prefixIcon: Icon(
             Icons.email_outlined,
@@ -179,7 +179,6 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
         AppTextFloatingLabelField(
           controller: _passwordController,
           labelText: 'Password',
-          hintText: 'Enter your password',
           border: AppFormFieldBorder.roundedOutlined,
           prefixIcon: Icon(
             Icons.lock_outlined,
@@ -254,7 +253,7 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
           isLoading: state.isLoading,
           onTap: () async {
             FocusScope.of(context).unfocus();
-             unawaited(ref.read(loginProvider.notifier).login());
+            unawaited(ref.read(loginProvider.notifier).login());
           },
         ),
         SizedBox(height: 20.h),

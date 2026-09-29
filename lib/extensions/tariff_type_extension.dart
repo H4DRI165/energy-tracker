@@ -50,7 +50,7 @@ extension TariffTypeX on TariffType {
   }
 
   static TariffType fromValue(String value) => TariffType.values.firstWhere(
-        (t) => t.value == value,
-        orElse: () => TariffType.domestic,
-      );
+    (t) => t.value == value,
+    orElse: () => TariffType.domestic,
+  );
 }
