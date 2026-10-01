@@ -2,6 +2,8 @@
 
 A Flutter mobile app for Malaysian TNB (Tenaga Nasional Berhad) customers to track electricity usage, estimate bills, and manage monthly energy budgets. Supports both residential (Tariff A) and commercial LV (Tariff B) accounts.
 
+> **Documentation:** product requirements, architecture, data model, billing logic, glossary, and the dev guide live in [`docs/`](docs/README.md).
+
 ---
 
 ## 📦 Live APK (Download & Test)
