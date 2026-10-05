@@ -302,7 +302,7 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
           AppTextField(
             label: 'TNB Account No.',
             controller: _tnbController,
-            hintText: 'e.g. 1234567890',
+            hintText: 'e.g. 123456789012',
             keyboardType: TextInputType.number,
             prefixIcon: Icons.receipt_long_outlined,
             errorText: state.tnbAccountError,
