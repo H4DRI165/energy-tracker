@@ -259,10 +259,12 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
             ),
             if (!isSaving && disabledReason != null) ...[
               SizedBox(height: 8.h),
-              Text(
-                disabledReason,
-                textAlign: TextAlign.center,
-                style: AppTextStyles.caption.copyWith(color: AppColors.text2),
+              Center(
+                child: Text(
+                  disabledReason,
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.caption.copyWith(color: AppColors.text2),
+                ),
               ),
             ],
             SizedBox(height: 24.h),
