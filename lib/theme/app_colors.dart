@@ -55,7 +55,7 @@ abstract class AppColors {
   static const Color text2 = Color(0xFF8899BB);
 
   /// Tertiary / disabled text: #4A5C7A
-  static const Color text3 = Color(0xFF4A5C7A);
+  static const Color text3 = Color(0xFF7E8DB0);
 
   // ─── Gradients ─────────────────────────────────────────────────────────────
   /// Primary CTA gradient (teal → blue)
