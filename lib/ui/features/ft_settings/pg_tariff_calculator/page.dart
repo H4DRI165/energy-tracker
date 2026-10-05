@@ -57,54 +57,59 @@ class _TariffCalculatorPageState extends ConsumerState<TariffCalculatorPage> {
         ? (isNoUsage ? AppColors.text3 : eeiBand?.color)
         : TariffRates.getTierColor(commercialTier, TariffType.commercial);
 
-    return Scaffold(
-      backgroundColor: AppColors.bg,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _Header(),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.symmetric(
-                  horizontal: AppDimensions.screenPaddingH,
-                  vertical: 8.h,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _TariffTypeSwitch(selected: tariffType),
-                    SizedBox(height: 16.h),
-                    _KwhInputCard(controller: _controller, kwh: kwh),
-                    SizedBox(height: 20.h),
-                    Text(
-                      'Bill Breakdown (${tariffType.shortLabel})',
-                      style: AppTextStyles.bodyMd.copyWith(
-                        fontWeight: FontWeight.w700,
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
+        backgroundColor: AppColors.bg,
+        body: SafeArea(
+          child: Column(
+            children: [
+              _Header(),
+              Expanded(
+                child: SingleChildScrollView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: AppDimensions.screenPaddingH,
+                    vertical: 8.h,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _TariffTypeSwitch(selected: tariffType),
+                      SizedBox(height: 16.h),
+                      _KwhInputCard(controller: _controller, kwh: kwh),
+                      SizedBox(height: 20.h),
+                      Text(
+                        'Bill Breakdown (${tariffType.shortLabel})',
+                        style: AppTextStyles.bodyMd.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                    ),
-                    SizedBox(height: 10.h),
-                    _BreakdownSection(
-                      items: TariffRates.breakdownFor(kwh, tariffType),
-                      kwh: kwh,
-                      tariffType: tariffType,
-                    ),
-                    SizedBox(height: 8.h),
-                    _TotalCard(
-                      total: total,
-                      minCharge: tariffType == TariffType.commercial
-                          ? TariffRates.minChargeFor(TariffType.commercial)
-                          : 0,
-                      badgeLabel: badgeLabel!,
-                      badgeColor: badgeColor!,
-                    ),
-                    SizedBox(height: 16.h),
-                    _InfoCard(tariffType: tariffType),
-                    SizedBox(height: 24.h),
-                  ],
+                      SizedBox(height: 10.h),
+                      _BreakdownSection(
+                        items: TariffRates.breakdownFor(kwh, tariffType),
+                        kwh: kwh,
+                        tariffType: tariffType,
+                      ),
+                      SizedBox(height: 8.h),
+                      _TotalCard(
+                        total: total,
+                        minCharge: tariffType == TariffType.commercial
+                            ? TariffRates.minChargeFor(TariffType.commercial)
+                            : 0,
+                        badgeLabel: badgeLabel!,
+                        badgeColor: badgeColor!,
+                      ),
+                      SizedBox(height: 16.h),
+                      _InfoCard(tariffType: tariffType),
+                      SizedBox(height: 24.h),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
