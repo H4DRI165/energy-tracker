@@ -53,6 +53,8 @@ class _LoginPageState extends ConsumerState<LoginPage>
 
   @override
   Widget build(BuildContext context) {
+    final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
+
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       behavior: HitTestBehavior.opaque,
@@ -85,13 +87,14 @@ class _LoginPageState extends ConsumerState<LoginPage>
                       ),
                     ),
                   ),
-                  Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: AppDimensions.screenPaddingH,
-                      vertical: 16.h,
+                  if (!keyboardOpen)
+                    Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppDimensions.screenPaddingH,
+                        vertical: 16.h,
+                      ),
+                      child: const _RegisterAccountRow(),
                     ),
-                    child: const _RegisterAccountRow(),
-                  ),
                 ],
               ),
             ),
@@ -165,7 +168,7 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
           controller: _emailController,
           keyboardType: TextInputType.emailAddress,
           labelText: 'Email',
-          hintText: 'Enter your email',
+          hintText: 'name@example.com',
           border: AppFormFieldBorder.roundedOutlined,
           prefixIcon: Icon(
             Icons.email_outlined,
@@ -179,7 +182,6 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
         AppTextFloatingLabelField(
           controller: _passwordController,
           labelText: 'Password',
-          hintText: 'Enter your password',
           border: AppFormFieldBorder.roundedOutlined,
           prefixIcon: Icon(
             Icons.lock_outlined,
@@ -252,7 +254,10 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
         GradientButton(
           label: 'Sign In',
           isLoading: state.isLoading,
-          onTap: ref.read(loginProvider.notifier).login,
+          onTap: () async {
+            FocusScope.of(context).unfocus();
+            unawaited(ref.read(loginProvider.notifier).login());
+          },
         ),
         SizedBox(height: 20.h),
         const AppDivider(middleText: 'or continue with'),

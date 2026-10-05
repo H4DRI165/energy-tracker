@@ -88,8 +88,9 @@ class RegisterPageState {
       confirmedPasswordError: identical(confirmedPasswordError, _unset)
           ? this.confirmedPasswordError
           : confirmedPasswordError as String?,
-      authError:
-          identical(authError, _unset) ? this.authError : authError as String?,
+      authError: identical(authError, _unset)
+          ? this.authError
+          : authError as String?,
     );
   }
 }

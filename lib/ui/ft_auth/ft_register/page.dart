@@ -54,6 +54,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage>
 
   @override
   Widget build(BuildContext context) {
+    final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
+
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       behavior: HitTestBehavior.opaque,
@@ -86,13 +88,14 @@ class _RegisterPageState extends ConsumerState<RegisterPage>
                       ),
                     ),
                   ),
-                  Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: AppDimensions.screenPaddingH,
-                      vertical: 24.h,
+                  if (!keyboardOpen)
+                    Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppDimensions.screenPaddingH,
+                        vertical: 24.h,
+                      ),
+                      child: const _LoginAccountRow(),
                     ),
-                    child: const _LoginAccountRow(),
-                  ),
                 ],
               ),
             ),
@@ -190,7 +193,7 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
         AppTextFloatingLabelField(
           controller: _fullNameController,
           labelText: 'Full Name',
-          hintText: 'Enter your full name',
+          hintText: 'e.g. Ahmad Faiz bin Ali',
           border: AppFormFieldBorder.roundedOutlined,
           prefixIcon: Icon(
             Icons.person_outline,
@@ -210,7 +213,7 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
           controller: _emailController,
           keyboardType: TextInputType.emailAddress,
           labelText: 'Email Address',
-          hintText: 'Enter your email',
+          hintText: 'name@example.com',
           border: AppFormFieldBorder.roundedOutlined,
           prefixIcon: Icon(
             Icons.email_outlined,
@@ -244,7 +247,7 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
         AppTextFloatingLabelField(
           controller: _passwordController,
           labelText: 'Password',
-          hintText: 'Create a strong password',
+          hintText: 'At least 8 characters, with a number',
           border: AppFormFieldBorder.roundedOutlined,
           prefixIcon: Icon(
             Icons.lock_outlined,
@@ -279,7 +282,6 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
         AppTextFloatingLabelField(
           controller: _confirmedPasswordController,
           labelText: 'Confirm Password',
-          hintText: 'Confirm your password',
           border: AppFormFieldBorder.roundedOutlined,
           prefixIcon: Icon(
             Icons.lock_outline,
@@ -338,37 +340,40 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
           isLoading: state.isLoading,
           onTap: _handleRegister,
         ),
-        SizedBox(height: 12.h),
-        Center(
-          child: RichText(
-            textAlign: TextAlign.center,
-            text: TextSpan(
-              style: TextStyle(
-                fontSize: 11.sp,
-                color: AppColors.text3,
-                height: 1.6,
-              ),
-              children: const [
-                TextSpan(text: 'By creating an account you agree to our '),
-                TextSpan(
-                  text: 'Terms of Service',
-                  style: TextStyle(color: AppColors.accent2),
-                ),
-                TextSpan(text: ' and '),
-                TextSpan(
-                  text: 'Privacy Policy',
-                  style: TextStyle(color: AppColors.accent2),
-                ),
-              ],
-            ),
-          ),
-        ),
+
+        // TODO(dev): implement later
+        // SizedBox(height: 12.h),
+        // Center(
+        //   child: RichText(
+        //     textAlign: TextAlign.center,
+        //     text: TextSpan(
+        //       style: TextStyle(
+        //         fontSize: 11.sp,
+        //         color: AppColors.text3,
+        //         height: 1.6,
+        //       ),
+        //       children: const [
+        //         TextSpan(text: 'By creating an account you agree to our '),
+        //         TextSpan(
+        //           text: 'Terms of Service',
+        //           style: TextStyle(color: AppColors.accent2),
+        //         ),
+        //         TextSpan(text: ' and '),
+        //         TextSpan(
+        //           text: 'Privacy Policy',
+        //           style: TextStyle(color: AppColors.accent2),
+        //         ),
+        //       ],
+        //     ),
+        //   ),
+        // ),
         SizedBox(height: 32.h),
       ],
     );
   }
 
   Future<void> _handleRegister() async {
+    FocusScope.of(context).unfocus();
     final notifier = ref.read(registerProvider.notifier);
     await notifier.register();
 

@@ -72,8 +72,10 @@ class ComingSoonPage extends StatelessWidget {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.text,
                   side: const BorderSide(color: AppColors.border),
-                  padding:
-                      EdgeInsets.symmetric(horizontal: 32.w, vertical: 16.h),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 32.w,
+                    vertical: 16.h,
+                  ),
                 ),
               ),
             ],

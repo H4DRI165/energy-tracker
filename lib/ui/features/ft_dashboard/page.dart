@@ -27,7 +27,7 @@ class DashboardPage extends ConsumerWidget {
               state.when(
                 loading: () =>
                     const SliverToBoxAdapter(child: SizedBox.shrink()),
-                error: (e, _) =>
+                error: (_, _) =>
                     const SliverToBoxAdapter(child: SizedBox.shrink()),
                 data: (state) => SliverToBoxAdapter(
                   child: _Header(
@@ -41,7 +41,7 @@ class DashboardPage extends ConsumerWidget {
                     child: CircularProgressIndicator(color: AppColors.accent),
                   ),
                 ),
-                error: (e, _) => SliverFillRemaining(
+                error: (_, _) => SliverFillRemaining(
                   hasScrollBody: false,
                   child: Center(
                     child: Padding(
@@ -51,14 +51,21 @@ class DashboardPage extends ConsumerWidget {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
+                          Icon(
+                            Icons.cloud_off_rounded,
+                            size: 40.r,
+                            color: AppColors.text3,
+                          ),
+                          SizedBox(height: 12.h),
                           Text(
-                            e.toString(),
+                            "We couldn't load your dashboard. "
+                            'Check your connection and try again.',
                             textAlign: TextAlign.center,
                             style: AppTextStyles.bodyMd.copyWith(
                               color: AppColors.text2,
                             ),
                           ),
-                          SizedBox(height: 12.h),
+                          SizedBox(height: 16.h),
                           FilledButton(
                             onPressed: () =>
                                 ref.read(dashboardProvider.notifier).refresh(),

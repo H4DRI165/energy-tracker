@@ -297,10 +297,9 @@ class AddReadingNotifier extends Notifier<AddReadingPageState>
     );
 
     if (existingTariff != tariffType) {
-      final monthLabel = date.monthYearLabel;
-      return 'This month already has readings under '
-          '${existingTariff.label}. Switch your tariff back, or add this '
-          'reading to a different month, to keep $monthLabel consistent.';
+      return 'This month already has ${existingTariff.label} reading. '
+          'Use ${existingTariff.label} for this entry, or delete this '
+          "month's reading first ";
     }
 
     return null;

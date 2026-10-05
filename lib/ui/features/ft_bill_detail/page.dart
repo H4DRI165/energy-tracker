@@ -316,6 +316,21 @@ class _PaidToggleCard extends ConsumerWidget {
           else
             GestureDetector(
               onTap: () async {
+                final confirmed = await ConfirmDialog.show(
+                  context,
+                  title: isPaid ? 'Mark as Unpaid?' : 'Mark as Paid?',
+                  message: isPaid
+                      ? 'This bill will be marked as unpaid.'
+                      : 'This bill will be marked as paid.',
+                  confirmLabel: isPaid ? 'Mark Unpaid' : 'Mark Paid',
+                  confirmColor: isPaid ? AppColors.warn : AppColors.accent,
+                  warning:
+                      'This will apply to all bills in '
+                      '${bill.date.monthYearLabel}.',
+                );
+
+                if (!confirmed || !context.mounted) return;
+
                 await ref.read(billDetailProvider.notifier).togglePaid(bill);
                 await ref.read(usageProvider.notifier).refresh();
               },

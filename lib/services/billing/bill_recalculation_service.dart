@@ -30,8 +30,11 @@ class BillRecalculationService {
         .orderBy('date')
         .get();
 
-    final billRef =
-        _firestore.collection('users').doc(uid).collection('bills').doc(key);
+    final billRef = _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('bills')
+        .doc(key);
 
     if (readingsSnap.docs.isEmpty) {
       await billRef.delete();

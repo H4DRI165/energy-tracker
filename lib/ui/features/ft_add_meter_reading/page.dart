@@ -816,12 +816,42 @@ class _SaveButton extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isSaving = ref.watch(addReadingProvider.select((s) => s.isSaving));
     final canSave = ref.watch(addReadingProvider.select((s) => s.canSave));
+    final isLoadingLastReading = ref.watch(
+      addReadingProvider.select((s) => s.isLoadingLastReading),
+    );
+    final readingError = ref.watch(
+      addReadingProvider.select((s) => s.readingError),
+    );
+    final hasReading = ref.watch(
+      addReadingProvider.select((s) => s.currentReading > 0),
+    );
 
-    return GradientButton(
-      label: isEdit ? 'Save Changes' : 'Save Reading',
-      isLoading: isSaving,
-      isEnabled: canSave,
-      onTap: onTap,
+    final String? disabledReason;
+    if (isLoadingLastReading) {
+      disabledReason = 'Checking your previous reading…';
+    } else if (readingError == null && !hasReading) {
+      disabledReason = 'Enter a reading above 0 to save';
+    } else {
+      disabledReason = null;
+    }
+
+    return Column(
+      children: [
+        GradientButton(
+          label: isEdit ? 'Save Changes' : 'Save Reading',
+          isLoading: isSaving,
+          isEnabled: canSave,
+          onTap: onTap,
+        ),
+        if (!isSaving && disabledReason != null) ...[
+          SizedBox(height: 8.h),
+          Text(
+            disabledReason,
+            textAlign: TextAlign.center,
+            style: AppTextStyles.caption.copyWith(color: AppColors.text2),
+          ),
+        ],
+      ],
     );
   }
 }

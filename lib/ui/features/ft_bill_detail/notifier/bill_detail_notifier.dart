@@ -327,7 +327,7 @@ class BillDetailNotifier extends Notifier<BillDetailPageState>
 
       if (!committed) {
         state = state.copyWith(
-          errorMessage: 'Reading deleted, but failed to refresh the bill.',
+          errorMessage: "Couldn't delete the reading. Please try again.",
         );
         return false;
       }

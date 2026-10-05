@@ -43,8 +43,9 @@ class _TariffCalculatorPageState extends ConsumerState<TariffCalculatorPage> {
 
     final isDomestic = tariffType == TariffType.domestic;
     final eeiBand = isDomestic ? TariffRates.getEeiBand(kwh) : null;
-    final commercialTier =
-        !isDomestic ? TariffRates.getTier(kwh, TariffType.commercial) : 0;
+    final commercialTier = !isDomestic
+        ? TariffRates.getTier(kwh, TariffType.commercial)
+        : 0;
 
     final isNoUsage = isDomestic && eeiBand!.number == 0;
 
@@ -56,53 +57,59 @@ class _TariffCalculatorPageState extends ConsumerState<TariffCalculatorPage> {
         ? (isNoUsage ? AppColors.text3 : eeiBand?.color)
         : TariffRates.getTierColor(commercialTier, TariffType.commercial);
 
-    return Scaffold(
-      backgroundColor: AppColors.bg,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _Header(),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.symmetric(
-                  horizontal: AppDimensions.screenPaddingH,
-                  vertical: 8.h,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _TariffTypeSwitch(selected: tariffType),
-                    SizedBox(height: 16.h),
-                    _KwhInputCard(controller: _controller, kwh: kwh),
-                    SizedBox(height: 20.h),
-                    Text(
-                      'Bill Breakdown (${tariffType.shortLabel})',
-                      style: AppTextStyles.bodyMd
-                          .copyWith(fontWeight: FontWeight.w700),
-                    ),
-                    SizedBox(height: 10.h),
-                    _BreakdownSection(
-                      items: TariffRates.breakdownFor(kwh, tariffType),
-                      kwh: kwh,
-                      tariffType: tariffType,
-                    ),
-                    SizedBox(height: 8.h),
-                    _TotalCard(
-                      total: total,
-                      minCharge: tariffType == TariffType.commercial
-                          ? TariffRates.minChargeFor(TariffType.commercial)
-                          : 0,
-                      badgeLabel: badgeLabel!,
-                      badgeColor: badgeColor!,
-                    ),
-                    SizedBox(height: 16.h),
-                    _InfoCard(tariffType: tariffType),
-                    SizedBox(height: 24.h),
-                  ],
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
+        backgroundColor: AppColors.bg,
+        body: SafeArea(
+          child: Column(
+            children: [
+              _Header(),
+              Expanded(
+                child: SingleChildScrollView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: AppDimensions.screenPaddingH,
+                    vertical: 8.h,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _TariffTypeSwitch(selected: tariffType),
+                      SizedBox(height: 16.h),
+                      _KwhInputCard(controller: _controller, kwh: kwh),
+                      SizedBox(height: 20.h),
+                      Text(
+                        'Bill Breakdown (${tariffType.shortLabel})',
+                        style: AppTextStyles.bodyMd.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      SizedBox(height: 10.h),
+                      _BreakdownSection(
+                        items: TariffRates.breakdownFor(kwh, tariffType),
+                        kwh: kwh,
+                        tariffType: tariffType,
+                      ),
+                      SizedBox(height: 8.h),
+                      _TotalCard(
+                        total: total,
+                        minCharge: tariffType == TariffType.commercial
+                            ? TariffRates.minChargeFor(TariffType.commercial)
+                            : 0,
+                        badgeLabel: badgeLabel!,
+                        badgeColor: badgeColor!,
+                      ),
+                      SizedBox(height: 16.h),
+                      _InfoCard(tariffType: tariffType),
+                      SizedBox(height: 24.h),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -191,8 +198,9 @@ class _TariffTypeSwitch extends ConsumerWidget {
                         maxLines: 1,
                         style: AppTextStyles.bodySm.copyWith(
                           fontWeight: FontWeight.w700,
-                          color:
-                              isSelected ? AppColors.accent : AppColors.text2,
+                          color: isSelected
+                              ? AppColors.accent
+                              : AppColors.text2,
                         ),
                       ),
                     ),
@@ -306,13 +314,14 @@ class _BreakdownSection extends StatelessWidget {
                   child: Text(
                     tariffType == TariffType.commercial
                         ? 'Excludes AFA — a monthly fuel adjustment '
-                            'published by TNB. Applies to all commercial '
-                            'usage.'
+                              'published by TNB. Applies to all commercial '
+                              'usage.'
                         : 'Excludes AFA — a monthly fuel adjustment '
-                            'published by TNB. Applies only above 600 kWh '
-                            'for domestic.',
-                    style:
-                        AppTextStyles.caption.copyWith(color: AppColors.warn),
+                              'published by TNB. Applies only above 600 kWh '
+                              'for domestic.',
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.warn,
+                    ),
                   ),
                 ),
               ],
@@ -472,13 +481,15 @@ class _DomesticInfo extends StatelessWidget {
                   SizedBox(height: 2.h),
                   Text(
                     'Applies only above 600 kWh',
-                    style:
-                        AppTextStyles.caption.copyWith(color: AppColors.text3),
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.text3,
+                    ),
                   ),
                   Text(
                     TariffRates.retailLabel,
-                    style: AppTextStyles.bodyMd
-                        .copyWith(fontWeight: FontWeight.w600),
+                    style: AppTextStyles.bodyMd.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
               ),
@@ -501,13 +512,16 @@ class _DomesticInfo extends StatelessWidget {
                   children: [
                     Text(
                       'EEI rebate bands',
-                      style: AppTextStyles.caption
-                          .copyWith(fontWeight: FontWeight.w600),
+                      style: AppTextStyles.caption.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     Text(
                       'rate applies to entire monthly kWh',
-                      style: AppTextStyles.caption
-                          .copyWith(color: AppColors.text3, fontSize: 10.sp),
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.text3,
+                        fontSize: 10.sp,
+                      ),
                     ),
                   ],
                 ),
@@ -677,20 +691,25 @@ class _LevyCard extends StatelessWidget {
         children: [
           Text(
             title,
-            style: AppTextStyles.caption
-                .copyWith(color: AppColors.warn, fontWeight: FontWeight.w600),
+            style: AppTextStyles.caption.copyWith(
+              color: AppColors.warn,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           SizedBox(height: 2.h),
           Text(
             rate,
-            style: AppTextStyles.bodyMd
-                .copyWith(color: AppColors.warn, fontWeight: FontWeight.w600),
+            style: AppTextStyles.bodyMd.copyWith(
+              color: AppColors.warn,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           SizedBox(height: 4.h),
           Text(
             description,
-            style: AppTextStyles.caption
-                .copyWith(color: AppColors.warn.withValues(alpha: 0.8)),
+            style: AppTextStyles.caption.copyWith(
+              color: AppColors.warn.withValues(alpha: 0.8),
+            ),
           ),
         ],
       ),
@@ -762,8 +781,9 @@ class _CommercialInfo extends StatelessWidget {
                   SizedBox(height: 2.h),
                   Text(
                     'Applies only for ≤200 kWh',
-                    style:
-                        AppTextStyles.caption.copyWith(color: AppColors.text3),
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.text3,
+                    ),
                   ),
                 ],
               ),

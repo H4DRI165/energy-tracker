@@ -184,12 +184,14 @@ class DashboardPageState {
       kwhUsed: other.kwhUsed != 0 ? other.kwhUsed : null,
       estimatedBill: other.estimatedBill != 0 ? other.estimatedBill : null,
       currentEeiBand: otherHasUsageData ? other.currentEeiBand : null,
-      tariffType:
-          other.tariffType != TariffType.domestic ? other.tariffType : null,
+      tariffType: other.tariffType != TariffType.domestic
+          ? other.tariffType
+          : null,
       dailyAvg: other.dailyAvg != 0 ? other.dailyAvg : null,
       daysLeft: other.daysLeft != 0 ? other.daysLeft : null,
-      percentageVsLastMonth:
-          other.percentageVsLastMonth != 0 ? other.percentageVsLastMonth : null,
+      percentageVsLastMonth: other.percentageVsLastMonth != 0
+          ? other.percentageVsLastMonth
+          : null,
       projectedBill: other.projectedBill ?? projectedBill,
       weeklyUsage: other.weeklyUsage.isNotEmpty ? other.weeklyUsage : null,
       errorMessage: other.errorMessage ?? errorMessage,
@@ -218,19 +220,19 @@ class DashboardPageState {
 
   @override
   int get hashCode => Object.hash(
-        userName,
-        monthLabel,
-        estimatedBill,
-        kwhUsed,
-        monthlyBudget,
-        dailyAvg,
-        currentEeiBand,
-        tariffType,
-        daysLeft,
-        percentageVsLastMonth,
-        projectedBill,
-        Object.hashAll(weeklyUsage),
-        hasUnreadNotifications,
-        errorMessage,
-      );
+    userName,
+    monthLabel,
+    estimatedBill,
+    kwhUsed,
+    monthlyBudget,
+    dailyAvg,
+    currentEeiBand,
+    tariffType,
+    daysLeft,
+    percentageVsLastMonth,
+    projectedBill,
+    Object.hashAll(weeklyUsage),
+    hasUnreadNotifications,
+    errorMessage,
+  );
 }

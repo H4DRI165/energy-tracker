@@ -69,8 +69,9 @@ class _TariffCard extends ConsumerWidget {
       dashboardProvider.select((s) => s.value?.tierRange),
     );
 
-    final label =
-        tariffType == TariffType.domestic ? 'EEI Band' : 'Tariff Tier';
+    final label = tariffType == TariffType.domestic
+        ? 'EEI Band'
+        : 'Tariff Tier';
     final value = tariffType == TariffType.domestic
         ? 'Band ${currentBand?.number == 0 ? '—' : currentBand?.number}'
         : 'Tier ${currentBand?.number}';

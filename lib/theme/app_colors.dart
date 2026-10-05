@@ -55,7 +55,7 @@ abstract class AppColors {
   static const Color text2 = Color(0xFF8899BB);
 
   /// Tertiary / disabled text: #4A5C7A
-  static const Color text3 = Color(0xFF4A5C7A);
+  static const Color text3 = Color(0xFF7E8DB0);
 
   // ─── Gradients ─────────────────────────────────────────────────────────────
   /// Primary CTA gradient (teal → blue)
@@ -110,34 +110,34 @@ abstract class AppColors {
 
   // ─── Glow / shadows ────────────────────────────────────────────────────────
   static List<BoxShadow> get cardGlow => [
-        BoxShadow(
-          color: accent.withValues(alpha: 0.08),
-          blurRadius: 40,
-        ),
-      ];
+    BoxShadow(
+      color: accent.withValues(alpha: 0.08),
+      blurRadius: 40,
+    ),
+  ];
 
   static List<BoxShadow> get navFabShadow => [
-        BoxShadow(
-          color: accent.withValues(alpha: 0.40),
-          blurRadius: 24,
-          offset: const Offset(0, 8),
-        ),
-      ];
+    BoxShadow(
+      color: accent.withValues(alpha: 0.40),
+      blurRadius: 24,
+      offset: const Offset(0, 8),
+    ),
+  ];
 
   static List<BoxShadow> get btnPrimaryShadow => [
-        BoxShadow(
-          color: accent.withValues(alpha: 0.30),
-          blurRadius: 24,
-          offset: const Offset(0, 8),
-        ),
-      ];
+    BoxShadow(
+      color: accent.withValues(alpha: 0.30),
+      blurRadius: 24,
+      offset: const Offset(0, 8),
+    ),
+  ];
 
   static List<BoxShadow> get cardElevated => [
-        BoxShadow(
-          color: Colors.black.withValues(alpha: 0.60),
-          blurRadius: 80,
-          offset: const Offset(0, 24),
-        ),
-        ...cardGlow,
-      ];
+    BoxShadow(
+      color: Colors.black.withValues(alpha: 0.60),
+      blurRadius: 80,
+      offset: const Offset(0, 24),
+    ),
+    ...cardGlow,
+  ];
 }

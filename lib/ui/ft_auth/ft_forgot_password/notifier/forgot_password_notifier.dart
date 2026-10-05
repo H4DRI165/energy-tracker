@@ -35,14 +35,14 @@ class ForgotPasswordNotifier extends Notifier<ForgotPasswordPageState>
     final email = state.email.trim();
 
     if (email.isEmpty) {
-      state = state.copyWith(emailError: 'Email address is required');
+      state = state.copyWith(emailError: 'Email is required');
 
       return;
     }
 
     final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
     if (!emailRegex.hasMatch(email)) {
-      state = state.copyWith(emailError: 'Please enter a valid email address');
+      state = state.copyWith(emailError: 'Valid email is required');
 
       return;
     }

@@ -166,6 +166,21 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
     final canSave = ref.watch(
       addApplianceProvider.select((state) => state.canSave),
     );
+    final name = ref.watch(
+      addApplianceProvider.select((state) => state.name),
+    );
+    final wattage = ref.watch(
+      addApplianceProvider.select((state) => state.wattage),
+    );
+
+    String? disabledReason;
+    if (!canSave && !isSaving) {
+      if (name.trim().isEmpty && nameError == null) {
+        disabledReason = 'Add an appliance name to continue';
+      } else if (wattage <= 0 && wattageError == null) {
+        disabledReason = 'Enter the wattage to continue';
+      }
+    }
 
     return Expanded(
       child: SingleChildScrollView(
@@ -242,6 +257,16 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
               isEnabled: canSave,
               onTap: _handleSave,
             ),
+            if (!isSaving && disabledReason != null) ...[
+              SizedBox(height: 8.h),
+              Center(
+                child: Text(
+                  disabledReason,
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.caption.copyWith(color: AppColors.text2),
+                ),
+              ),
+            ],
             SizedBox(height: 24.h),
           ],
         ),

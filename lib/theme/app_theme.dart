@@ -86,8 +86,9 @@ abstract class AppTheme {
         ),
         hintStyle: AppTextStyles.bodyLg.copyWith(color: AppColors.text3),
         labelStyle: AppTextStyles.label,
-        floatingLabelStyle:
-            AppTextStyles.label.copyWith(color: AppColors.accent),
+        floatingLabelStyle: AppTextStyles.label.copyWith(
+          color: AppColors.accent,
+        ),
         prefixIconColor: AppColors.text3,
         suffixIconColor: AppColors.text3,
       ),
@@ -273,23 +274,27 @@ abstract class AppTheme {
       primaryIconTheme: const IconThemeData(color: AppColors.accent, size: 22),
 
       // ─── Text theme (base, overridden per widget) ──────────────────────────
-      textTheme:
-          GoogleFonts.dmSansTextTheme(ThemeData.dark().textTheme).copyWith(
-        displayLarge: AppTextStyles.displayXl,
-        displayMedium: AppTextStyles.displayLg,
-        displaySmall: AppTextStyles.displayMd,
-        headlineLarge: AppTextStyles.titleLg,
-        headlineMedium: AppTextStyles.titleMd,
-        titleLarge: AppTextStyles.titleMd,
-        titleMedium: AppTextStyles.bodyLg.copyWith(fontWeight: FontWeight.w600),
-        titleSmall: AppTextStyles.bodyMd.copyWith(fontWeight: FontWeight.w600),
-        bodyLarge: AppTextStyles.bodyLg,
-        bodyMedium: AppTextStyles.bodyMd,
-        bodySmall: AppTextStyles.bodySm,
-        labelLarge: AppTextStyles.button,
-        labelMedium: AppTextStyles.label,
-        labelSmall: AppTextStyles.caption,
-      ),
+      textTheme: GoogleFonts.dmSansTextTheme(ThemeData.dark().textTheme)
+          .copyWith(
+            displayLarge: AppTextStyles.displayXl,
+            displayMedium: AppTextStyles.displayLg,
+            displaySmall: AppTextStyles.displayMd,
+            headlineLarge: AppTextStyles.titleLg,
+            headlineMedium: AppTextStyles.titleMd,
+            titleLarge: AppTextStyles.titleMd,
+            titleMedium: AppTextStyles.bodyLg.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+            titleSmall: AppTextStyles.bodyMd.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+            bodyLarge: AppTextStyles.bodyLg,
+            bodyMedium: AppTextStyles.bodyMd,
+            bodySmall: AppTextStyles.bodySm,
+            labelLarge: AppTextStyles.button,
+            labelMedium: AppTextStyles.label,
+            labelSmall: AppTextStyles.caption,
+          ),
 
       // ─── Page transitions ──────────────────────────────────────────────────
       pageTransitionsTheme: const PageTransitionsTheme(
