@@ -340,31 +340,33 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
           isLoading: state.isLoading,
           onTap: _handleRegister,
         ),
-        SizedBox(height: 12.h),
-        Center(
-          child: RichText(
-            textAlign: TextAlign.center,
-            text: TextSpan(
-              style: TextStyle(
-                fontSize: 11.sp,
-                color: AppColors.text3,
-                height: 1.6,
-              ),
-              children: const [
-                TextSpan(text: 'By creating an account you agree to our '),
-                TextSpan(
-                  text: 'Terms of Service',
-                  style: TextStyle(color: AppColors.accent2),
-                ),
-                TextSpan(text: ' and '),
-                TextSpan(
-                  text: 'Privacy Policy',
-                  style: TextStyle(color: AppColors.accent2),
-                ),
-              ],
-            ),
-          ),
-        ),
+
+        // TODO(dev): implement later
+        // SizedBox(height: 12.h),
+        // Center(
+        //   child: RichText(
+        //     textAlign: TextAlign.center,
+        //     text: TextSpan(
+        //       style: TextStyle(
+        //         fontSize: 11.sp,
+        //         color: AppColors.text3,
+        //         height: 1.6,
+        //       ),
+        //       children: const [
+        //         TextSpan(text: 'By creating an account you agree to our '),
+        //         TextSpan(
+        //           text: 'Terms of Service',
+        //           style: TextStyle(color: AppColors.accent2),
+        //         ),
+        //         TextSpan(text: ' and '),
+        //         TextSpan(
+        //           text: 'Privacy Policy',
+        //           style: TextStyle(color: AppColors.accent2),
+        //         ),
+        //       ],
+        //     ),
+        //   ),
+        // ),
         SizedBox(height: 32.h),
       ],
     );
