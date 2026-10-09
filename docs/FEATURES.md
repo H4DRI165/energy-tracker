@@ -28,7 +28,7 @@ Jump to: [Auth](#auth) · [Onboarding](#onboarding) · [Dashboard](#dashboard) �
 **Gaps / issues**
 - Email verification is disabled (`register_notifier.dart:204-205` TODO).
 - No guest mode despite an `isGuest` field.
-- Password policy is inconsistent between hint/checklist and validator (see `ux-review/FINDINGS.md` H5).
+- Password policy is inconsistent between hint/checklist and validator (see [ux-review/README.md](ux-review/README.md) H5).
 - No autofill/keyboard actions (H2).
 
 ---
@@ -51,7 +51,7 @@ Jump to: [Auth](#auth) · [Onboarding](#onboarding) · [Dashboard](#dashboard) �
 
 **Gaps / issues**
 - Completion is gated only on Firestore write success; no retry guidance beyond an error banner.
-- Summary claims "Alerts enabled" regardless of notification permission (see `ux-review/FINDINGS.md` M6).
+- Summary claims "Alerts enabled" regardless of notification permission (see [ux-review/README.md](ux-review/README.md) M6).
 
 ---
 

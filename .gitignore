@@ -52,7 +52,6 @@ GoogleService-Info.plist
 firebase_options.dart
 firebase_options_*.dart
 **/.firebase/
-firebase.json
 .pub-cache/
 
 # Android
@@ -99,6 +98,9 @@ test/**/coverage
 *.aab
 *.ipa
 *.app
+
+# Node
+node_modules/
 
 # Temporary files
 *~
