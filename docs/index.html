@@ -1,0 +1,1970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Energy Tracker — Documentation</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" />
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1117;
+    --bg-elev: #161923;
+    --bg-elev-2: #1d2130;
+    --sidebar: #12141c;
+    --border: #262b3a;
+    --text: #e6e9f0;
+    --text-dim: #9aa3b5;
+    --text-faint: #6b7488;
+    --accent: #4fd1c5;
+    --accent-2: #7c9cff;
+    --code-bg: #10131b;
+    --mark: #ffe08a;
+    --shadow: 0 10px 40px rgba(0,0,0,.45);
+    --radius: 14px;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .layout { display: flex; min-height: 100vh; }
+
+  /* Sidebar */
+  .sidebar {
+    width: 290px;
+    flex: 0 0 290px;
+    background: var(--sidebar);
+    border-right: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+  .brand {
+    padding: 22px 22px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .brand h1 {
+    font-size: 17px;
+    margin: 0 0 4px;
+    letter-spacing: .2px;
+  }
+  .brand .tag {
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .brand .version {
+    display: inline-block;
+    margin-top: 8px;
+    font-size: 11px;
+    font-family: var(--mono);
+    background: var(--bg-elev-2);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 2px 8px;
+    border-radius: 999px;
+  }
+  .search-wrap {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  #search {
+    width: 100%;
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    padding: 9px 12px;
+    font-size: 14px;
+    outline: none;
+  }
+  #search:focus { border-color: var(--accent-2); }
+  .search-hint {
+    font-size: 11px;
+    color: var(--text-faint);
+    margin-top: 6px;
+    min-height: 14px;
+  }
+  nav { padding: 10px 10px 30px; }
+  nav .group-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    color: var(--text-faint);
+    padding: 12px 12px 6px;
+  }
+  nav a.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 10px;
+    color: var(--text-dim);
+    font-size: 14.5px;
+    cursor: pointer;
+    margin-bottom: 2px;
+    border: 1px solid transparent;
+  }
+  nav a.nav-item:hover { background: var(--bg-elev); color: var(--text); text-decoration: none; }
+  nav a.nav-item.active {
+    background: linear-gradient(90deg, rgba(79,209,197,.14), rgba(124,156,255,.08));
+    color: #fff;
+    border-color: rgba(79,209,197,.35);
+  }
+  nav a.nav-item .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--border); flex: 0 0 7px;
+  }
+  nav a.nav-item.active .dot { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+  nav a.nav-item .num {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-faint);
+    margin-left: auto;
+  }
+
+  /* Main */
+  .main { flex: 1; min-width: 0; }
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 26px;
+    background: rgba(15,17,23,.82);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+  }
+  .hamburger {
+    display: none;
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 9px;
+    padding: 7px 11px;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  .crumb { font-size: 13px; color: var(--text-dim); }
+  .crumb b { color: var(--text); }
+  .topbar .spacer { flex: 1; }
+  .topbar .actions { display: flex; gap: 8px; }
+  .btn {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    border-radius: 9px;
+    padding: 7px 12px;
+    font-size: 12.5px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn:hover { color: var(--text); border-color: var(--accent-2); }
+  #progress {
+    position: fixed; top: 0; left: 0; height: 2px; width: 0%;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    z-index: 100; transition: width .1s linear;
+  }
+
+  .content {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 34px 34px 120px;
+  }
+  .doc { display: none; animation: fade .25s ease; }
+  .doc.active { display: block; }
+  @keyframes fade { from { opacity: 0; transform: translateY(6px);} to { opacity: 1; transform: none;} }
+
+  .doc h1 {
+    font-size: 30px;
+    line-height: 1.25;
+    margin: 0 0 6px;
+    letter-spacing: -.4px;
+  }
+  .doc h1::after {
+    content: "";
+    display: block;
+    width: 64px; height: 3px;
+    margin-top: 16px;
+    border-radius: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  }
+  .doc h2 {
+    font-size: 22px;
+    margin: 44px 0 12px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    letter-spacing: -.2px;
+  }
+  .doc h2:first-child { border-top: none; }
+  .doc h3 { font-size: 17.5px; margin: 28px 0 8px; color: #fff; }
+  .doc h4 { font-size: 15px; margin: 20px 0 6px; color: var(--accent); }
+  .doc p { margin: 12px 0; }
+  .doc ul, .doc ol { padding-left: 24px; margin: 12px 0; }
+  .doc li { margin: 5px 0; }
+  .doc li > ul, .doc li > ol { margin: 5px 0; }
+  .doc strong { color: #fff; }
+  .doc hr { border: none; border-top: 1px solid var(--border); margin: 34px 0; }
+
+  .doc code {
+    font-family: var(--mono);
+    font-size: 13px;
+    background: var(--bg-elev-2);
+    border: 1px solid var(--border);
+    padding: 1.5px 6px;
+    border-radius: 6px;
+    color: #ffd7a8;
+    white-space: nowrap;
+  }
+  .doc pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    overflow-x: auto;
+    margin: 16px 0;
+    line-height: 1.55;
+  }
+  .doc pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    color: #cbd5e6;
+    font-size: 13px;
+    white-space: pre;
+    display: block;
+  }
+
+  .doc blockquote {
+    margin: 16px 0;
+    padding: 10px 18px;
+    border-left: 3px solid var(--accent-2);
+    background: rgba(124,156,255,.07);
+    border-radius: 0 10px 10px 0;
+    color: var(--text-dim);
+  }
+  .doc blockquote p { margin: 6px 0; }
+
+  .doc table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 18px 0;
+    font-size: 14px;
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  .doc table thead th {
+    background: var(--bg-elev-2);
+    text-align: left;
+    font-weight: 600;
+    color: #fff;
+    position: sticky;
+    top: 0;
+  }
+  .doc table th, .doc table td {
+    border: 1px solid var(--border);
+    padding: 9px 13px;
+    vertical-align: top;
+  }
+  .doc table tbody tr:nth-child(even) { background: rgba(255,255,255,.018); }
+  .doc table tbody tr:hover { background: rgba(79,209,197,.05); }
+
+  mark.hit { background: var(--mark); color: #1a1a1a; border-radius: 3px; padding: 0 1px; }
+
+  .doc-meta {
+    display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 26px;
+  }
+  .chip {
+    font-size: 11.5px;
+    font-family: var(--mono);
+    padding: 3px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    background: var(--bg-elev);
+  }
+  .chip.status-current { border-color: rgba(79,209,197,.4); color: var(--accent); }
+  .chip.status-approved { border-color: rgba(124,156,255,.4); color: var(--accent-2); }
+
+  /* Screenshots */
+  .shots-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 18px;
+    margin-top: 22px;
+  }
+  .shot {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    cursor: zoom-in;
+    transition: transform .18s ease, border-color .18s ease;
+  }
+  .shot:hover { transform: translateY(-3px); border-color: var(--accent-2); }
+  .shot img { width: 100%; display: block; aspect-ratio: 9/16; object-fit: cover; object-position: top; background: #000; }
+  .shot .cap { padding: 9px 12px; font-size: 12.5px; color: var(--text-dim); }
+
+  .lightbox {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,.88);
+    display: none; align-items: center; justify-content: center;
+    flex-direction: column; gap: 14px; padding: 30px;
+    cursor: zoom-out;
+  }
+  .lightbox.open { display: flex; }
+  .lightbox img { max-height: 88vh; max-width: 92vw; border-radius: 12px; box-shadow: var(--shadow); }
+  .lightbox .cap { color: #fff; font-size: 14px; }
+
+  .empty-state { color: var(--text-dim); padding: 40px 0; }
+
+  @media (max-width: 900px) {
+    .sidebar {
+      position: fixed; z-index: 80; left: 0; top: 0;
+      transform: translateX(-100%); transition: transform .25s ease;
+      box-shadow: var(--shadow);
+    }
+    .sidebar.open { transform: none; }
+    .hamburger { display: inline-block; }
+    .content { padding: 22px 18px 100px; }
+    .topbar { padding: 10px 14px; }
+  }
+  .scrim {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 70;
+  }
+  .scrim.open { display: block; }
+
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: #2c3242; border-radius: 8px; }
+  ::-webkit-scrollbar-thumb:hover { background: #3a4155; }
+  ::-webkit-scrollbar-track { background: transparent; }
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <h1>Energy Tracker</h1>
+      <div class="tag">Documentation</div>
+      <div class="version">v0.5.7+1 · Android</div>
+    </div>
+    <div class="search-wrap">
+      <input id="search" type="search" placeholder="Search docs…  (Ctrl / ⌘ + K)" autocomplete="off" />
+      <div class="search-hint" id="searchHint"></div>
+    </div>
+    <nav id="nav"></nav>
+  </aside>
+
+  <div class="scrim" id="scrim"></div>
+
+  <main class="main">
+    <div class="topbar">
+      <button class="hamburger" id="hamburger" aria-label="Toggle navigation">☰</button>
+      <div class="crumb" id="crumb"></div>
+      <div class="spacer"></div>
+      <div class="actions">
+        <button class="btn" id="themeBtn" title="Toggle theme">🌓</button>
+        <button class="btn" id="topBtn" title="Back to top">↑ Top</button>
+      </div>
+    </div>
+    <div class="content" id="content"></div>
+  </main>
+</div>
+
+<div class="lightbox" id="lightbox">
+  <img id="lightboxImg" alt="" />
+  <div class="cap" id="lightboxCap"></div>
+</div>
+
+<!-- ===================== MARKDOWN SOURCES ===================== -->
+
+<script id="doc-readme" type="text/markdown" data-title="Overview" data-file="README.md" data-status="Current">
+# Energy Tracker — Documentation
+
+This folder is the source of truth for **what** the product is, **why** it exists, and **how** it is built.
+
+## Start here
+
+| Doc | Read it when you want to… |
+|---|---|
+| [PRD.md](PRD.md) | Review the vision, goals, users, scope, and product decisions |
+| [FEATURES.md](FEATURES.md) | See every feature, its status, its flow, and where the code lives |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Understand the layers, state management, auth/routing, notifications |
+| [DATA_MODEL.md](DATA_MODEL.md) | Look up Firestore fields, collections, and known schema issues |
+| [BILLING.md](BILLING.md) | Understand the TNB tariff math, reading chain, and bill recalculation |
+| [DEVELOPMENT.md](DEVELOPMENT.md) | Set up, run, test, build, release, and follow conventions |
+| [GLOSSARY.md](GLOSSARY.md) | Decode domain terms (EEI, AFA, KWTBB, SST, tier, band…) |
+| [screenshots/](screenshots/) | Visual reference per screen |
+
+The root [README.md](../README.md) is the short public/portfolio overview; this folder is the working detail.
+
+## Status legend
+
+Used in `FEATURES.md`:
+
+| Status | Meaning |
+|---|---|
+| **Shipped** | Implemented, reachable in the UI, considered working |
+| **Shipped (partial)** | Works, but a known sub-part is incomplete or inconsistent |
+| **WIP / Hidden** | Code exists but is commented out, feature-flagged, or not reachable |
+| **Planned** | Described but not implemented |
+
+## Documentation conventions
+
+- Every doc starts with a **Status** line: `Current`, `Approved`, or `Out of date`.
+- Facts cite `path:line` where useful.
+- When a feature changes, update the matching row in `FEATURES.md` and, if data changed, `DATA_MODEL.md`.
+
+## Current direction
+
+Energy Tracker is an Android-only portfolio project. Positioning: "Track, estimate, and understand your TNB bill." The active milestone is the WIP feature set — in-app notification settings, Terms/Privacy screens, and guest mode. Full detail in [PRD.md](PRD.md) §16 **Roadmap**.
+</script>
+
+<script id="doc-prd" type="text/markdown" data-title="PRD" data-file="PRD.md" data-status="Approved">
+# Product Requirements Document (PRD) — Energy Tracker
+
+- **Status:** Approved
+- **Platform:** Android (mobile, portrait)
+- **Version documented:** app `0.5.7+1`
+- **Last updated:** 2026-10-02
+
+---
+
+## 1. One-liner
+
+A Flutter mobile app that helps Malaysian TNB electricity customers log meter readings, estimate their bill from real TNB tariff rates, track usage over time, and stay within a monthly budget.
+
+## 2. Problem
+
+TNB customers, especially in Malaysia, struggle to:
+
+- Predict what their next bill will cost before it arrives.
+- Understand why a bill changed (tariff components, EEI rebate, usage tier).
+- Track usage over time without manually reading the meter and doing math.
+- Stay within a monthly electricity budget.
+
+The TNB e-bill shows a final number but does not help users *plan* or *change behavior during the month*.
+
+## 3. Vision / north star
+
+> "Never get surprised by your electricity bill again."
+
+Give a household or small business a trustworthy, low-effort estimate of the running bill from a single meter reading, and turn that estimate into actionable budget feedback.
+
+### Positioning
+
+Positioning is **combined** — the three framings reinforce each other and all are real features:
+
+> **Headline:** "Track, estimate, and understand your TNB bill."
+>
+> - **Bill estimator** — the core value (kWh → RM using real TNB rates).
+> - **Budget tracker** — turns the estimate into behaviour (80%/100% alerts).
+> - **Tariff education tool** — the calculator and breakdown explain *why* the bill is what it is.
+
+For the **portfolio audience**, the headline is different and should lead with craft:
+
+> "A production-quality Flutter app that implements real TNB tariff logic end-to-end — billing engine, data integrity, push notifications, and CI/CD."
+
+## 4. Goals
+
+1. **Accurate estimation** — convert a meter reading delta into an itemized RM estimate using current TNB tariff components.
+2. **Low-friction tracking** — adding a reading takes seconds; the app does the kWh and cost math.
+3. **Budget awareness** — show progress toward a monthly budget and alert before/after exceeding it.
+4. **Historical insight** — monthly/yearly usage charts and per-month bill history.
+5. **Appliance-level awareness** — estimate what individual appliances cost per month.
+6. **Trust** — correct handling of edits/deletes (recompute dependent bills) and honest disclaimers (AFA excluded).
+
+## 5. Non-goals
+
+- Not a payment app — no TNB bill payment, no bank/wallet integration.
+- Not a real-time smart-meter integration — readings are manual.
+- Not multi-utility — electricity only (no water/gas/internet).
+- Not multi-country — TNB tariffs (Malaysia) only.
+- **Android only** for the foreseeable future; iOS is not a target. Web/desktop are not targets. (Portrait-only mobile.)
+- No social features.
+- **Not a monetized product** — it is a portfolio piece, not a business.
+
+## 6. Target users
+
+Energy Tracker is portfolio-first. The primary audience is the portfolio reviewer; the target end user is a Malaysian domestic TNB customer. Commercial accounts are supported but are not the focus.
+
+| Priority | Persona | Description | What they need |
+|---|---|---|---|
+| **1** | **The portfolio reviewer** | Recruiter / senior engineer / collaborator evaluating the project | Clean architecture, working APK, readable docs, evidence of product thinking |
+| **2** | **The budget-conscious homeowner** | Malaysian household (Tariff A), wants no bill shock | Quick reading log, clear RM estimate, budget alerts |
+| **3** | **The small-business operator** | Shop/office on Non-Domestic LV (Tariff B) | Commercial tariff estimate, usage history |
+
+Design priorities:
+- Optimise the **reviewer experience** (README, docs, APK, code quality, tests) without neglecting real usability.
+- The **homeowner** is the design target for flows and copy.
+- **Commercial** must remain correct but does not need dedicated UX investment.
+
+## 7. Success metrics
+
+Success is measured in two layers: portfolio outcomes first, product health second.
+
+### Layer A — Portfolio success (primary)
+
+- A signed, installable **release APK** is always downloadable.
+- The GitHub repo shows **clean architecture, meaningful tests, and readable docs**.
+- `flutter analyze` reports **no new issues**; billing logic has unit-test coverage.
+- A reviewer can go from install → log reading → see estimate in **under 2 minutes**.
+
+### Layer B — Product health (secondary, instrumented)
+
+| Metric | Definition | Target (initial) |
+|---|---|---|
+| Activation | % of registrations that complete onboarding | ≥ 70% |
+| Habit | Median readings logged per active user / month | ≥ 2 |
+| Retention | 4-week retention | "improving", no hard target |
+| Reliability | Crash-free sessions | ≥ 99% |
+| Estimate trust | % of months where estimate is within accuracy bar (§11) | ≥ 95% |
+
+### Recommended Analytics events
+
+Firebase Analytics is already integrated, but only auto events exist. Add a small, deliberate set (privacy-safe, no PII):
+
+```
+onboarding_completed         { tariff_type }
+reading_logged               { tariff_type, is_edit }
+budget_alert_received        { tier: 80|100 }
+budget_alert_opened          { tier }
+bill_marked_paid
+tariff_calculator_used       { tariff_type }
+appliance_added              { category }
+profile_updated
+```
+
+Guidance:
+- Do **not** log meter values, TNB account numbers, email, or names.
+- Prefer a handful of high-signal events over exhaustive screen tracking.
+- Use these to validate Layer B only; do not let instrumentation delay portfolio work.
+
+## 8. Scope
+
+### In scope (v0.5.x)
+
+- Email/password + Google authentication, password reset.
+- First-run onboarding: tariff type + monthly budget.
+- Dashboard: estimated bill, budget progress, 7-day chart, saving tips.
+- Meter readings: add / edit / delete, with chain re-computation.
+- Bill detail: itemized breakdown, paid toggle, readings list.
+- Usage: monthly/yearly chart, bill history, delete month.
+- Appliances: CRUD + monthly cost estimate.
+- Settings: profile, tariff, budget, sign out, app version.
+- Tariff calculator (standalone).
+- Push notifications: budget threshold (80/100%) + end-of-month reminder.
+- Observability: Crashlytics, Analytics, App Check.
+
+### Out of scope / WIP
+
+**Next milestone — build these:**
+
+- In-app notification settings section (currently commented out; prefs live in a dashboard sheet).
+- Terms of Service / Privacy Policy screens (referenced in register, not built).
+- Guest mode (`isGuest` field exists, no flow yet).
+
+**Deliberately out of scope:**
+
+- Bill scanning via camera/AI (route exists as "Coming Soon"; not a priority).
+
+> Dependency note: notification settings must first resolve the field-name mismatch in [DATA_MODEL.md](DATA_MODEL.md#known-issues) (#2), otherwise the toggles will not affect real alerts.
+
+## 9. Key user journeys
+
+1. **First run:** splash → landing → sign in/register → onboarding (tariff + budget) → dashboard.
+2. **Log a reading:** dashboard/tab → Add Reading → enter reading + date → auto-calc kWh/cost → save → dashboard + usage refresh.
+3. **Understand a bill:** usage → bill history → bill detail → itemized breakdown + readings → mark paid.
+4. **Fix a mistake:** bill detail → swipe a reading → delete/edit → dependent kWh + bills recompute.
+5. **Set budget:** onboarding or settings/dashboard → budget sheet → confirm → alert thresholds active.
+6. **Convert a number:** settings → tariff calculator → enter kWh → see breakdown for either tariff.
+
+## 10. Functional requirements (summary)
+
+Detailed inventory is in [FEATURES.md](FEATURES.md).
+
+- **FR-1 Auth:** users can register (name, email, 12-digit TNB account, password), sign in, sign in with Google, and reset password.
+- **FR-2 Onboarding:** users choose domestic/commercial and set a monthly budget (RM 50–300 in onboarding; RM 50–500 in settings).
+- **FR-3 Readings:** users log a monotonic meter reading per date; app computes kWh delta vs previous reading and estimated cost.
+- **FR-4 Integrity:** editing/deleting a reading fixes the next reading's kWh and recalculates affected monthly bills.
+- **FR-5 Bills:** the app maintains one bill document per user per month (sum of kWh, amount, tier, tariff).
+- **FR-6 Budget:** app tracks budget % used and can alert at 80% and 100%.
+- **FR-7 Usage:** app shows monthly/yearly kWh charts and bill history; deleting a month removes its readings and bill.
+- **FR-8 Appliances:** users manage appliances and see estimated monthly kWh/cost.
+- **FR-9 Tariff calc:** users can compute a bill breakdown for any kWh amount.
+- **FR-10 Notifications:** budget alerts and monthly reminders; per-user toggles for 80/100%.
+
+## 11. Constraints & domain rules
+
+- Tariff figures reflect **post-1 July 2025** TNB rates and are hard-coded in `lib/constants/tariff_rates.dart`.
+- **AFA** (Automatic Fuel Adjustment) is intentionally **excluded** from estimates because TNB republishes it monthly.
+- Meter readings must be **monotonically increasing** within the chain (a reading cannot be lower than the previous one).
+- A billing month must not mix tariff types.
+- Estimates are labelled as estimates, not official TNB invoices.
+- **Accuracy bar:** the estimate should match a real TNB bill within **±5%**, measured **excluding AFA**, across the validated sample set (300 / 600 / 900 / 1100 / 1600 kWh). See [Accuracy](#accuracy-note) for why AFA matters.
+- **Data retention:** raw readings are retained for **12 months**, then deleted. See [§15 Data & Privacy](#15-data--privacy).
+
+### Accuracy note
+
+The billing formula is deterministic, so excluding AFA the estimate should be **~exactly** right. The real risk to a 95% target is AFA:
+
+- AFA is 0 ≤ 600 kWh, but around **2.59 sen/kWh** above 600 kWh (June 2026 example).
+- On a 700 kWh month that is ~RM 18 (~6% of the bill) — enough to blow the ±5% band on its own.
+
+Recommendation:
+1. Define the accuracy bar as **±5% excluding AFA**, and state that prominently in the UI (already partly done via disclaimers).
+2. For high-usage customers, add an optional **"current AFA rate" setting** (the user enters the monthly figure from their TNB bill). This is the most impactful single accuracy improvement.
+3. Add a `tariff_rates_test.dart` case per sample kWh so the bar is enforced by tests, not hopes.
+
+## 12. Release & versioning
+
+- `pubspec.yaml` version drives the build (currently `0.5.7+1`).
+- CI builds a release APK on every push to `main` and publishes a GitHub Release tagged `v<run_number>`.
+- See [DEVELOPMENT.md](DEVELOPMENT.md#build--release) for the release mechanics.
+
+---
+
+## 13. Operating Assumptions
+
+1. The project is primarily a **portfolio piece** that is also **genuinely usable**.
+2. English is the only language; currency is RM (Malaysian Ringgit).
+3. Dark theme only is intentional.
+4. Manual meter entry is acceptable; smart-meter integration is future scope.
+5. Android is the only target platform.
+6. There is no monetization; the app is free and not a business.
+
+## 14. Product Decisions
+
+Captured 2026-10-02.
+
+| # | Question | Decision |
+|---|---|---|
+| 1 | Primary audience | **Portfolio reviewers first**; target end user is the Malaysian domestic TNB customer. Commercial supported, not a focus. |
+| 2 | Monetization | **None.** Portfolio piece, free. |
+| 3 | Positioning | **Combined:** "Track, estimate, and understand your TNB bill" (estimator + budget tracker + tariff education). |
+| 4 | Platform priority | **Android only.** iOS/web/desktop are non-goals. |
+| 5 | Accuracy bar | **±5% excluding AFA** on validated samples. Optional "current AFA rate" setting recommended. See §11. |
+| 6 | Next WIP features | **In-app notification settings, ToS/Privacy, guest mode.** Bill scanning is out of scope. |
+| 7 | Analytics | Optional; define a small privacy-safe event set (see §7). |
+| 8 | Data & privacy | Retain raw readings **12 months**, then delete. See §15. |
+
+New decisions are appended to this table as they are made.
+
+---
+
+## 15. Data & Privacy
+
+### What "data & privacy" means here
+
+It answers four things about the data the app stores:
+
+1. **What** personal/sensitive data is stored.
+2. **Who** can access it.
+3. **How long** it is kept (retention).
+4. **How** a user can get it deleted.
+
+In short: it is mainly about **when data is deleted**, plus a clear statement of the four points above.
+
+### What the app stores (today)
+
+| Data | Where | Sensitivity |
+|---|---|---|
+| Email, display name | `users/{uid}`, Firebase Auth | PII |
+| TNB account number (12 digits) | `users/{uid}` | Sensitive identifier |
+| Meter readings (usage) | `users/{uid}/readings` | Usage data (can reveal occupancy habits) |
+| Monthly bills (derived) | `users/{uid}/bills` | Usage data |
+| Appliances / budget | `users/{uid}/appliances`, profile | Low |
+| Profile photo | Firebase Storage `users/{uid}/…` | PII |
+| FCM token | `users/{uid}` | Device identifier |
+
+### Policy
+
+- **Retention:** raw readings are kept for **12 months**, then deleted.
+- **Bills:** because bills are derived from readings and only 12 months are shown, delete the matching month bill when its readings age out (keeps history consistent with the 12-month chart).
+- **Account deletion:** a user can delete their account, which removes all their data (see below).
+- **No selling / no third-party sharing** beyond the Firebase services used to run the app.
+- **Never log** readings, TNB account numbers, email, or names to Analytics/Crashlytics.
+
+### How to implement retention
+
+Two viable options:
+
+1. **Firestore TTL policy** — write an `expireAt` timestamp on each reading (`date + 12 months`) and enable a TTL policy on the `readings` collection group. Pros: no code to maintain. Cons: TTL deletion is eventual (not exact) and does not delete the derived bill docs.
+2. **Scheduled Cloud Function** (recommended, consistent with the existing monthly reminder) — once a month, query `readings` with `date < now - 12 months` and batch-delete them, then delete/refresh the corresponding `bills/{YYYY-MM}` docs. Pros: precise, handles bills, easy to reason about for reviewers.
+
+Also recommended for a public release:
+
+- **Account deletion flow** ("Delete account" in Settings) that removes subcollections + user doc + FirebaseAuth user. Google Play requires this for published apps.
+- **`firestore.rules` committed to the repo** restricting `users/{uid}/**` to the authenticated owner. Rules are currently not version-controlled (see `DATA_MODEL.md` #5).
+- A short **privacy policy** (screen planned for the next milestone) stating: what is stored, 12-month retention, account deletion, and the Firebase services used.
+
+---
+
+## 16. Roadmap
+
+Ordered so each milestone de-risks the next. (UX details live in `ux-review/`.)
+
+| Milestone | Theme | Contents | Status |
+|---|---|---|---|
+| **M0** | Core app | v0.5.7 feature set + Critical UX fixes (C1 raw error, C2 disabled CTAs) | Done |
+| **M1** | Trust & accessibility | ux-review Milestones 1–2 (copy honesty H4–H7, contrast H1, semantics/touch targets H3) | Next |
+| **M2** | WIP features | Notification settings (fix field mismatch first), ToS/Privacy screens, guest mode | Planned |
+| **M3** | Accuracy | Optional current-AFA-rate setting; per-sample accuracy tests; prominent "excl. AFA" labelling | Planned |
+| **M4** | Privacy & compliance | 12-month retention job, account deletion flow, `firestore.rules`, privacy policy | Planned |
+| **M5** | Polish | Remaining UX consistency/loading/error items; copy centralization | Planned |
+
+Rationale:
+- **M1 before M2:** the WIP screens will reuse the accessibility and copy patterns fixed in M1.
+- **M2 before M3/M4:** ship the promised features; then harden correctness and privacy.
+- **M4 demonstrates privacy engineering:** retention, deletion, and access rules are handled the way production apps handle them.
+</script>
+
+<script id="doc-features" type="text/markdown" data-title="Feature Inventory" data-file="FEATURES.md" data-status="Current">
+# Feature Inventory
+
+Status legend: **Shipped** · **Shipped (partial)** · **WIP / Hidden** · **Planned**
+
+Jump to: [Auth](#auth) · [Onboarding](#onboarding) · [Dashboard](#dashboard) · [Meter readings](#meter-readings) · [Bill detail](#bill-detail) · [Usage](#usage) · [Appliances](#appliances) · [Settings](#settings) · [Edit profile](#edit-profile) · [Tariff calculator](#tariff-calculator) · [Notifications](#notifications) · [Observability](#observability) · [WIP / Planned](#wip--planned)
+
+---
+
+## Auth
+**Status:** Shipped (partial)
+
+**What it does:** Register, sign in (email/password or Google), and reset password. Account creation also writes the Firestore user profile that gates onboarding.
+
+**User flow:** Splash → Landing (auto-redirect) → Login ↔ Register → (Forgot Password) → Onboarding if profile incomplete, else Dashboard.
+
+**Key files**
+- Screens: `lib/ui/ft_auth/ft_login/page.dart`, `ft_register/page.dart`, `ft_forgot_password/page.dart`
+- State: `lib/ui/ft_auth/*/notifier/*.dart`
+- Service: `lib/services/auth/auth_service.dart`
+- Routing gate: `lib/ui/routes/router.dart:19-57`
+
+**Details**
+- Email/password via Firebase Auth; Google via `google_sign_in`.
+- Register captures name, email, 12-digit TNB account, password; writes `users/{uid}` with defaults (`tariffType: domestic`, `monthlyBudget: 150`, `onboardingCompleted: false`).
+- Registration rolls back the Firestore doc and auth user if the profile write fails.
+- Error codes mapped in `lib/ui/components/logging/app_logger.dart:90` (`mapFirebaseAuthError`).
+
+**Gaps / issues**
+- Email verification is disabled (`register_notifier.dart:204-205` TODO).
+- No guest mode despite an `isGuest` field.
+- Password policy is inconsistent between hint/checklist and validator (see `ux-review/FINDINGS.md` H5).
+- No autofill/keyboard actions (H2).
+
+---
+
+## Onboarding
+**Status:** Shipped
+
+**What it does:** Three steps — choose tariff type, set monthly budget, summary — then writes `tariffType`, `monthlyBudget`, and `onboardingCompleted: true`.
+
+**User flow:** Register → Step 1 Tariff → Step 2 Budget → Step 3 Complete → "Start Tracking".
+
+**Key files**
+- Screen: `lib/ui/features/ft_onboarding/page.dart`
+- State: `ft_onboarding/notifier/onboarding_notifier.dart`, `onboarding_state.dart`
+
+**Details**
+- Tariff options from `TariffType` enum (`domestic` / `commercial`).
+- Budget slider RM 50–300 plus quick presets.
+- Progress header ("1 of 3") and back handling via `PopScope`.
+
+**Gaps / issues**
+- Completion is gated only on Firestore write success; no retry guidance beyond an error banner.
+- Summary claims "Alerts enabled" regardless of notification permission (see `ux-review/FINDINGS.md` M6).
+
+---
+
+## Dashboard
+**Status:** Shipped
+
+**What it does:** The home screen. Shows current-month estimated bill, budget progress, 7-day usage chart, EEI band / tariff tier, saving tips, and quick actions.
+
+**Key files**
+- Screen: `lib/ui/features/ft_dashboard/page.dart`
+- State: `ft_dashboard/notifier/dashboard_notifier.dart`, `dashboard_state.dart`
+- Widgets: `ft_dashboard/widgets/*`
+
+**Data read:** current-month readings, previous-month readings, user profile (name, budget), derived tariff from the latest reading.
+**Derived values:** `kwhUsed`, `estimatedBill`, `dailyAvg`, projected bill, `percentageVsLastMonth`, budget status (normal/warning/exceeded at 80/100%), 7-day usage series.
+
+**Gaps / issues**
+- Error state previously dumped raw exceptions (fixed in `ux-review` C1).
+- Loading hides the header and uses a bare spinner (M1).
+
+---
+
+## Meter readings
+**Status:** Shipped
+
+**What it does:** Add/edit/delete a meter reading for a date. Computes kWh delta vs the previous reading, itemized cost, and the current EEI band / commercial tier.
+
+**User flow:** Dashboard/tab → Add Reading → pick date → enter reading (kWh) → see auto-calc → save → dashboard + usage refresh.
+
+**Key files**
+- Screen: `lib/ui/features/ft_add_meter_reading/page.dart`
+- State: `ft_add_meter_reading/notifier/add_meter_reading_notifier.dart`, `add_meter_reading_state.dart`
+- Chain/bill services: `lib/services/billing/reading_chain_service.dart`, `bill_recalculation_service.dart`
+
+**Rules**
+- Reading must be > 0 and cannot be lower than the previous reading or higher than the next.
+- Edit mode fixes the date (read-only).
+- A month cannot mix tariff types (`_checkTariffConflict`).
+- Saving recalculates the affected month's bill and the next reading if the chain shifted.
+
+**Gaps / issues**
+- Save button disabled with no explanation (fixed C2).
+- Tariff-conflict error is verbose and has no action (M4).
+
+---
+
+## Bill detail
+**Status:** Shipped
+
+**What it does:** Per-month bill page: estimated amount, itemized breakdown, payment status toggle, and the month's readings (tap to edit, swipe to delete).
+
+**Key files**
+- Screen: `lib/ui/features/ft_bill_detail/page.dart`
+- State: `ft_bill_detail/notifier/bill_detail_notifier.dart`, `bill_detail_state.dart`
+
+**Details**
+- Paid toggle updates all bill docs for the month and refreshes usage.
+- Deleting a reading recomputes neighbors and recalculates the month.
+- "Swipe to delete history" hint is shown.
+
+**Gaps / issues**
+- Delete failure copy was misleading (see `ux-review` H4).
+- "Tap to mark as paid" caption but only the small toggle is tappable (M2).
+
+---
+
+## Usage
+**Status:** Shipped
+
+**What it does:** Monthly/yearly kWh chart (last 6 or 12 months), current month summary, charge breakdown, and bill history with delete-month.
+
+**Key files**
+- Screen: `lib/ui/features/ft_usage/page.dart`
+- State: `ft_usage/notifier/usage_notifier.dart`, `usage_state.dart`
+- Widgets: `ft_usage/widgets/*`
+
+**Details**
+- Empty state with "Add First Reading" CTA.
+- Deleting a bill month removes all its readings + bill docs in a batch.
+- AFA disclaimer shown for applicable tariffs.
+
+**Gaps / issues**
+- Bare spinner loading (M1); error uses generic `ErrorView` (L5).
+
+---
+
+## Appliances
+**Status:** Shipped
+
+**What it does:** Manage household appliances (name, category, wattage, daily hours) and see estimated monthly kWh and RM cost, plus a share-of-total ring.
+
+**Key files**
+- Screen: `lib/ui/features/ft_devices/pg_devices/page.dart`, `pg_add_appliance/page.dart`
+- State: `pg_devices/notifier/devices_notifier.dart`, `pg_add_appliance/notifier/add_appliance_notifier.dart`
+- Model: `lib/models/appliance.dart`
+
+**Formula:** `monthlyKwh = (wattage / 1000) * dailyHours * 30`; cost via `TariffRates.marginalCost`.
+
+**Gaps / issues**
+- Category silently defaults to "Cooling" (M7).
+- Hours stepper enabled at limits, not typable, no semantics (M8).
+- Save disabled with no explanation (fixed C2).
+
+---
+
+## Settings
+**Status:** Shipped
+
+**What it does:** Profile card, account section (Edit Profile, Tariff Type, Monthly Budget), Tools (Tariff Calculator), About (version), and Sign Out.
+
+**Key files:** `lib/ui/features/ft_settings/pg_settings/page.dart`, `widgets/settings_layout.dart`, `widgets/budget_sheet.dart`, `widgets/tariff_type_sheet.dart`, `notifier/settings_notifier.dart`
+
+**Details**
+- Tariff switch and budget change are confirmed via dialogs.
+- Sign out is confirmed and redirects to login.
+
+**Gaps / issues**
+- The "NOTIFICATIONS" settings section is **commented out**; notification prefs actually live in the dashboard bell sheet.
+- Reads `budgetAlertsEnabled` / `billRemindersEnabled` fields that the notification system does not use (see `DATA_MODEL.md`).
+
+---
+
+## Edit profile
+**Status:** Shipped
+
+**What it does:** Edit display name and TNB account number, upload/replace avatar, view account info. Email is read-only.
+
+**Key files:** `lib/ui/features/ft_settings/pg_edit_profile/page.dart`, `notifier/edit_profile_notifier.dart`
+
+**Details**
+- Avatar uploaded to Firebase Storage at `users/{uid}/profile_<timestamp>.jpg`; old avatar deleted.
+- Syncs `displayName` to FirebaseAuth.
+- Save button only enabled when there are changes.
+
+**Gaps / issues**
+- TNB hint shows 10 digits but validation requires 12 (H7).
+- Placeholder "Loading..." fallback for name (L2).
+
+---
+
+## Tariff calculator
+**Status:** Shipped
+
+**What it does:** Standalone calculator: enter kWh, switch between domestic/commercial, see itemized breakdown, total, min-charge and EEI band/tier. Includes tariff reference cards.
+
+**Key files:** `lib/ui/features/ft_settings/pg_tariff_calculator/page.dart`, `notifier/tariff_calculator_notifier.dart`
+
+**Gaps / issues**
+- Input has no accessible label (M9) and is integer-only (L7).
+
+---
+
+## Notifications
+**Status:** Shipped
+
+**What it does:** Budget threshold alerts (80% / 100%) and an end-of-month reading reminder, delivered via FCM; per-user toggles for the budget alerts.
+
+**Architecture:** Server-driven. Cloud Functions react to bill writes and a monthly schedule; the client handles foreground display and tap routing.
+
+**Key files**
+- Client: `lib/services/notification/service/notification_service.dart`, `prefs/notification_prefs_notifier.dart`, `ft_dashboard/widgets/notification_prefs_sheet.dart`
+- Backend: `functions/index.js`
+
+**Details**
+- `checkBudgetOnBillUpdate`: on `users/{uid}/bills/{billId}` write, computes `amount / monthlyBudget`; atomically reserves tier (`alertTierSent`) before sending; rolls back on FCM failure.
+- `sendMonthlyReadingReminder`: 9:00 AM on the 28th (Asia/Kuala_Lumpur); sends to users with a token and no bill for `YYYY-MM`; batches at 500 and cleans stale tokens.
+- Tap payload `type`: `budget_alert` → dashboard, `reading_reminder` → add reading.
+- Token attached on login, detached on logout/account switch.
+
+**Gaps / issues**
+- Field-name mismatch between the notification system (`alert80Enabled`/`alert100Enabled`) and the settings model (`budgetAlertsEnabled`/`billRemindersEnabled`). See `DATA_MODEL.md`.
+- Permission denial is not surfaced; onboarding claims alerts are enabled (M6).
+
+---
+
+## Observability
+**Status:** Shipped
+
+**What it does:** Crashlytics for fatal + non-fatal errors, Firebase Analytics, App Check, and a safe error screen for Firestore profile-load failures.
+
+**Key files:** `lib/main.dart`, `lib/ui/components/logging/app_logger.dart`, `lib/services/observers/crashlytics_provider_observer.dart`, `lib/ui/routes/router.dart:200-216`
+
+**Details**
+- Crash collection disabled in debug.
+- `AppLogger` sanitizes custom keys to String/int/double/bool.
+- `mapFirebaseError` / `mapFirebaseAuthError` central mapping.
+
+---
+
+## WIP / Planned
+
+Priorities ([PRD.md](PRD.md) §14): **next milestone = notification settings, ToS/Privacy, guest mode**. Bill scanning is explicitly out of scope.
+
+| Feature | Priority | Status | Evidence / note |
+|---|---|---|---|
+| In-app notification settings section | **Next** | WIP / Hidden | Commented block in `pg_settings/page.dart:155-181`. Fix the field mismatch (`DATA_MODEL.md` #2) before enabling |
+| Terms of Service / Privacy Policy | **Next** | Planned | Referenced in register (`ft_register/page.dart:353-363`) and commented in settings; no routes. Pair with the privacy policy in `PRD.md` §15 |
+| Guest mode | **Next** | Planned | `isGuest` written in register; no flow. Needs auth + router changes |
+| Scan TNB bill (camera/AI) | Out of scope | WIP / Hidden | `AppRoutes.scanBill` → `ComingSoonPage`; QuickActions Scan tile commented out (`ft_dashboard/widgets/quick_actions.dart:27-35`) |
+| Email verification | Backlog | WIP / Hidden | Commented in `register_notifier.dart:204-205` |
+</script>
+
+<script id="doc-architecture" type="text/markdown" data-title="Architecture" data-file="ARCHITECTURE.md" data-status="Current">
+# Architecture
+
+- **Status:** Current
+- **App version:** `0.5.7+1`
+
+## 1. Overview
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                        Flutter app (lib/)                     │
+│                                                               │
+│  ui/            Presentation: pages, widgets, components      │
+│   ├─ features/  Feature slices (dashboard, usage, devices…)   │
+│   ├─ ft_auth/   Auth feature slice                            │
+│   ├─ ft_main/   Splash + landing                              │
+│   ├─ components Shared widgets (input, display, feedback…)    │
+│   └─ routes/    go_router config + auth redirect               │
+│                                                               │
+│  Riverpod       Notifiers / AsyncNotifiers hold screen state   │
+│                 and orchestrate reads/writes                  │
+│                                                               │
+│  services/      Auth, billing engine, notifications, logging   │
+│  models/        Plain data models (from Firestore docs)        │
+│  theme/         Colors, dimensions, text styles, ThemeData     │
+│  constants/     Tariff rates (domain constants)                │
+└──────────────────────────────────────────────────────────────┘
+              │                          │
+              ▼                          ▼
+     Firebase Auth            Cloud Firestore
+     Firebase Storage         (users/{uid}/…)
+     Firebase Messaging
+              ▲
+              │ triggers
+┌──────────────────────────────────────────────────────────────┐
+│         Cloud Functions (functions/index.js, Node 24)          │
+│  checkBudgetOnBillUpdate · sendMonthlyReadingReminder          │
+└──────────────────────────────────────────────────────────────┘
+```
+
+Key idea: **the client owns everything except notifications.** Bill math, reading chains, and bill writes happen on-device; Cloud Functions only react to bill writes and run a scheduled reminder.
+
+## 2. Tech stack
+
+| Layer | Choice |
+|---|---|
+| Framework | Flutter (Dart SDK `>=3.10.0`, Flutter `>=3.44.0`; CI pins `3.44.1`) |
+| State | `flutter_riverpod` 3.x |
+| Routing | `go_router` 17 with `StatefulShellRoute` bottom nav |
+| Backend | Firebase: Auth, Firestore, Storage, Messaging, Analytics, Crashlytics, App Check |
+| Server logic | Firebase Cloud Functions v2, Node.js 24 |
+| UI scale | `flutter_screenutil` (design size 390×844) |
+| Charts | `fl_chart` (+ custom `CustomPaint` for the appliance ring) |
+| Fonts | `google_fonts` (Lato headings, DM Sans body) |
+| Local prefs | `shared_preferences`, `flutter_secure_storage` |
+
+## 3. Folder map
+
+```
+lib/
+├── main.dart                 # bootstrap: Firebase, Crashlytics, App Check, runApp
+├── app.dart                  # barrel export
+├── firebase_options.dart     # generated (gitignored in CI, restored from secret)
+├── constants/tariff_rates.dart
+├── extensions/               # DateTime + TariffType extensions
+├── models/                   # Appliance, BillRecord, ReadingRecord, UserProfile
+├── services/
+│   ├── auth/                 # AuthService singleton + currentUidProvider
+│   ├── billing/              # ReadingChainService, BillRecalculationService
+│   ├── notification/         # FCM/local notifications + prefs
+│   ├── notifier/             # AppUserNotifier, userProfileProvider, tariffTypeProvider
+│   └── observers/            # CrashlyticsProviderObserver
+├── theme/                    # AppColors, AppDimensions, AppTextStyles, AppTheme
+└── ui/
+    ├── components/           # shared input/display/feedback/navigation
+    ├── features/             # dashboard, usage, devices, settings, meter reading, bill
+    ├── ft_auth/              # login, register, forgot password
+    ├── ft_main/              # splash, landing
+    └── routes/              # router + AppRoutes constants
+```
+
+Feature slice convention: `pg_<name>/page.dart` (the screen) + `notifier/<name>_notifier.dart` + `notifier/<name>_state.dart` (+ optional `widgets/`).
+
+## 4. State management
+
+- **Riverpod** providers, mostly:
+  - `AsyncNotifierProvider` for async screen data (`dashboardProvider`, `usageProvider`, `settingsProvider`, `editProfileProvider`).
+  - `NotifierProvider` for synchronous/form state (`loginProvider`, `registerProvider`, `addReadingProvider`, `addApplianceProvider`, `billDetailProvider`, `onboardingProvider`).
+  - `Provider` for derived values (`tariffTypeProvider`, `isProfileLoadingProvider`).
+  - `ChangeNotifierProvider` bridging `AppUserNotifier` (`userProfileProvider`).
+  - `StreamProvider` for uid (`currentUidProvider`).
+- Screen state classes use a `_unset` sentinel so `copyWith` can distinguish "no change" from "set to null".
+- `loggable_notifier.dart` mixes in screen-name context for error logging.
+
+## 5. Auth & routing gate
+
+`AuthService` is a **singleton** (`factory AuthService() => _instance`) that:
+- listens to `authStateChanges`, subscribes to the user's Firestore doc, and drives `AppUserNotifier`.
+- exposes `uidChanges` (immediate current value, then future changes).
+
+`AppUserNotifier` holds `OnboardingStatus`: `loading | complete | incomplete | error`.
+
+`appRouter` (`lib/ui/routes/router.dart`) uses `refreshListenable` on auth + profile and redirects:
+- Logged in + loading → stay.
+- Logged in + error → `/error` (safe retry screen; never overwrites data).
+- Logged in + incomplete → `/onboarding`.
+- Logged in + complete hitting a public/onboarding route → `/dashboard`.
+- Logged out + protected route → `/login`.
+
+Navigation is a `StatefulShellRoute.indexedStack` with four branches (Dashboard, Usage, Devices, Settings) behind `AppBottomNav`, plus non-tab routes (onboarding, add reading, bill detail, add/edit appliance, edit profile, tariff calculator, scan bill, error).
+
+## 6. Data access patterns
+
+- Reads happen in notifiers via Firestore queries scoped to `users/{uid}/…`.
+- Writes that must stay consistent use **`WriteBatch`** (reading delete + chain fix) or **transactions** (budget-alert reservation in the Cloud Function).
+- Bills are **denormalized**: one `bills/{YYYY-MM}` doc per month, recomputed by `BillRecalculationService.recalculateMonth` whenever readings change.
+- Tariff is resolved from the **most recent reading** of the month, falling back to the live profile tariff.
+
+See [DATA_MODEL.md](DATA_MODEL.md) and [BILLING.md](BILLING.md).
+
+## 7. Billing engine
+
+Two services on top of `TariffRates`:
+
+- `ReadingChainService` — finds previous/next readings globally across months and computes corrected `kwh`/`tier` for a reading whose chain position changed. Invariant: a reading cannot be lower than its predecessor.
+- `BillRecalculationService` — sums a month's readings and upserts/deletes the month's bill doc.
+
+Full domain detail: [BILLING.md](BILLING.md).
+
+## 8. Notifications
+
+- Client (`NotificationService`): requests permission, initializes the Android channel `budget_alerts`, renders foreground messages via `flutter_local_notifications`, routes taps by `data.type`, attaches/detaches FCM tokens on login/logout.
+- Server (`functions/index.js`): `checkBudgetOnBillUpdate` (Firestore trigger + atomic tier reservation + rollback on failure) and `sendMonthlyReadingReminder` (scheduled, batched, stale-token cleanup).
+
+## 9. Error handling & logging
+
+- `AppLogger.error` sanitizes keys and forwards to Crashlytics.
+- `mapFirebaseError` / `mapFirebaseAuthError` centralize user-facing messages.
+- Router sends profile-load failures to `/error`, which calls `AuthService.retryLoadUser()`.
+- `CrashlyticsProviderObserver` records Riverpod provider errors.
+
+## 10. Theming
+
+- `AppColors` (dark palette, semantic colors, gradients, shadows), `AppDimensions` (spacing/radius/sizes via `.r`/`.w`/`.h`), `AppTextStyles` (Lato + DM Sans), assembled in `AppTheme.dark`.
+- `ScreenUtilInit(designSize: 390×844, minTextAdapt: true)` wraps `MaterialApp.router`.
+
+## 11. CI/CD
+
+`.github/workflows/release-apk.yml`: on push to `main` → Java 17, Flutter 3.44.1, restore secrets (`google-services.json`, `firebase_options.dart`, keystore, `key.properties`), `flutter build apk --release`, publish a GitHub Release `v<run_number>`.
+
+## 12. Known architectural risks / tech debt
+
+1. **Field-name drift** between settings and notification systems (`photoURL` vs `photoUrl`; `budgetAlertsEnabled` vs `alert80Enabled`). See `DATA_MODEL.md`.
+2. **No Firestore security rules in the repo** — `firebase.json` only declares Functions. Rules are not version-controlled here.
+3. **All migration/versioning is implicit** — no schema version field; older docs fall back via `??` defaults.
+4. **Hard-coded tariff constants** — a TNB update requires a code change and release.
+5. **No integration/E2E tests** — unit tests cover state and billing services only.
+6. **Singleton `AuthService`** — convenient, but makes isolated testing harder.
+</script>
+
+<script id="doc-datamodel" type="text/markdown" data-title="Data Model" data-file="DATA_MODEL.md" data-status="Current">
+# Data Model (Cloud Firestore)
+
+- **Status:** Current
+- **Last updated:** 2026-10-02
+- **Root collection:** `users`
+
+> Note: Firestore field names are **case-sensitive**. Inconsistencies below are real and can cause features to silently fail. They are listed in [Known issues](#known-issues).
+
+## 1. Tree
+
+```
+users/{uid}
+├── (profile fields, see §2)
+├── readings/{autoId}      # one per meter reading
+├── bills/{YYYY-MM}        # one per month, e.g. 2026-07
+└── appliances/{autoId}    # one per appliance
+```
+
+Storage:
+
+```
+users/{uid}/profile_<millis>.jpg   # avatar (Firebase Storage)
+```
+
+## 2. `users/{uid}`
+
+| Field | Type | Default / notes | Written by |
+|---|---|---|---|
+| `uid` | string | Same as doc id | register |
+| `fullName` | string | — | register, edit profile |
+| `email` | string | From FirebaseAuth | register |
+| `tnbAccountNo` | string | 12 digits | register, edit profile |
+| `tariffType` | `"domestic"` \| `"commercial"` | `"domestic"` | register, onboarding, settings |
+| `monthlyBudget` | number | `150` | register, onboarding, settings |
+| `onboardingCompleted` | bool | `false` | register, onboarding |
+| `createdAt` | timestamp | server | register |
+| `updatedAt` | timestamp | server | register, onboarding, settings, edit profile |
+| `isGuest` | bool | `false` | register (no flow yet) |
+| `fcmToken` | string | — | notification service; deleted on logout/account switch |
+| `alert80Enabled` | bool | `true` | dashboard notification sheet |
+| `alert100Enabled` | bool | `true` | dashboard notification sheet |
+| `photoUrl` | string | — | edit profile |
+| `photoUpdatedAt` | timestamp | — | edit profile |
+| `photoURL` | null | — | register (legacy/inconsistent — see §5) |
+| `budgetAlertsEnabled` | bool | read as `true` | **settings model only — no writer** |
+| `billRemindersEnabled` | bool | read as `true` | **settings model only — no writer** |
+| `monthlySummaryEnabled` | bool | read as `true` (profile) / `false` (settings) | **no writer** |
+
+## 3. `users/{uid}/readings/{autoId}`
+
+| Field | Type | Notes |
+|---|---|---|
+| `reading` | number | Raw meter value (not a delta) |
+| `kwh` | number | Delta vs previous reading for that date |
+| `date` | timestamp | Reading date |
+| `notes` | string | Optional user note |
+| `tier` | number | EEI band number (domestic) or tier (commercial) at time of reading |
+| `tariffType` | string | Tariff at creation; preserved for history |
+| `createdAt` | timestamp | Set on create only (preserved on edit) |
+
+> `ReadingRecord.estimatedBill` and `ReadingRecord.tierLabel` exist in the model, but the add/update path does not persist `estimatedBill`. Treat it as effectively unused; no writer exists.
+
+## 4. `users/{uid}/bills/{YYYY-MM}`
+
+Doc id is the month key, e.g. `2026-07`.
+
+| Field | Type | Notes |
+|---|---|---|
+| `kwh` | number | Sum of that month's reading kWh |
+| `amount` | number | `TariffRates.calculate(kwh, tariffType)` |
+| `tier` | number | Tier/band for the month total |
+| `tariffType` | string | Resolved from the latest reading that month |
+| `date` | timestamp | Start of the month |
+| `isPaid` | bool | Toggled from bill detail (updates all docs for the month) |
+| `alertTierSent` | number | `0` \| `80` \| `100`; alert reservation (Cloud Function only) |
+
+Bills are **derived, not authored**: `BillRecalculationService.recalculateMonth` upserts the doc from current readings, and deletes it if the month has no readings.
+
+## 5. `users/{uid}/appliances/{autoId}`
+
+| Field | Type | Notes |
+|---|---|---|
+| `name` | string | |
+| `category` | string | One of Cooling, Lighting, Kitchen, Entertainment, Washing, Heating, Other |
+| `wattage` | number | Watts |
+| `dailyHours` | number | Hours/day (0.5 steps) |
+| `createdAt` | timestamp | Preserved on edit |
+
+## 6. Derived values (not stored)
+
+Computed on read from readings + profile:
+- Current-month `kwhUsed`, `estimatedBill`, `dailyAvg`, projected bill.
+- Budget status (`normal` / `warning`≥80% / `exceeded`≥100%).
+- EEI band / commercial tier for a running kWh total.
+- 7-day and 12-month usage series.
+
+## 7. Known issues
+
+| # | Issue | Impact | Suggested fix |
+|---|---|---|---|
+| 1 | `photoURL` (register) vs `photoUrl` (edit/settings) | Avatar reads/writes use different keys; register's null is harmless today but confusing | Standardize on `photoUrl` everywhere |
+| 2 | Notification toggles: functions + sheet use `alert80Enabled`/`alert100Enabled`; settings model reads `budgetAlertsEnabled`/`billRemindersEnabled` | Re-enabling the settings notification section would write fields nothing reads, so toggles would do nothing | Use `alert80Enabled`/`alert100Enabled` in settings, or add a migration |
+| 3 | `monthlySummaryEnabled` default differs (`true` in `UserProfile`, `false` in settings) and has no writer | Dead/contradictory config | Pick one default or remove |
+| 4 | No `schemaVersion` field | Hard to migrate safely later | Add `schemaVersion` on the user doc |
+| 5 | Firestore security rules are not in the repo (`firebase.json` lists only Functions) | Rules live only in the console; unreviewable and unreproducible | Add `firestore.rules` + reference it in `firebase.json` and CI |
+| 6 | `estimatedBill` on readings is modeled but never written | Possible source of confusion | Remove from model or start writing it |
+| 7 | Bills stored per reading-total; deleting all readings deletes the bill | Historical "paid" state is lost with the month | If history matters, soft-delete instead |
+
+## 8. Indexing notes
+
+Queries filter on `date` with `orderBy('date')` (range + order on the same field) — served by the default single-field index. The monthly reminder queries bills by document id, so no composite index is required. Multi-field filters (e.g. `tariffType` + `date`) require a composite index.
+
+## 9. Retention & deletion (planned)
+
+Policy ([PRD.md](PRD.md) §15): **raw readings are retained for 12 months, then deleted**, along with their derived monthly bill docs.
+
+Recommended implementation:
+- A monthly scheduled Cloud Function (mirrors `sendMonthlyReadingReminder`) that deletes `readings` with `date < now - 12 months` in batches and clears the matching `bills/{YYYY-MM}`.
+- Alternatively, write an `expireAt` field per reading and enable a Firestore TTL policy (eventual deletion; does not cover bills).
+- Add a user-facing **Delete account** action that removes all subcollections, the user doc, and the FirebaseAuth user.
+- Commit `firestore.rules` restricting `users/{uid}/**` to the authenticated owner.
+
+When this ships, update the field tables above to include any new `expireAt` field.
+</script>
+
+<script id="doc-billing" type="text/markdown" data-title="Billing & Tariff" data-file="BILLING.md" data-status="Current">
+# Billing & Tariff Domain
+
+- **Status:** Current
+- **Source of truth in code:** `lib/constants/tariff_rates.dart`
+- **Rates version:** post-1 July 2025 TNB restructuring
+
+> Estimates exclude **AFA** by default. The app is an estimator, not the official TNB invoice.
+
+## 1. Core concepts
+
+- **Meter reading** — the raw cumulative number on the meter (never decreases).
+- **kWh used** — the delta between a reading and the previous reading. This is what gets billed.
+- **Tariff type** — `domestic` (Tariff A) or `commercial` (Non-Domestic LV, Tariff B).
+- **EEI** — Energy Efficiency Incentive, a per-kWh rebate (domestic only uses a band table; commercial has a flat ≤200 kWh rebate).
+- **Tier / Band** — usage bracket used for badges and color. Domestic now uses EEI bands (`EeiBand`), commercial keeps the old 2-tier int.
+
+## 2. Domestic (Tariff A)
+
+Rates (RM per kWh unless noted):
+
+| Component | Rate | Condition |
+|---|---|---|
+| Energy | 0.2703 | total ≤ 1500 kWh |
+| Energy | 0.3703 | total > 1500 kWh (applies to **all** kWh) |
+| Capacity | 0.0455 | always |
+| Network | 0.1285 | always |
+| Retail | RM 10 | only when total > 600 kWh |
+| AFA | published monthly | 0 by default; applies when total > 600 kWh |
+| EEI rebate | 0.5–25 sen/kWh | lookup table, applies to **all** kWh; 0 above 1000 kWh |
+| KWTBB | 1.6% of (Energy + Capacity + Network − EEI) | only when total > 300 kWh |
+| SST | 8% of the net subtotal attributable to kWh above 600 | only when total > 600 kWh |
+
+Formula (`_domesticCharges`, `tariff_rates.dart:288-314`):
+
+```
+energy   = kwh * (kwh > 1500 ? 0.3703 : 0.2703)
+afa      = kwh > 600 ? kwh * afaRate : 0
+capacity = kwh * 0.0455
+network  = kwh * 0.1285
+retail   = kwh > 600 ? 10 : 0
+eei      = kwh * (eeiSen(kwh) / 100)
+net      = energy + afa + capacity + network + retail - eei
+kwtbb    = kwh > 300 ? (energy + capacity + network - eei) * 0.016 : 0
+sst      = kwh > 600 ? net * ((kwh - 600) / kwh) * 0.08 : 0
+total    = net + kwtbb + sst
+```
+
+EEI band lookup (`_eeiBands`, `tariff_rates.dart:240-258`): 17 bands from `≤200 kWh → 25.0 sen` down to `≤1000 kWh → 0.5 sen`, then no rebate above 1000 kWh. The rebate is applied to the **entire month's kWh**, not incrementally.
+
+## 3. Commercial LV (Tariff B)
+
+Rates:
+
+| Component | Rate | Condition |
+|---|---|---|
+| Energy | 0.2703 | flat (no 1500 kWh crossover) |
+| Capacity | 0.0883 | always |
+| Network | 0.1482 | always |
+| Retail | RM 20 | always |
+| AFA | published monthly | excluded by default |
+| EEI rebate | 11 sen/kWh | only when total ≤ 200 kWh |
+| KWTBB | 1.6% of (Energy + Capacity + Network − EEI) | always (no threshold) |
+| SST | not applicable | — |
+
+Formula (`_commercialCharges`, `tariff_rates.dart:567-589`):
+
+```
+energy   = kwh * 0.2703
+afa      = kwh * afaRate
+capacity = kwh * 0.0883
+network  = kwh * 0.1482
+eei      = kwh <= 200 ? kwh * 0.11 : 0
+net      = energy + afa + capacity + network + 20 - eei
+kwtbb    = (energy + capacity + network - eei) * 0.016
+total    = net + kwtbb
+```
+
+## 4. AFA (Automatic Fuel Adjustment)
+
+- Republished by TNB every month, so it is **not** a hard-coded constant.
+- `TariffRates.calculate(kwh, type, afaSenPerKwh: ...)` accepts it; all callers currently use the default `0`.
+- The UI shows a disclaimer wherever AFA is excluded (`BillBreakdownCard`, usage summary, tariff calculator).
+
+## 5. Reading chain
+
+Handled by `lib/services/billing/reading_chain_service.dart`.
+
+- Readings form a global, date-ordered chain across **all** months.
+- `findPrevious` / `findNext` return true neighbors from Firestore (not just in-memory).
+- When a reading is inserted/edited/deleted, the **next** reading's `kwh` must be recomputed as `next.reading - previous.reading`.
+- If a deleted/replaced reading was the baseline, the next reading becomes the new baseline (`kwh = 0`).
+- Invariant enforced: `next.reading >= previous.reading`, else `StateError`.
+- `tier` is recomputed with `TariffRates.getTier(newKwh, tariffType)`.
+
+## 6. Bill recalculation
+
+Handled by `lib/services/billing/bill_recalculation_service.dart`.
+
+- One bill doc per month at `users/{uid}/bills/{YYYY-MM}`.
+- `recalculateMonth` sums all readings in the month, resolves the tariff from the **latest** reading (fallback to the caller's tariff), and upserts `kwh`, `amount`, `tier`, `tariffType`, `date`.
+- If the month has **no readings**, the bill doc is **deleted**.
+- Called after add/update/delete of a reading, and for the neighboring month if a chain fix crosses a month boundary.
+- `isPaid` and `alertTierSent` are preserved via `SetOptions(merge: true)`.
+
+## 7. Worked examples
+
+### Domestic, 300 kWh
+
+```
+energy   300 * 0.2703 = 81.09
+capacity 300 * 0.0455 = 13.65
+network  300 * 0.1285 = 38.55
+eei      300 * 0.2250 = 67.50   (band ≤300 kWh → 22.5 sen)
+net      81.09 + 13.65 + 38.55 - 67.50 = 65.79
+kwtbb    0            (needs > 300 kWh)
+sst      0            (needs > 600 kWh)
+total    RM 65.79
+```
+
+### Domestic, 700 kWh (shows Retail + SST)
+
+```
+energy   700 * 0.2703 = 189.21
+capacity 700 * 0.0455 = 31.85
+network  700 * 0.1285 = 89.95
+retail   10.00
+eei      700 * 0.0550 = 38.50   (band ≤700 kWh → 5.5 sen)
+net      189.21 + 31.85 + 89.95 + 10 - 38.50 = 282.51
+kwtbb    (189.21 + 31.85 + 89.95 - 38.50) * 0.016 = 4.36
+sst      282.51 * (100/700) * 0.08 = 3.23
+total    RM 290.10
+```
+
+### Commercial, 200 kWh
+
+```
+energy   200 * 0.2703 = 54.06
+capacity 200 * 0.0883 = 17.66
+network  200 * 0.1482 = 29.64
+retail   20.00
+eei      200 * 0.1100 = 22.00   (≤200 kWh)
+net      54.06 + 17.66 + 29.64 + 20 - 22.00 = 99.36
+kwtbb    (54.06 + 17.66 + 29.64 - 22.00) * 0.016 = 1.27
+total    RM 100.63
+```
+
+(Values rounded for display; the code computes in full precision.)
+
+## 8. Edge cases & invariants
+
+- `kwh <= 0` → calculate returns `0`; breakdown returns `[]`.
+- EEI rebate for domestic disappears above 1000 kWh; `EeiBand.number == 0` means "no rebate", which is also used for >1000 kWh (not "no usage").
+- Mixing tariff types in one month is blocked (`_checkTariffConflict`), so a month's tariff is unambiguous.
+- Deleting all readings in a month deletes that month's bill (and its paid state).
+
+## 9. When TNB changes rates
+
+1. Update the constants and `_eeiBands` in `lib/constants/tariff_rates.dart`.
+2. Re-run the worked examples mentally or add a test; existing tests include `test/tariff_rates_test.dart`.
+3. Update the tables in this doc and in the root README.
+4. Note that AFA may need the current published rate passed in (currently defaults to 0).
+</script>
+
+<script id="doc-development" type="text/markdown" data-title="Development" data-file="DEVELOPMENT.md" data-status="Current">
+# Development Guide
+
+## 1. Prerequisites
+
+| Tool | Version | Notes |
+|---|---|---|
+| Flutter | `>=3.44.0` (CI pins `3.44.1`) | `flutter --version` |
+| Dart | `>=3.10.0` | bundled with Flutter |
+| Java | 17 | for Android builds |
+| Firebase CLI | latest | only for Cloud Functions |
+| Node.js | 24 | only for `functions/` |
+
+## 2. First-time setup
+
+```bash
+git clone <repo>
+cd energy-tracker
+flutter pub get
+```
+
+### Required local config (gitignored)
+
+The app will not build/run without these:
+
+| File | Purpose | How to get it |
+|---|---|---|
+| `android/app/google-services.json` | Android Firebase config | Firebase console → project settings, or `flutterfire configure` |
+| `lib/firebase_options.dart` | Dart Firebase options | `flutterfire configure` (CI restores it from a secret) |
+| `android/release.keystore` | Release signing | Your keystore, only needed for release builds |
+| `android/key.properties` | Keystore credentials | See below, only needed for release builds |
+
+`android/key.properties` (do not commit):
+
+```properties
+storePassword=...
+keyPassword=...
+keyAlias=...
+storeFile=../release.keystore
+```
+
+> Firebase project id is `energy-tracker-848fa` (`firebase.json`).
+
+## 3. Run, analyze, test
+
+```bash
+flutter run                 # debug on a connected device/emulator
+flutter analyze             # static analysis
+flutter test                # unit tests
+flutter test test/tariff_rates_test.dart   # single file
+```
+
+**Analyzer baseline:** `very_good_analysis` (`analysis_options.yaml`). Expect **0 errors** and a handful of pre-existing `lines_longer_than_80_chars` infos. Fix new issues; don't add warnings.
+
+**Existing tests** (`test/`):
+- `add_meter_reading_state_test.dart`
+- `tariff_rates_test.dart`
+- `appliance_test.dart`
+- `user_profile_test.dart`
+- `bill_recalculation_service_test.dart`
+- `reading_chain_service_test.dart`
+
+There are no widget/integration tests yet.
+
+## 4. Build & release
+
+Local release build:
+
+```bash
+flutter build apk --release
+# output: build/app/outputs/flutter-apk/app-release.apk
+```
+
+Version comes from `pubspec.yaml` (`version: 0.5.7+1`).
+
+CI (`.github/workflows/release-apk.yml`) builds on every push to `main` and publishes a GitHub Release. Required repository secrets:
+
+- `GOOGLE_SERVICES_JSON_BASE64`
+- `FIREBASE_OPTIONS_DART_BASE64`
+- `RELEASE_KEYSTORE_BASE64`
+- `KEYSTORE_PASSWORD`
+- `KEY_PASSWORD`
+- `KEY_ALIAS`
+
+## 5. Cloud Functions
+
+```bash
+cd functions
+npm install
+npm run lint
+npm run serve          # emulators (functions only)
+npm run deploy         # firebase deploy --only functions
+npm run logs
+```
+
+Lint runs on deploy (`firebase.json` `predeploy`). Node 24, `firebase-functions` v7.
+
+## 6. Code conventions
+
+- Lints: `very_good_analysis` + `prefer_single_quotes`, `require_trailing_commas`, `avoid_print`, `use_key_in_widget_constructors`.
+- Imports are package-absolute (`package:energy_tracker/...`); barrel files (`app.dart`, `models/models.dart`, feature `widgets/widgets.dart`) re-export.
+- Feature slice pattern:
+  ```
+  ft_<feature>/
+    page.dart
+    widgets/*.dart          (optional)
+    notifier/
+      notifier.dart         (exports)
+      <name>_notifier.dart
+      <name>_state.dart
+  ```
+- State classes: immutable, `copyWith` with an `_unset` sentinel for nullable fields.
+- User-facing strings currently live inline near the widget; prefer extracting reused ones (see `docs/ux-review/EXAMPLES.md` M3).
+- No comments unless they add non-obvious context (the codebase already uses explains-why comments sparingly).
+- `AppLogger.error` for failures; never `print` (lint blocks it).
+
+## 7. Where to add things
+
+### New screen + route
+1. Add the path to `AppRoutes` (`lib/ui/routes/routes.dart`).
+2. Add a `GoRoute` in `lib/ui/routes/router.dart` (tab branch or top-level).
+3. Create the feature slice under `lib/ui/features/ft_<name>/`.
+
+### New Riverpod provider
+1. Prefer `NotifierProvider` (form/sync) or `AsyncNotifierProvider` (async data).
+2. Mix in `LoggableNotifier` and set `screenName` for error context.
+3. Expose via the slice's `notifier.dart` barrel.
+
+### New Firestore field
+1. Write it from the relevant notifier (use `SetOptions(merge: true)`).
+2. Read it with a safe fallback (`as T? ?? default`).
+3. Update [DATA_MODEL.md](DATA_MODEL.md).
+4. Keep field names consistent — check the [Known issues](DATA_MODEL.md#known-issues) first.
+
+### New tariff/rate
+See [BILLING.md §9](BILLING.md#9-when-tnb-changes-rates).
+
+## 8. Common tasks
+
+**Add a budget alert field / change notification behavior**
+- Client prefs: `lib/services/notification/prefs/notification_prefs_notifier.dart`
+- Sheet UI: `lib/ui/features/ft_dashboard/widgets/notification_prefs_sheet.dart`
+- Server: `functions/index.js`
+
+**Change validation or error copy**
+- Notifiers hold validation; `lib/ui/components/logging/app_logger.dart` maps Firebase codes.
+- Follow the UX copy rules in `docs/ux-review/EXAMPLES.md`.
+
+**Add an appliance category**
+- `lib/ui/features/ft_devices/pg_add_appliance/notifier/add_appliance_state.dart` (`_categories`)
+- `lib/models/appliance.dart` (`categoryEmoji`)
+- The add-appliance grid `_items` and `_CategoryGrid._hint`.
+
+## 9. Troubleshooting
+
+| Symptom | Likely cause |
+|---|---|
+| Build fails with missing `firebase_options.dart` | Not generated locally; run `flutterfire configure` |
+| Android build fails signing | Missing `key.properties` / keystore (release only) |
+| Avatar never appears | `photoUrl` vs `photoURL` field mismatch (see `DATA_MODEL.md` #1) |
+| Notification toggles do nothing | Settings model writes fields the functions don't read (`DATA_MODEL.md` #2) |
+| Estimates don't match a real bill | AFA excluded by default; also check EEI band edge values |
+</script>
+
+<script id="doc-glossary" type="text/markdown" data-title="Glossary" data-file="GLOSSARY.md" data-status="Current">
+# Glossary
+
+Domain and technical terms used across the app, docs, and code.
+
+## Energy / TNB domain
+
+- **TNB** — Tenaga Nasional Berhad, Malaysia's main electricity utility.
+- **kWh** — kilowatt-hour; unit of energy. The app's primary usage unit.
+- **Meter reading** — the cumulative number shown on an electricity meter; never decreases.
+- **kWh used** — the difference between consecutive meter readings; the billable consumption.
+- **Tariff A (Domestic)** — residential tariff category.
+- **Tariff B / Non-Domestic LV** — commercial low-voltage tariff category (shops, offices).
+- **LV** — Low Voltage.
+- **RM** — Malaysian Ringgit; app currency.
+- **sen** — 1/100 of a Ringgit; rates are often quoted in sen/kWh.
+- **AFA (Automatic Fuel Adjustment)** — a fuel-cost adjustment TNB republishes monthly. **Excluded** from the app's estimates by default.
+- **EEI (Energy Efficiency Incentive)** — a per-kWh rebate that shrinks as usage rises. Domestic uses a 17-band table; commercial is flat 11 sen/kWh for ≤200 kWh.
+- **Band** — an EEI rebate bracket (domestic), numbered 1–17; `0` means "no rebate" (usage > 1000 kWh).
+- **Tier** — usage bracket used for the commercial 2-tier structure; also used as a generic badge concept.
+- **KWTBB** — Kumpulan Wang Tenaga Boleh Baharu (renewable energy fund levy), 1.6% of certain components.
+- **SST** — Sales and Service Tax (8%), applied to the domestic portion above 600 kWh; not applicable to commercial LV.
+- **Net charge** — subtotal after adding all per-kWh charges and subtracting the EEI rebate, before levies.
+
+## App concepts
+
+- **Baseline reading** — the earliest reading in the chain; its `kwh` is 0 (no predecessor).
+- **Chain** — the globally date-ordered sequence of a user's readings.
+- **Chain fix** — recomputation of the next reading's `kwh`/`tier` after an insert/edit/delete.
+- **Recalculate month** — summing a month's readings and upserting (or deleting) its bill document.
+- **Budget status** — `normal` (<80%), `warning` (≥80%), `exceeded` (≥100%) of monthly budget.
+- **Onboarding status** — `loading` / `complete` / `incomplete` / `error`, used by the router gate.
+- **Estimate** — the app's computed bill, explicitly not the official TNB invoice.
+
+## Technical
+
+- **Riverpod provider** — a dependency/state container. Variants used: `NotifierProvider`, `AsyncNotifierProvider`, `Provider`, `ChangeNotifierProvider`, `StreamProvider`.
+- **Notifier / AsyncNotifier** — classes holding screen state; `LoggableNotifier` adds `screenName` for logging.
+- **`_unset` sentinel** — a private object used in `copyWith` so nullable fields can be set to null explicitly.
+- **Feature slice** — the `pg_<name>/page.dart` + `notifier/` convention.
+- **FCM** — Firebase Cloud Messaging (push notifications).
+- **Foreground message** — a push received while the app is open; rendered locally via `flutter_local_notifications`.
+- **App Check** — Firebase abuse protection; Play Integrity in release, debug provider in development.
+- **Crashlytics** — Firebase crash/error reporting.
+- **`alertTierSent`** — per-bill field (`0`/`80`/`100`) reserving which budget alert has been sent, to prevent duplicates.
+- **ScreenUtil** — `flutter_screenutil`; sizes written as `.w`/`.h`/`.r`/`.sp` against a 390×844 design size.
+</script>
+
+<script>
+/* ====================== APP LOGIC ====================== */
+const DOCS = Array.from(document.querySelectorAll('script[type="text/markdown"]')).map((el) => ({
+  id: el.id,
+  title: el.dataset.title,
+  file: el.dataset.file,
+  status: el.dataset.status || '',
+  markdown: el.textContent.trim(),
+}));
+
+const SCREENSHOT_TITLES = {
+  'dashboard.jpg': 'Dashboard',
+  'usage.jpg': 'Usage — chart',
+  'usage_2.jpg': 'Usage — bill history',
+  'bill_history.jpg': 'Bill history',
+  'devices.jpg': 'Appliances',
+  'add_appliance.jpg': 'Add appliance',
+  'edit_appliance.jpg': 'Edit appliance',
+  'add_meter_reading.jpg': 'Add meter reading',
+  'edit_meter_reading.jpg': 'Edit meter reading',
+  'settings.jpg': 'Settings',
+  'edit_profile.jpg': 'Edit profile',
+  'login.jpg': 'Login',
+  'create_account.jpg': 'Create account',
+  'reset_password.jpg': 'Reset password',
+  'monthly_budget_sheet.jpg': 'Monthly budget sheet',
+  'tariff_type_sheet.jpg': 'Tariff type sheet',
+  'tariff_calculator_domestic.jpg': 'Tariff calculator — domestic',
+  'tariff_calculator_domestic_2.jpg': 'Tariff calculator — domestic (2)',
+  'tariff_calculator_commercial.jpg': 'Tariff calculator — commercial',
+  'tariff_calculator_commercial_2.jpg': 'Tariff calculator — commercial (2)',
+};
+const SCREENSHOTS = Object.keys(SCREENSHOT_TITLES);
+
+const nav = document.getElementById('nav');
+const content = document.getElementById('content');
+const crumb = document.getElementById('crumb');
+const search = document.getElementById('search');
+const searchHint = document.getElementById('searchHint');
+const sidebar = document.getElementById('sidebar');
+const scrim = document.getElementById('scrim');
+const progress = document.getElementById('progress');
+const topbar = document.querySelector('.topbar');
+
+if (window.marked && typeof marked.setOptions === 'function') {
+  marked.setOptions({ gfm: true, breaks: false });
+}
+
+function renderMarkdown(md) {
+  if (window.marked && typeof marked.parse === 'function') return marked.parse(md);
+  const escaped = md.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return '<p><em>The Markdown renderer could not load from the CDN. Connect to the internet and reload to get full formatting; raw content is shown below.</em></p><pre>' + escaped + '</pre>';
+}
+
+function slugify(text) {
+  return text
+    .toLowerCase()
+    .replace(/<[^>]+>/g, '')
+    .replace(/[^\w\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-');
+}
+
+function fileToDocId(file) {
+  const match = DOCS.find((d) => d.file.toLowerCase() === file.toLowerCase());
+  return match ? match.id : null;
+}
+
+/* Render docs + rewrite internal links/anchors */
+function buildDoc(doc) {
+  const section = document.createElement('section');
+  section.className = 'doc';
+  section.id = doc.id;
+  section.dataset.title = doc.title;
+  section.dataset.file = doc.file;
+
+  section.innerHTML = renderMarkdown(doc.markdown);
+
+  const h1 = section.querySelector('h1');
+  if (h1 && doc.status) {
+    const meta = document.createElement('div');
+    meta.className = 'doc-meta';
+    const chip = document.createElement('span');
+    chip.className = 'chip status-' + doc.status.toLowerCase();
+    chip.textContent = 'Status: ' + doc.status;
+    const chip2 = document.createElement('span');
+    chip2.className = 'chip';
+    chip2.textContent = doc.file;
+    meta.appendChild(chip);
+    meta.appendChild(chip2);
+    h1.insertAdjacentElement('afterend', meta);
+  }
+
+  /* Add ids to headings for in-page anchors */
+  section.querySelectorAll('h1, h2, h3, h4').forEach((h) => {
+    h.id = slugify(h.textContent);
+  });
+
+  /* Normalize links */
+  section.querySelectorAll('a[href]').forEach((a) => {
+    const href = a.getAttribute('href');
+    if (/^(https?:)?\/\//.test(href) || href.startsWith('mailto:')) {
+      a.target = '_blank';
+      a.rel = 'noopener';
+      return;
+    }
+    /* Split file#anchor, e.g. DATA_MODEL.md#known-issues */
+    const [file, anchor] = href.split('#');
+    let targetDocId = file ? fileToDocId(file) : null;
+    if (file && /^screenshots\/?/.test(file)) targetDocId = 'doc-screenshots';
+    if (targetDocId) {
+      a.dataset.goto = targetDocId;
+      a.dataset.anchor = anchor || '';
+      a.setAttribute('href', '#' + targetDocId);
+    } else if (!file && anchor) {
+      a.dataset.selfAnchor = anchor;
+      a.setAttribute('href', '#' + anchor);
+    } else if (file && !targetDocId) {
+      /* unknown local file — remove broken link behavior */
+      a.removeAttribute('href');
+    }
+  });
+
+  return section;
+}
+
+/* Screenshots gallery */
+function buildScreenshots(titles) {
+  const section = document.createElement('section');
+  section.className = 'doc';
+  section.id = 'doc-screenshots';
+  section.dataset.title = titles;
+
+  const h1 = document.createElement('h1');
+  h1.textContent = 'Screenshots';
+  section.appendChild(h1);
+
+  const p = document.createElement('p');
+  p.textContent = 'Visual reference per screen. Click any image to enlarge.';
+  section.appendChild(p);
+
+  const grid = document.createElement('div');
+  grid.className = 'shots-grid';
+  SCREENSHOTS.forEach((file) => {
+    const card = document.createElement('div');
+    card.className = 'shot';
+    card.dataset.file = file;
+    const img = document.createElement('img');
+    img.loading = 'lazy';
+    img.src = 'screenshots/' + file;
+    img.alt = SCREENSHOT_TITLES[file];
+    const cap = document.createElement('div');
+    cap.className = 'cap';
+    cap.textContent = SCREENSHOT_TITLES[file];
+    card.appendChild(img);
+    card.appendChild(cap);
+    card.addEventListener('click', () => openLightbox(file));
+    grid.appendChild(card);
+  });
+  section.appendChild(grid);
+  return section;
+}
+
+/* Build nav */
+const NAV = [];
+DOCS.forEach((doc) => {
+  const a = document.createElement('a');
+  a.className = 'nav-item';
+  a.dataset.target = doc.id;
+  a.dataset.title = doc.title;
+  a.innerHTML = '<span class="dot"></span><span class="t">' + doc.title + '</span>';
+  a.addEventListener('click', () => show(doc.id));
+  nav.appendChild(a);
+  NAV.push(a);
+});
+
+const shotsNav = document.createElement('a');
+shotsNav.className = 'nav-item';
+shotsNav.dataset.target = 'doc-screenshots';
+shotsNav.dataset.title = 'Screenshots';
+shotsNav.innerHTML = '<span class="dot"></span><span class="t">Screenshots</span>';
+shotsNav.addEventListener('click', () => show('doc-screenshots'));
+nav.appendChild(shotsNav);
+NAV.push(shotsNav);
+
+/* Render all into DOM */
+DOCS.forEach((doc) => content.appendChild(buildDoc(doc)));
+content.appendChild(buildScreenshots('Screenshots'));
+
+/* Current view state */
+let current = DOCS.length ? DOCS[0].id : 'doc-screenshots';
+
+function show(id, anchor) {
+  const target = document.getElementById(id);
+  if (!target) return;
+  document.querySelectorAll('.doc').forEach((d) => d.classList.toggle('active', d === target));
+  NAV.forEach((a) => a.classList.toggle('active', a.dataset.target === id));
+  current = id;
+
+  const title = target.dataset.title;
+  crumb.innerHTML = 'Docs / <b>' + title + '</b>';
+  document.title = title + ' — Energy Tracker Docs';
+  history.replaceState(null, '', '#' + id + (anchor ? '/' + anchor : ''));
+
+  if (anchor) {
+    const el = document.getElementById(anchor) || target.querySelector('[id="' + anchor + '"]');
+    if (el) {
+      const y = el.getBoundingClientRect().top + window.scrollY - topbar.offsetHeight - 14;
+      window.scrollTo({ top: y, behavior: 'smooth' });
+      closeSidebar();
+      return;
+    }
+  }
+  window.scrollTo({ top: 0, behavior: 'auto' });
+  closeSidebar();
+}
+
+/* Delegate clicks on internal links */
+content.addEventListener('click', (e) => {
+  const a = e.target.closest('a');
+  if (!a) return;
+  if (a.dataset.goto) {
+    e.preventDefault();
+    show(a.dataset.goto, a.dataset.anchor);
+  } else if (a.dataset.selfAnchor) {
+    e.preventDefault();
+    show(current, a.dataset.selfAnchor);
+  }
+});
+
+/* Search / filter navigation */
+search.addEventListener('input', () => {
+  const q = search.value.trim().toLowerCase();
+  let visible = 0;
+  NAV.forEach((a) => {
+    const hit = !q || a.dataset.title.toLowerCase().includes(q);
+    a.style.display = hit ? '' : 'none';
+    if (hit) visible++;
+  });
+  if (q && visible === 1) {
+    const only = NAV.find((a) => a.style.display !== 'none');
+    if (only) searchHint.textContent = 'Enter to open "' + only.dataset.title + '"';
+  } else {
+    searchHint.textContent = q ? visible + ' match(es)' : '';
+  }
+});
+search.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    const first = NAV.find((a) => a.style.display !== 'none');
+    if (first) show(first.dataset.target);
+  }
+  if (e.key === 'Escape') { search.value = ''; search.dispatchEvent(new Event('input')); }
+});
+
+/* Sidebar mobile */
+function openSidebar() { sidebar.classList.add('open'); scrim.classList.add('open'); }
+function closeSidebar() { sidebar.classList.remove('open'); scrim.classList.remove('open'); }
+document.getElementById('hamburger').addEventListener('click', openSidebar);
+scrim.addEventListener('click', closeSidebar);
+
+/* Lightbox */
+const lightbox = document.getElementById('lightbox');
+const lightboxImg = document.getElementById('lightboxImg');
+const lightboxCap = document.getElementById('lightboxCap');
+function openLightbox(file) {
+  lightboxImg.src = 'screenshots/' + file;
+  lightboxImg.alt = SCREENSHOT_TITLES[file] || file;
+  lightboxCap.textContent = SCREENSHOT_TITLES[file] || file;
+  lightbox.classList.add('open');
+}
+lightbox.addEventListener('click', () => lightbox.classList.remove('open'));
+
+/* Top button + scroll progress */
+document.getElementById('topBtn').addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+window.addEventListener('scroll', () => {
+  const h = document.documentElement;
+  const pct = (h.scrollTop / (h.scrollHeight - h.clientHeight)) * 100;
+  progress.style.width = (isFinite(pct) ? pct : 0) + '%';
+});
+
+/* Theme toggle */
+const themeBtn = document.getElementById('themeBtn');
+themeBtn.addEventListener('click', () => document.body.classList.toggle('light'));
+
+/* Keyboard shortcuts */
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+    e.preventDefault();
+    if (window.innerWidth <= 900) openSidebar();
+    search.focus();
+    search.select();
+  }
+});
+
+/* Initial route from hash */
+function boot() {
+  const hash = decodeURIComponent(location.hash.replace(/^#/, ''));
+  if (!hash) { show(DOCS.length ? DOCS[0].id : 'doc-screenshots'); return; }
+  const [id, anchor] = hash.split('/');
+  if (document.getElementById(id)) show(id, anchor || '');
+  else show(DOCS.length ? DOCS[0].id : 'doc-screenshots');
+}
+boot();
+window.addEventListener('hashchange', () => {
+  const hash = decodeURIComponent(location.hash.replace(/^#/, ''));
+  const [id, anchor] = hash.split('/');
+  if (document.getElementById(id) && id !== current) show(id, anchor || '');
+});
+</script>
+</body>
+</html>
