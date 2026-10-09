@@ -52,7 +52,6 @@ GoogleService-Info.plist
 firebase_options.dart
 firebase_options_*.dart
 **/.firebase/
-firebase.json
 .pub-cache/
 
 # Android

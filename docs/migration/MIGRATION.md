@@ -73,7 +73,7 @@ New: `docs/DESIGN_SYSTEM.md`, `docs/SECURITY.md`, `docs/migration/MIGRATION.md` 
 |------|--------|-------|
 | Step 0 — tag, branch, skills, docs skeleton, Firebase CLI | ✅ Done | `v0.5.7` tagged; branch `chore/m-security-rules`; skills + docs added; `firebase-tools` installed |
 | Deps baseline | ✅ Done | `fake_cloud_firestore` bump on `chore/deps-baseline`; 24/24 tests pass |
-| S1 — access-control foundation | ⏳ Next | `firestore.rules`, `storage.rules`, `firebase.json`, emulator tests, CI |
+| S1 — access-control foundation | ⏳ In progress | `firestore.rules` + `storage.rules` + `firebase.json` done; emulator tests + CI deploy **on hold** (needs JDK 21; revisit later) |
 | M1 — day/night theme | ⬜ Pending | |
 | M2 — daily-logging gamification | ⬜ Pending | |
 | M3/M3b — Energy Home + Readings Log | ⬜ Pending | |
