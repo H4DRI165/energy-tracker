@@ -100,6 +100,9 @@ test/**/coverage
 *.ipa
 *.app
 
+# Node
+node_modules/
+
 # Temporary files
 *~
 *.swp
