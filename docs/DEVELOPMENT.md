@@ -109,7 +109,7 @@ Lint runs on deploy (`firebase.json` `predeploy`). Node 24, `firebase-functions`
       <name>_state.dart
   ```
 - State classes: immutable, `copyWith` with an `_unset` sentinel for nullable fields.
-- User-facing strings currently live inline near the widget; prefer extracting reused ones (see `docs/ux-review/EXAMPLES.md` M3).
+- User-facing strings currently live inline near the widget; prefer extracting reused ones (see `docs/ux-review/README.md`).
 - No comments unless they add non-obvious context (the codebase already uses explains-why comments sparingly).
 - `AppLogger.error` for failures; never `print` (lint blocks it).
 
@@ -143,7 +143,7 @@ See [BILLING.md §9](BILLING.md#9-when-tnb-changes-rates).
 
 **Change validation or error copy**
 - Notifiers hold validation; `lib/ui/components/logging/app_logger.dart` maps Firebase codes.
-- Follow the UX copy rules in `docs/ux-review/EXAMPLES.md`.
+- Follow the UX copy rules in `docs/ux-review/README.md`.
 
 **Add an appliance category**
 - `lib/ui/features/ft_devices/pg_add_appliance/notifier/add_appliance_state.dart` (`_categories`)

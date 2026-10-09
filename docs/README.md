@@ -12,6 +12,9 @@ This folder is the source of truth for **what** the product is, **why** it exist
 | [DATA_MODEL.md](DATA_MODEL.md) | Look up Firestore fields, collections, and known schema issues |
 | [BILLING.md](BILLING.md) | Understand the TNB tariff math, reading chain, and bill recalculation |
 | [DEVELOPMENT.md](DEVELOPMENT.md) | Set up, run, test, build, release, and follow conventions |
+| [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) | Follow the design tokens, motion, and interaction rules |
+| [SECURITY.md](SECURITY.md) | Review the OWASP:2025 mapping, threat model, and security workstream |
+| [migration/MIGRATION.md](migration/MIGRATION.md) | Track the UI/UX + gamification overhaul milestones and rollout |
 | [GLOSSARY.md](GLOSSARY.md) | Decode domain terms (EEI, AFA, KWTBB, SST, tier, band…) |
 | [ux-review/](ux-review/README.md) | Track UX / microcopy / accessibility findings and fixes |
 | [screenshots/](screenshots/) | Visual reference per screen |
