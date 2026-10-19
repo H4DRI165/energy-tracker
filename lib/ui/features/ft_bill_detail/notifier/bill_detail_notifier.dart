@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/constants/tariff_rates.dart';
-import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 import 'package:energy_tracker/models/bill_record.dart';
 import 'package:energy_tracker/models/reading_record.dart';
 import 'package:energy_tracker/services/auth/providers/current_uid_provider.dart';
@@ -29,13 +28,8 @@ extension ReadingRecordListX on List<ReadingRecord> {
 
     for (final r in sorted) {
       runningKwh += r.kwh;
-      if (r.tariffType == TariffType.domestic) {
-        final band = TariffRates.getEeiBand(runningKwh);
-        labels[r.id] = band.number == 0 ? 'No rebate' : band.label;
-      } else {
-        final tier = TariffRates.getTier(runningKwh, r.tariffType);
-        labels[r.id] = TariffRates.getTierPriceKwhLabel(tier, r.tariffType);
-      }
+      final band = TariffRates.getEeiBand(runningKwh);
+      labels[r.id] = band.number == 0 ? 'No rebate' : band.label;
     }
     return labels;
   }
@@ -70,10 +64,7 @@ class BillDetailNotifier extends Notifier<BillDetailPageState>
       return;
     }
 
-    state = state.copyWith(
-      bill: freshBill,
-      isPaid: freshBill.isPaid,
-    );
+    state = state.copyWith(bill: freshBill);
 
     await _loadReadings(freshBill);
   }
@@ -107,7 +98,6 @@ class BillDetailNotifier extends Notifier<BillDetailPageState>
       final readings = snap.docs.map((doc) {
         final data = doc.data();
         final date = (data['date'] as Timestamp).toDate();
-        final rawTariffType = data['tariffType'] as String?;
         return ReadingRecord(
           id: doc.id,
           reading: (data['reading'] as num?)?.toDouble() ?? 0,
@@ -116,9 +106,6 @@ class BillDetailNotifier extends Notifier<BillDetailPageState>
           notes: data['notes'] as String? ?? '',
           estimatedBill: (data['estimatedBill'] as num?)?.toDouble() ?? 0,
           tier: (data['tier'] as num?)?.toInt() ?? 1,
-          tariffType: rawTariffType == null
-              ? bill.tariffType
-              : TariffTypeX.fromValue(rawTariffType),
         );
       }).toList();
 
@@ -171,10 +158,6 @@ class BillDetailNotifier extends Notifier<BillDetailPageState>
         ).format((data['date'] as Timestamp).toDate()),
         kwh: (data['kwh'] as num).toDouble(),
         amount: (data['amount'] as num).toDouble(),
-        isPaid: data['isPaid'] as bool? ?? false,
-        tariffType: TariffTypeX.fromValue(
-          data['tariffType'] as String? ?? TariffType.domestic.value,
-        ),
         date: (data['date'] as Timestamp).toDate(),
       );
     } on FirebaseException catch (e, st) {
@@ -193,60 +176,6 @@ class BillDetailNotifier extends Notifier<BillDetailPageState>
         context: {'bill_id': billId},
       );
       return null;
-    }
-  }
-
-  Future<void> togglePaid(BillRecord bill) async {
-    final uid = ref.read(currentUidProvider).value;
-    if (uid == null) return;
-
-    state = state.copyWith(isUpdatingPaid: true, errorMessage: null);
-    final newIsPaid = !state.isPaid;
-
-    try {
-      final startOfMonth = DateTime(bill.date.year, bill.date.month);
-      final endOfMonth = DateTime(bill.date.year, bill.date.month + 1);
-
-      final snap = await _firestore
-          .collection('users')
-          .doc(uid)
-          .collection('bills')
-          .where(
-            'date',
-            isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth),
-          )
-          .where('date', isLessThan: Timestamp.fromDate(endOfMonth))
-          .get();
-
-      final batch = _firestore.batch();
-      for (final doc in snap.docs) {
-        batch.update(doc.reference, {'isPaid': newIsPaid});
-      }
-      await batch.commit();
-
-      state = state.copyWith(isUpdatingPaid: false, isPaid: newIsPaid);
-    } on FirebaseException catch (e, st) {
-      logError(
-        'Failed to toggle paid status (Firebase)',
-        e,
-        st,
-        context: {'bill_id': bill.id, 'new_is_paid': newIsPaid},
-      );
-      state = state.copyWith(
-        isUpdatingPaid: false,
-        errorMessage: mapFirebaseError(e.code),
-      );
-    } on Exception catch (e, st) {
-      logError(
-        'Failed to toggle paid status',
-        e,
-        st,
-        context: {'bill_id': bill.id, 'new_is_paid': newIsPaid},
-      );
-      state = state.copyWith(
-        isUpdatingPaid: false,
-        errorMessage: 'Failed to update payment status. Please try again.',
-      );
     }
   }
 
@@ -291,21 +220,21 @@ class BillDetailNotifier extends Notifier<BillDetailPageState>
       await batch.commit();
       committed = true;
 
-      await _billService.recalculateMonth(uid, reading.date, bill.tariffType);
+      await _billService.recalculateMonth(uid, reading.date);
 
       final fixInDifferentMonth =
           fix != null &&
           (fix.date.year != reading.date.year ||
               fix.date.month != reading.date.month);
       if (fixInDifferentMonth) {
-        await _billService.recalculateMonth(uid, fix.date, fix.tariffType);
+        await _billService.recalculateMonth(uid, fix.date);
       }
 
       // Local state can no longer be cheaply patched given possible
       // cross-month effects — reload from source of truth.
       final freshBill = await _loadBill(bill.id);
       if (freshBill != null) {
-        state = state.copyWith(bill: freshBill, isPaid: freshBill.isPaid);
+        state = state.copyWith(bill: freshBill);
         await _loadReadings(freshBill);
       } else {
         state = state.copyWith(

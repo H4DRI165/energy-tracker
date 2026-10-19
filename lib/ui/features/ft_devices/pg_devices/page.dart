@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 
 import 'package:energy_tracker/app.dart';
-import 'package:energy_tracker/services/notifier/user_profile_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_devices/pg_devices/notifier/notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -90,7 +89,6 @@ class _BodyContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final tariffType = ref.watch(tariffTypeProvider);
     final appliances = ref.watch(devicesProvider.select((s) => s.appliances));
     final totalKwh = ref.watch(
       devicesProvider.select((s) => s.totalMonthlyKwh),
@@ -109,7 +107,7 @@ class _BodyContent extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _SummaryCard(tariffType: tariffType),
+            const _SummaryCard(),
             SizedBox(height: 16.h),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -146,7 +144,6 @@ class _BodyContent extends ConsumerWidget {
                 child: _ApplianceCard(
                   appliance: appliance,
                   totalKwh: totalKwh,
-                  tariffType: tariffType,
                 ),
               ),
             ),
@@ -221,11 +218,7 @@ class _EmptyDevicesView extends StatelessWidget {
 }
 
 class _SummaryCard extends ConsumerWidget {
-  const _SummaryCard({
-    required this.tariffType,
-  });
-
-  final TariffType tariffType;
+  const _SummaryCard();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -236,9 +229,9 @@ class _SummaryCard extends ConsumerWidget {
       devicesProvider.select((s) => s.appliances.length),
     );
     final totalCost = ref.watch(
-      devicesProvider.select((s) => s.totalMonthlyCost(tariffType)),
+      devicesProvider.select((s) => s.totalMonthlyCost),
     );
-    final kwhRef = TariffRates.ringReferenceKwh(tariffType);
+    final kwhRef = TariffRates.ringReferenceKwh;
 
     return Container(
       padding: EdgeInsets.all(18.r),
@@ -359,12 +352,10 @@ class _ApplianceCard extends ConsumerWidget {
   const _ApplianceCard({
     required this.appliance,
     required this.totalKwh,
-    required this.tariffType,
   });
 
   final Appliance appliance;
   final double totalKwh;
-  final TariffType tariffType;
 
   Color get _accentColor {
     switch (appliance.category) {
@@ -473,7 +464,7 @@ class _ApplianceCard extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        'RM ${appliance.monthlyCost(tariffType).toStringAsFixed(2)}',
+                        'RM ${appliance.monthlyCost().toStringAsFixed(2)}',
                         style: AppTextStyles.bodyMd.copyWith(
                           fontWeight: FontWeight.w700,
                           color: _accentColor,

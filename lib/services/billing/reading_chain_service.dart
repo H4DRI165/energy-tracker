@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/constants/tariff_rates.dart';
-import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 
 /// A lightweight snapshot of a reading document, used internally by
 /// [ReadingChainService] when resolving neighbors.
@@ -11,7 +10,6 @@ class AdjacentReading {
     required this.date,
     required this.notes,
     required this.estimatedBill,
-    required this.tariffType,
   });
 
   factory AdjacentReading.fromDoc(
@@ -24,9 +22,6 @@ class AdjacentReading {
       date: (data['date'] as Timestamp).toDate(),
       notes: data['notes'] as String? ?? '',
       estimatedBill: (data['estimatedBill'] as num?)?.toDouble() ?? 0,
-      tariffType: TariffTypeX.fromValue(
-        data['tariffType'] as String? ?? TariffType.domestic.value,
-      ),
     );
   }
 
@@ -35,7 +30,6 @@ class AdjacentReading {
   final DateTime date;
   final String notes;
   final double estimatedBill;
-  final TariffType tariffType;
 }
 
 /// Result of fixing up a reading whose chain position changed (because a
@@ -46,14 +40,12 @@ class ChainFixResult {
     required this.newKwh,
     required this.newTier,
     required this.date,
-    required this.tariffType,
   });
 
   final String readingId;
   final double newKwh;
   final int newTier;
   final DateTime date;
-  final TariffType tariffType;
 }
 
 /// Resolves true previous/next readings for a given date, globally across
@@ -105,14 +97,13 @@ class ReadingChainService {
       }
       newKwh = delta;
     }
-    final newTier = TariffRates.getTier(newKwh, next.tariffType);
+    final newTier = TariffRates.getTier(newKwh);
 
     return ChainFixResult(
       readingId: next.id,
       newKwh: newKwh,
       newTier: newTier,
       date: next.date,
-      tariffType: next.tariffType,
     );
   }
 

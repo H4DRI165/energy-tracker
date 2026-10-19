@@ -1,5 +1,4 @@
 import 'package:energy_tracker/constants/tariff_rates.dart';
-import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 
 const _categories = [
   'Cooling',
@@ -37,11 +36,9 @@ class AddAppliancePageState {
   double get monthlyKwh => (wattage / 1000) * dailyHours * 30;
   double get dailyKwh => (wattage / 1000) * dailyHours;
 
-  double monthlyCost(TariffType tariffType) =>
-      TariffRates.marginalCost(monthlyKwh, tariffType);
+  double monthlyCost() => TariffRates.marginalCost(monthlyKwh);
 
-  double dailyCost(TariffType tariffType) =>
-      TariffRates.marginalCost(dailyKwh, tariffType);
+  double dailyCost() => TariffRates.marginalCost(dailyKwh);
 
   bool get canSave =>
       name.trim().isNotEmpty &&

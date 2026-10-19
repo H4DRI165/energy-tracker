@@ -1,5 +1,4 @@
 import 'package:energy_tracker/app.dart';
-import 'package:energy_tracker/services/notifier/user_profile_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_devices/pg_add_appliance/notifier/notifier.dart';
 import 'package:energy_tracker/ui/features/ft_devices/pg_devices/notifier/devices_notifier.dart';
 import 'package:flutter/material.dart';
@@ -144,7 +143,6 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
 
   @override
   Widget build(BuildContext context) {
-    final tariffType = ref.watch(tariffTypeProvider);
     final category = ref.watch(
       addApplianceProvider.select((state) => state.category),
     );
@@ -229,9 +227,7 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
                   ref.read(addApplianceProvider.notifier).decrementHours(),
             ),
             SizedBox(height: 16.h),
-            _MonthlyEstimateCard(
-              tariffType: tariffType,
-            ),
+            const _MonthlyEstimateCard(),
             SizedBox(height: 24.h),
             if (errorMessage != null) ...[
               Container(
@@ -502,11 +498,7 @@ class _HoursStepper extends StatelessWidget {
 }
 
 class _MonthlyEstimateCard extends ConsumerWidget {
-  const _MonthlyEstimateCard({
-    required this.tariffType,
-  });
-
-  final TariffType tariffType;
+  const _MonthlyEstimateCard();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -514,13 +506,13 @@ class _MonthlyEstimateCard extends ConsumerWidget {
       addApplianceProvider.select((state) => state.monthlyKwh),
     );
     final monthlyCost = ref.watch(
-      addApplianceProvider.select((state) => state.monthlyCost(tariffType)),
+      addApplianceProvider.select((state) => state.monthlyCost()),
     );
     final dailyKwh = ref.watch(
       addApplianceProvider.select((state) => state.dailyKwh),
     );
     final dailyCost = ref.watch(
-      addApplianceProvider.select((state) => state.dailyCost(tariffType)),
+      addApplianceProvider.select((state) => state.dailyCost()),
     );
 
     return Container(
@@ -598,10 +590,9 @@ class _MonthlyEstimateCard extends ConsumerWidget {
               Expanded(
                 child: Text(
                   'Based on flat energy, capacity & network rates '
-                  '(${(TariffRates.marginalRatePerKwh(tariffType) * 100).toStringAsFixed(2)} sen/kWh). '
-                  '${tariffType == TariffType.domestic ? 'Excludes EEI rebate, '
-                            'KWTBB & SST' : 'Excludes KWTBB & SST'} — these depend '
-                  'on your total ${tariffType == TariffType.domestic ? 'household' : 'business'} usage.',
+                  '(${(TariffRates.marginalRatePerKwh() * 100).toStringAsFixed(2)} sen/kWh). '
+                  'Excludes EEI rebate, KWTBB & SST — these depend on '
+                  'your total household usage.',
                   style: AppTextStyles.caption.copyWith(color: AppColors.text3),
                 ),
               ),

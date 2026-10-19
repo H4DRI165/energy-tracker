@@ -162,10 +162,11 @@ class _BodyContent extends ConsumerWidget {
       children: [
         _BillSummaryCard(bill: bill),
         SizedBox(height: 16.h),
-        const _PaidToggleCard(),
-        SizedBox(height: 16.h),
         BillBreakdownCard(
-          items: TariffRates.breakdownFor(bill.kwh, bill.tariffType),
+          items: TariffRates.breakdownFor(
+            bill.kwh,
+            billingMonth: bill.date,
+          ),
           emptyLabel: 'No data available.',
           padding: EdgeInsets.all(16.r),
         ),
@@ -218,146 +219,6 @@ class _BillSummaryCard extends StatelessWidget {
             '${bill.kwh.toStringAsFixed(0)} kWh · ${bill.monthYear}',
             style: AppTextStyles.bodySm.copyWith(color: AppColors.text2),
           ),
-          SizedBox(height: 4.h),
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 4.h),
-            decoration: BoxDecoration(
-              color: AppColors.surface3,
-              borderRadius: BorderRadius.circular(6.r),
-              border: Border.all(
-                color: AppColors.text3.withValues(alpha: 0.3),
-              ),
-            ),
-            child: Text(
-              bill.tariffType.label,
-              style: AppTextStyles.caption.copyWith(
-                color: AppColors.text2,
-                fontSize: 10.sp,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PaidToggleCard extends ConsumerWidget {
-  const _PaidToggleCard();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final isPaid = ref.watch(billDetailProvider.select((s) => s.isPaid));
-    final isUpdating = ref.watch(
-      billDetailProvider.select((s) => s.isUpdatingPaid),
-    );
-    final bill = ref.watch(billDetailProvider.select((s) => s.bill!));
-
-    final color = isPaid ? AppColors.accent : AppColors.warn;
-    final bgColor = isPaid
-        ? AppColors.accent.withValues(alpha: 0.06)
-        : AppColors.warn.withValues(alpha: 0.06);
-    final borderColor = isPaid
-        ? AppColors.accent.withValues(alpha: 0.2)
-        : AppColors.warn.withValues(alpha: 0.2);
-
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-        border: Border.all(color: borderColor),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40.r,
-            height: 40.r,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12.r),
-            ),
-            child: Icon(
-              isPaid
-                  ? Icons.check_circle_outline_rounded
-                  : Icons.schedule_rounded,
-              color: color,
-              size: 20.r,
-            ),
-          ),
-          SizedBox(width: 12.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  isPaid ? 'Bill Paid' : 'Payment Pending',
-                  style: AppTextStyles.bodyMd.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: color,
-                  ),
-                ),
-                Text(
-                  isPaid ? 'Tap to mark as unpaid' : 'Tap to mark as paid',
-                  style: AppTextStyles.caption,
-                ),
-              ],
-            ),
-          ),
-          if (isUpdating)
-            SizedBox(
-              width: 20.r,
-              height: 20.r,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: color,
-              ),
-            )
-          else
-            GestureDetector(
-              onTap: () async {
-                final confirmed = await ConfirmDialog.show(
-                  context,
-                  title: isPaid ? 'Mark as Unpaid?' : 'Mark as Paid?',
-                  message: isPaid
-                      ? 'This bill will be marked as unpaid.'
-                      : 'This bill will be marked as paid.',
-                  confirmLabel: isPaid ? 'Mark Unpaid' : 'Mark Paid',
-                  confirmColor: isPaid ? AppColors.warn : AppColors.accent,
-                  warning:
-                      'This will apply to all bills in '
-                      '${bill.date.monthYearLabel}.',
-                );
-
-                if (!confirmed || !context.mounted) return;
-
-                await ref.read(billDetailProvider.notifier).togglePaid(bill);
-                await ref.read(usageProvider.notifier).refresh();
-              },
-              child: Container(
-                width: 44.r,
-                height: 24.r,
-                decoration: BoxDecoration(
-                  color: isPaid ? AppColors.accent : AppColors.surface3,
-                  borderRadius: BorderRadius.circular(12.r),
-                ),
-                child: AnimatedAlign(
-                  duration: const Duration(milliseconds: 200),
-                  alignment: isPaid
-                      ? Alignment.centerRight
-                      : Alignment.centerLeft,
-                  child: Container(
-                    margin: EdgeInsets.all(3.r),
-                    width: 18.r,
-                    height: 18.r,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ),
-              ),
-            ),
         ],
       ),
     );
@@ -579,29 +440,6 @@ class _ReadingRow extends ConsumerWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ],
-                      SizedBox(height: 4.h),
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 6.w,
-                          vertical: 1.h,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface3,
-                          borderRadius: BorderRadius.circular(6.r),
-                          border: Border.all(
-                            color: AppColors.text3.withValues(
-                              alpha: 0.3,
-                            ),
-                          ),
-                        ),
-                        child: Text(
-                          reading.tariffType.label,
-                          style: AppTextStyles.caption.copyWith(
-                            color: AppColors.text2,
-                            fontSize: 9.sp,
-                          ),
-                        ),
-                      ),
                     ],
                   ),
                 ),

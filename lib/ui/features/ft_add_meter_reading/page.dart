@@ -1,5 +1,4 @@
 import 'package:energy_tracker/app.dart';
-import 'package:energy_tracker/services/notifier/user_profile_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_add_meter_reading/notifier/notifier.dart';
 import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_usage/notifier/usage_notifier.dart';
@@ -147,15 +146,8 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
     super.dispose();
   }
 
-  TariffType get _effectiveTariffType {
-    if (_isEdit) return widget.reading!.tariffType;
-    return ref.watch(tariffTypeProvider);
-  }
-
   @override
   Widget build(BuildContext context) {
-    final tariffType = _effectiveTariffType;
-
     return Expanded(
       child: SingleChildScrollView(
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
@@ -181,11 +173,7 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
               controller: _readingController,
             ),
             SizedBox(height: 10.h),
-            _TariffTypeNote(tariffType: tariffType, isEdit: _isEdit),
-            SizedBox(height: 16.h),
-            _AutoCalcCard(
-              tariffType: tariffType,
-            ),
+            const _AutoCalcCard(),
             Text('Notes (optional)', style: AppTextStyles.label),
             SizedBox(height: 6.h),
             _NotesField(controller: _notesController),
@@ -541,38 +529,8 @@ class _MeterReadingField extends ConsumerWidget {
   }
 }
 
-class _TariffTypeNote extends StatelessWidget {
-  const _TariffTypeNote({
-    required this.tariffType,
-    required this.isEdit,
-  });
-
-  final TariffType tariffType;
-  final bool isEdit;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(Icons.receipt_long_rounded, size: 13.r, color: AppColors.text3),
-        SizedBox(width: 6.w),
-        Text(
-          isEdit
-              ? 'Billed under ${tariffType.label}'
-              : 'Calculating under ${tariffType.label} rates',
-          style: AppTextStyles.caption.copyWith(color: AppColors.text3),
-        ),
-      ],
-    );
-  }
-}
-
 class _AutoCalcCard extends ConsumerWidget {
-  const _AutoCalcCard({
-    required this.tariffType,
-  });
-
-  final TariffType tariffType;
+  const _AutoCalcCard();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -584,7 +542,7 @@ class _AutoCalcCard extends ConsumerWidget {
       addReadingProvider.select((s) => s.cumulativeKwh),
     );
     final incrementalCost = ref.watch(
-      addReadingProvider.select((s) => s.incrementalCost(tariffType)),
+      addReadingProvider.select((s) => s.incrementalCost()),
     );
     final eeiBand = TariffRates.getEeiBand(cumulativeKwh);
 
@@ -631,19 +589,11 @@ class _AutoCalcCard extends ConsumerWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    tariffType == TariffType.domestic
-                        ? 'EEI band'
-                        : 'EEI rebate',
-                    style: AppTextStyles.caption,
-                  ),
-                  _BandBadge(
-                    tariffType: tariffType,
-                    cumulativeKwh: cumulativeKwh,
-                  ),
+                  Text('EEI band', style: AppTextStyles.caption),
+                  _BandBadge(cumulativeKwh: cumulativeKwh),
                 ],
               ),
-              if (tariffType == TariffType.domestic && cumulativeKwh > 0) ...[
+              if (cumulativeKwh > 0) ...[
                 Text(
                   eeiBand.description,
                   style: AppTextStyles.caption.copyWith(color: AppColors.text3),
@@ -659,42 +609,22 @@ class _AutoCalcCard extends ConsumerWidget {
 }
 
 class _BandBadge extends StatelessWidget {
-  const _BandBadge({
-    required this.tariffType,
-    required this.cumulativeKwh,
-  });
+  const _BandBadge({required this.cumulativeKwh});
 
-  final TariffType tariffType;
   final double cumulativeKwh;
 
   @override
   Widget build(BuildContext context) {
-    if (tariffType == TariffType.domestic) {
-      final band = TariffRates.getEeiBand(cumulativeKwh);
-      return Container(
-        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
-        decoration: BoxDecoration(
-          color: band.color.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(20.r),
-        ),
-        child: Text(
-          band.label,
-          style: AppTextStyles.tag.copyWith(color: band.color),
-        ),
-      );
-    }
-
-    final tier = TariffRates.getTier(cumulativeKwh, TariffType.commercial);
-    final color = TariffRates.getTierColor(tier, TariffType.commercial);
+    final band = TariffRates.getEeiBand(cumulativeKwh);
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
+        color: band.color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20.r),
       ),
       child: Text(
-        TariffRates.tierBadgeLabel(tier, TariffType.commercial),
-        style: AppTextStyles.tag.copyWith(color: color),
+        band.label,
+        style: AppTextStyles.tag.copyWith(color: band.color),
       ),
     );
   }

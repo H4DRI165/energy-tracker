@@ -1,9 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/constants/tariff_rates.dart';
-import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 import 'package:energy_tracker/models/bill_record.dart';
 import 'package:energy_tracker/services/auth/providers/current_uid_provider.dart';
-import 'package:energy_tracker/services/notifier/user_profile_notifier.dart';
 import 'package:energy_tracker/ui/components/logging/notifier/loggable_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_usage/notifier/usage_state.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -75,19 +73,11 @@ class UsageNotifier extends AsyncNotifier<UsageState>
       return total + ((doc.data()['kwh'] as num?)?.toDouble() ?? 0);
     });
 
-    // Derive this month's tariff from its actual readings, same rule as
-    // the dashboard: most-recent-reading wins, fall back to live tariff
-    // only when there's no data yet.
-    final liveTariffType = ref.read(tariffTypeProvider);
-    final currentTariffType = currentMonthReadings.isEmpty
-        ? liveTariffType
-        : TariffTypeX.fromValue(
-            currentMonthReadings.last.data()['tariffType'] as String? ??
-                TariffType.domestic.value,
-          );
-
     final monthlyData = _buildMonthlyData(readingsSnap.docs, now);
-    final currentBill = TariffRates.calculate(currentKwh, currentTariffType);
+    final currentBill = TariffRates.calculate(
+      currentKwh,
+      billingMonth: now,
+    );
     final currentMonthLabel = DateFormat('MMMM yyyy').format(now);
 
     return UsageState(
@@ -95,7 +85,6 @@ class UsageNotifier extends AsyncNotifier<UsageState>
       billHistory: billHistory,
       currentKwh: currentKwh,
       currentBill: currentBill,
-      currentTariffType: currentTariffType,
       currentMonthLabel: currentMonthLabel,
     );
   }
@@ -109,7 +98,6 @@ class UsageNotifier extends AsyncNotifier<UsageState>
     DateTime now,
   ) {
     final monthlyKwh = <String, double>{};
-    final monthlyTariff = <String, TariffType>{};
     final formatter = DateFormat('MMM-yyyy');
 
     for (final doc in docs) {
@@ -119,12 +107,6 @@ class UsageNotifier extends AsyncNotifier<UsageState>
       final key = formatter.format(date);
       final kwh = (data['kwh'] as num?)?.toDouble() ?? 0;
       monthlyKwh[key] = (monthlyKwh[key] ?? 0) + kwh;
-
-      // Most recent reading per month wins, consistent with other places
-      // in the app that resolve a month's tariff from its readings.
-      monthlyTariff[key] = TariffTypeX.fromValue(
-        data['tariffType'] as String? ?? TariffType.domestic.value,
-      );
     }
 
     final result = <MonthlyUsage>[];
@@ -132,15 +114,16 @@ class UsageNotifier extends AsyncNotifier<UsageState>
       final month = DateTime(now.year, now.month - i);
       final key = formatter.format(month);
       final kwh = monthlyKwh[key] ?? 0;
-      final tariffType = monthlyTariff[key] ?? TariffType.domestic;
 
       result.add(
         MonthlyUsage(
           month: DateFormat('MMM').format(month),
           year: month.year,
           kwh: kwh,
-          bill: TariffRates.calculate(kwh, tariffType),
-          isPaid: i > 0,
+          bill: TariffRates.calculate(
+            kwh,
+            billingMonth: month,
+          ),
         ),
       );
     }
@@ -161,11 +144,7 @@ class UsageNotifier extends AsyncNotifier<UsageState>
         monthYear: formatter.format(date),
         kwh: (data['kwh'] as num?)?.toDouble() ?? 0,
         amount: (data['amount'] as num?)?.toDouble() ?? 0,
-        isPaid: data['isPaid'] as bool? ?? false,
         date: date,
-        tariffType: TariffTypeX.fromValue(
-          data['tariffType'] as String? ?? TariffType.domestic.value,
-        ),
       );
     }).toList();
   }
@@ -225,7 +204,6 @@ class UsageNotifier extends AsyncNotifier<UsageState>
                         year: m.year,
                         kwh: 0,
                         bill: 0,
-                        isPaid: false,
                       )
                     : m,
               )

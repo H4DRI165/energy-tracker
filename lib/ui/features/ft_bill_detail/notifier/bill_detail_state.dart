@@ -4,8 +4,6 @@ import 'package:energy_tracker/models/reading_record.dart';
 class BillDetailPageState {
   const BillDetailPageState({
     this.isLoading = true,
-    this.isUpdatingPaid = false,
-    this.isPaid = false,
     this.bill,
     this.readings = const [],
     this.billDeleted = false,
@@ -13,8 +11,6 @@ class BillDetailPageState {
   });
 
   final bool isLoading;
-  final bool isUpdatingPaid;
-  final bool isPaid;
   final BillRecord? bill;
   final List<ReadingRecord> readings;
   final bool billDeleted;
@@ -23,8 +19,6 @@ class BillDetailPageState {
 
   BillDetailPageState copyWith({
     bool? isLoading,
-    bool? isUpdatingPaid,
-    bool? isPaid,
     Object? bill = _unset,
     List<ReadingRecord>? readings,
     bool? billDeleted,
@@ -32,8 +26,6 @@ class BillDetailPageState {
   }) {
     return BillDetailPageState(
       isLoading: isLoading ?? this.isLoading,
-      isUpdatingPaid: isUpdatingPaid ?? this.isUpdatingPaid,
-      isPaid: isPaid ?? this.isPaid,
       bill: identical(bill, _unset) ? this.bill : bill as BillRecord?,
       readings: readings ?? this.readings,
       billDeleted: billDeleted ?? this.billDeleted,

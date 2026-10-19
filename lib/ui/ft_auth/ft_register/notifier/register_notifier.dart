@@ -191,12 +191,10 @@ class RegisterNotifier extends Notifier<RegisterPageState>
         'fullName': fullName,
         'email': email,
         'tnbAccountNo': tnbAccount,
-        'tariffType': 'domestic',
         'monthlyBudget': 150.0,
         'onboardingCompleted': false,
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
-        'photoURL': null,
         'isGuest': false,
       });
       userDocWritten = true;

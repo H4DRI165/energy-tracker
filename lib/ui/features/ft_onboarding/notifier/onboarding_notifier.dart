@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 import 'package:energy_tracker/services/auth/providers/current_uid_provider.dart';
 import 'package:energy_tracker/ui/components/logging/app_logger.dart';
 import 'package:energy_tracker/ui/components/logging/notifier/loggable_notifier.dart';
@@ -22,20 +21,12 @@ class OnboardingNotifier extends Notifier<OnboardingPageState>
   @override
   OnboardingPageState build() => const OnboardingPageState();
 
-  void selectTariff(TariffType tariff) {
-    state = state.copyWith(selectedTariff: tariff);
-  }
-
-  void nextFromTariff() {
-    state = state.copyWith(currentStep: 1);
-  }
-
   void setBudget(double budget) {
     state = state.copyWith(monthlyBudget: budget);
   }
 
   void nextFromBudget() {
-    state = state.copyWith(currentStep: 2);
+    state = state.copyWith(currentStep: 1);
   }
 
   void goBack() {
@@ -63,7 +54,6 @@ class OnboardingNotifier extends Notifier<OnboardingPageState>
     try {
       await _firestore.collection('users').doc(uid).set(
         {
-          'tariffType': state.selectedTariff.value,
           'monthlyBudget': state.monthlyBudget,
           'onboardingCompleted': true,
           'updatedAt': FieldValue.serverTimestamp(),
@@ -77,7 +67,6 @@ class OnboardingNotifier extends Notifier<OnboardingPageState>
         e,
         st,
         context: {
-          'tariff_type': state.selectedTariff.value,
           'monthly_budget': state.monthlyBudget,
         },
       );
@@ -91,7 +80,6 @@ class OnboardingNotifier extends Notifier<OnboardingPageState>
         e,
         st,
         context: {
-          'tariff_type': state.selectedTariff.value,
           'monthly_budget': state.monthlyBudget,
         },
       );

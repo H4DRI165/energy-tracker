@@ -1,4 +1,3 @@
-export 'badge.dart';
 export 'cards.dart';
 export 'charge_line_item.dart';
 export 'chart.dart';

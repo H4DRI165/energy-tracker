@@ -1,4 +1,3 @@
-import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 import 'package:energy_tracker/ui/features/ft_add_meter_reading/notifier/add_meter_reading_state.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -25,11 +24,8 @@ void main() {
 
     expect(state.usageKwh, 200);
     expect(state.hasUsage, isTrue);
-    expect(state.currentTier(TariffType.commercial), 1);
-    expect(
-      state.incrementalCost(TariffType.commercial),
-      closeTo(100.62976, 0.000001),
-    );
+    expect(state.currentTier, 1);
+    expect(state.incrementalCost(), closeTo(38.86, 0.000001));
   });
 
   test(
@@ -56,7 +52,7 @@ void main() {
       currentReading: 1100,
     );
 
-    expect(state.currentTier(TariffType.domestic), 17);
+    expect(state.currentTier, 17);
     expect(state.currentEeiBand.number, 17);
   });
 }

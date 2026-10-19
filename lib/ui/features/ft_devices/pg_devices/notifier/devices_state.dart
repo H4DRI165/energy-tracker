@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 import 'package:energy_tracker/models/appliance.dart';
 import 'package:flutter/material.dart';
 
@@ -19,8 +18,8 @@ class DevicesPageState {
   double get totalMonthlyKwh =>
       appliances.fold(0, (total, a) => total + a.monthlyKwh);
 
-  double totalMonthlyCost(TariffType tariffType) =>
-      appliances.fold(0, (total, a) => total + a.monthlyCost(tariffType));
+  double get totalMonthlyCost =>
+      appliances.fold(0, (total, a) => total + a.monthlyCost());
 
   DevicesPageState copyWith({
     bool? isLoading,

@@ -2,12 +2,10 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/extensions/date_time_extension.dart';
-import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 import 'package:energy_tracker/models/reading_record.dart';
 import 'package:energy_tracker/services/auth/providers/current_uid_provider.dart';
 import 'package:energy_tracker/services/billing/bill_recalculation_service.dart';
 import 'package:energy_tracker/services/billing/reading_chain_service.dart';
-import 'package:energy_tracker/services/notifier/user_profile_notifier.dart';
 import 'package:energy_tracker/ui/components/logging/app_logger.dart';
 import 'package:energy_tracker/ui/components/logging/notifier/loggable_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_add_meter_reading/notifier/add_meter_reading_state.dart';
@@ -272,43 +270,9 @@ class AddReadingNotifier extends Notifier<AddReadingPageState>
     state = state.copyWith(notes: value);
   }
 
-  Future<String?> _checkTariffConflict(
-    String uid,
-    DateTime date,
-    TariffType tariffType,
-  ) async {
-    final start = DateTime(date.year, date.month);
-    final end = DateTime(date.year, date.month + 1);
-
-    final snap = await _firestore
-        .collection('users')
-        .doc(uid)
-        .collection('readings')
-        .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(start))
-        .where('date', isLessThan: Timestamp.fromDate(end))
-        .limit(1)
-        .get();
-
-    if (snap.docs.isEmpty) return null;
-
-    final existingTariffValue = snap.docs.first.data()['tariffType'] as String?;
-    final existingTariff = TariffTypeX.fromValue(
-      existingTariffValue ?? TariffType.domestic.value,
-    );
-
-    if (existingTariff != tariffType) {
-      return 'This month already has ${existingTariff.label} reading. '
-          'Use ${existingTariff.label} for this entry, or delete this '
-          "month's reading first ";
-    }
-
-    return null;
-  }
-
   Future<bool> _applyChainFixAndRecalculate(
     String uid,
     DateTime date,
-    TariffType tariffType,
   ) async {
     final next = await _chainService.findNext(uid, date);
     if (next != null) {
@@ -320,10 +284,10 @@ class AddReadingNotifier extends Notifier<AddReadingPageState>
       final sameMonth =
           fix.date.year == date.year && fix.date.month == date.month;
       if (!sameMonth) {
-        await _billService.recalculateMonth(uid, fix.date, fix.tariffType);
+        await _billService.recalculateMonth(uid, fix.date);
       }
     }
-    await _billService.recalculateMonth(uid, date, tariffType);
+    await _billService.recalculateMonth(uid, date);
     return true;
   }
 
@@ -341,26 +305,18 @@ class AddReadingNotifier extends Notifier<AddReadingPageState>
     state = state.copyWith(isSaving: true, errorMessage: null);
 
     final date = state.selectedDate ?? DateTime.now();
-    final tariffType = ref.read(tariffTypeProvider);
 
     try {
-      final conflict = await _checkTariffConflict(uid, date, tariffType);
-      if (conflict != null) {
-        state = state.copyWith(isSaving: false, errorMessage: conflict);
-        return false;
-      }
-
       await _firestore.collection('users').doc(uid).collection('readings').add({
         'reading': state.currentReading,
         'kwh': state.usageKwh,
         'date': Timestamp.fromDate(date),
         'notes': state.notes.trim(),
-        'tier': state.currentTier(tariffType),
-        'tariffType': tariffType.value,
+        'tier': state.currentTier,
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      await _applyChainFixAndRecalculate(uid, date, tariffType);
+      await _applyChainFixAndRecalculate(uid, date);
 
       state = state.copyWith(isSaving: false);
       return true;
@@ -373,7 +329,6 @@ class AddReadingNotifier extends Notifier<AddReadingPageState>
           'reading_value': state.currentReading,
           'kwh': state.usageKwh,
           'date': date.toIso8601String(),
-          'tariff_type': tariffType.value,
         },
       );
       state = state.copyWith(
@@ -390,7 +345,6 @@ class AddReadingNotifier extends Notifier<AddReadingPageState>
           'reading_value': state.currentReading,
           'kwh': state.usageKwh,
           'date': date.toIso8601String(),
-          'tariff_type': tariffType.value,
         },
       );
       state = state.copyWith(
@@ -425,10 +379,10 @@ class AddReadingNotifier extends Notifier<AddReadingPageState>
             'reading': state.currentReading,
             'kwh': state.usageKwh,
             'notes': state.notes.trim(),
-            'tier': state.currentTier(reading.tariffType),
+            'tier': state.currentTier,
           });
 
-      await _applyChainFixAndRecalculate(uid, date, reading.tariffType);
+      await _applyChainFixAndRecalculate(uid, date);
 
       state = state.copyWith(isSaving: false);
       return true;

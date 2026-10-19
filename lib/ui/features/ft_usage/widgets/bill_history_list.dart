@@ -197,43 +197,14 @@ class _BillHistoryTile extends ConsumerWidget {
                       '${bill.kwh.toStringAsFixed(0)} kWh',
                       style: AppTextStyles.caption,
                     ),
-                    SizedBox(height: 4.h),
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 2.w,
-                        vertical: 2.h,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface3,
-                        borderRadius: BorderRadius.circular(6.r),
-                        border: Border.all(
-                          color: AppColors.text3.withValues(alpha: 0.3),
-                        ),
-                      ),
-                      child: Text(
-                        bill.tariffType.label,
-                        style: AppTextStyles.caption.copyWith(
-                          color: AppColors.text2,
-                          fontSize: 9.sp,
-                          height: 1.2,
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    'RM ${bill.amount.toStringAsFixed(2)}',
-                    style: AppTextStyles.bodyMd.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  SizedBox(height: 2.h),
-                  PaidBadge(isPaid: bill.isPaid),
-                ],
+              Text(
+                'RM ${bill.amount.toStringAsFixed(2)}',
+                style: AppTextStyles.bodyMd.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               SizedBox(width: 8.w),
               Icon(

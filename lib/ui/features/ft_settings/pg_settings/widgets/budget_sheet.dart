@@ -4,13 +4,11 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class BudgetSheet extends StatefulWidget {
   const BudgetSheet({
-    required this.tariffType,
     required this.current,
     required this.onSave,
     super.key,
   });
 
-  final TariffType tariffType;
   final double current;
   final ValueChanged<double> onSave;
 
@@ -31,10 +29,7 @@ class _BudgetSheetState extends State<BudgetSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final estimatedKwh = TariffRates.estimateKwhFromBudget(
-      _budget,
-      widget.tariffType,
-    );
+    final estimatedKwh = TariffRates.estimateKwhFromBudget(_budget);
 
     return Padding(
       padding: EdgeInsets.only(

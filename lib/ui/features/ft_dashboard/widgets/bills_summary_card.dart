@@ -1,7 +1,5 @@
 import 'dart:async';
 
-import 'package:energy_tracker/extensions/tariff_type_extension.dart';
-import 'package:energy_tracker/services/notifier/user_profile_notifier.dart';
 import 'package:energy_tracker/theme/theme.dart';
 import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_notifier.dart';
 import 'package:flutter/material.dart';
@@ -18,7 +16,6 @@ class BillSummaryCard extends ConsumerWidget {
     );
     if (state == null) return const SizedBox.shrink();
 
-    final tariffType = ref.watch(tariffTypeProvider);
     final isAlert = state.isNearBudget || state.isOverBudget;
     final billColor = state.billColor;
 
@@ -79,42 +76,8 @@ class BillSummaryCard extends ConsumerWidget {
                                 letterSpacing: 2,
                               ),
                             ),
-                            SizedBox(width: 8.w),
-                            Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 6.w,
-                                vertical: 2.h,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.surface3.withValues(
-                                  alpha: 0.6,
-                                ),
-                                borderRadius: BorderRadius.circular(6.r),
-                                border: Border.all(
-                                  color: AppColors.text3.withValues(alpha: 0.3),
-                                ),
-                              ),
-                              child: Text(
-                                state.tariffType.shortLabel,
-                                style: AppTextStyles.caption.copyWith(
-                                  color: AppColors.text2,
-                                  fontSize: 9.sp,
-                                  height: 1.2,
-                                ),
-                              ),
-                            ),
                           ],
                         ),
-                        if (state.tariffType != tariffType) ...[
-                          SizedBox(height: 4.h),
-                          Text(
-                            'Showing ${state.tariffType.shortLabel} '
-                            "rates — matches this month's readings",
-                            style: AppTextStyles.caption.copyWith(
-                              color: AppColors.text3,
-                            ),
-                          ),
-                        ],
                         SizedBox(height: 4.h),
                         Text(
                           'RM ${state.estimatedBill.toStringAsFixed(2)}',

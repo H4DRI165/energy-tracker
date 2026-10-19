@@ -1,4 +1,3 @@
-import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 import 'package:energy_tracker/theme/theme.dart';
 import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_notifier.dart';
 import 'package:flutter/material.dart';
@@ -56,28 +55,17 @@ class _TariffCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final tariffType = ref.watch(
-      dashboardProvider.select((s) => s.value?.tariffType),
-    );
     final currentBand = ref.watch(
       dashboardProvider.select((s) => s.value?.currentEeiBand),
     );
     final tierColor = ref.watch(
       dashboardProvider.select((s) => s.value?.tierColor),
     );
-    final tierRange = ref.watch(
-      dashboardProvider.select((s) => s.value?.tierRange),
-    );
 
-    final label = tariffType == TariffType.domestic
-        ? 'EEI Band'
-        : 'Tariff Tier';
-    final value = tariffType == TariffType.domestic
-        ? 'Band ${currentBand?.number == 0 ? '—' : currentBand?.number}'
-        : 'Tier ${currentBand?.number}';
-    final badge = tariffType == TariffType.domestic
-        ? currentBand?.description ?? ''
-        : tierRange ?? '';
+    final label = 'EEI Band';
+    final value =
+        'Band ${currentBand?.number == 0 ? '—' : currentBand?.number}';
+    final badge = currentBand?.description ?? '';
 
     return _StatCard(
       label: label,

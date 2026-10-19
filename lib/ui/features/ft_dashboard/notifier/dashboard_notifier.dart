@@ -1,8 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/constants/tariff_rates.dart';
-import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 import 'package:energy_tracker/services/auth/providers/current_uid_provider.dart';
-import 'package:energy_tracker/services/notifier/user_profile_notifier.dart';
 import 'package:energy_tracker/ui/components/logging/app_logger.dart';
 import 'package:energy_tracker/ui/components/logging/notifier/loggable_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_state.dart';
@@ -30,11 +28,9 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState>
     if (uid == null) return const DashboardPageState();
 
     final authName = _auth.currentUser?.displayName ?? '';
-    final tariffType = ref.watch(tariffTypeProvider);
-
     final results = await Future.wait([
       _loadUserProfile(uid, authName),
-      _loadUsageData(uid, tariffType),
+      _loadUsageData(uid),
     ]);
 
     return results[0].merge(results[1]);
@@ -80,10 +76,7 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState>
     }
   }
 
-  Future<DashboardPageState> _loadUsageData(
-    String uid,
-    TariffType liveTariffType,
-  ) async {
+  Future<DashboardPageState> _loadUsageData(String uid) async {
     try {
       final now = DateTime.now();
       final monthLabel = DateFormat('MMMM yyyy').format(now);
@@ -124,7 +117,7 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState>
       final combinedSnap = results[0];
       final lastMonthSnap = results[1];
 
-      // Filter for current-month-only (kwhUsed & tariffType detection)
+      // Filter for current-month-only usage.
       final currentMonthDocs = combinedSnap.docs.where((d) {
         final date = (d.data()['date'] as Timestamp).toDate();
         return !date.isBefore(startOfMonth);
@@ -144,40 +137,18 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState>
           ? ((kwhUsed - lastMonthKwh) / lastMonthKwh) * 100
           : 0.0;
 
-      final tariffType = currentMonthDocs.isEmpty
-          ? liveTariffType
-          : TariffTypeX.fromValue(
-              currentMonthDocs.last.data()['tariffType'] as String? ??
-                  TariffType.domestic.value,
-            );
-
-      final bill = TariffRates.calculate(kwhUsed, tariffType);
-      final eeiBand = tariffType == TariffType.domestic
-          ? TariffRates.getEeiBand(kwhUsed)
-          : (() {
-              final tier = TariffRates.getTier(kwhUsed, TariffType.commercial);
-              return EeiBand(
-                number: tier,
-                kwhRange: TariffRates.getTierKwhRange(
-                  tier,
-                  TariffType.commercial,
-                ),
-                rebateSenPerKwh: 0,
-                color: TariffRates.getTierColor(tier, TariffType.commercial),
-                label: TariffRates.tierBadgeLabel(tier, TariffType.commercial),
-                description: TariffRates.tierBadgeLabel(
-                  tier,
-                  TariffType.commercial,
-                ),
-              );
-            })();
+      final bill = TariffRates.calculate(kwhUsed, billingMonth: now);
+      final eeiBand = TariffRates.getEeiBand(kwhUsed);
 
       final daysElapsed = now.day;
       final dailyAvg = daysElapsed > 0 ? kwhUsed / daysElapsed : 0.0;
 
       final projectedKwh =
           dailyAvg * DateUtils.getDaysInMonth(now.year, now.month);
-      final projectedBill = TariffRates.calculate(projectedKwh, tariffType);
+      final projectedBill = TariffRates.calculate(
+        projectedKwh,
+        billingMonth: now,
+      );
       final weeklyUsage = _buildWeeklyUsage(combinedSnap.docs, now);
 
       return DashboardPageState(
@@ -185,7 +156,6 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState>
         kwhUsed: kwhUsed,
         estimatedBill: bill,
         currentEeiBand: eeiBand,
-        tariffType: tariffType,
         dailyAvg: dailyAvg,
         daysLeft: daysLeft,
         percentageVsLastMonth: percentVsLast,

@@ -5,6 +5,7 @@ import 'package:energy_tracker/firebase_options.dart';
 import 'package:energy_tracker/services/auth/providers/current_uid_provider.dart';
 import 'package:energy_tracker/services/notification/service/provider/notification_service_provider.dart';
 import 'package:energy_tracker/services/observers/crashlytics_provider_observer.dart';
+import 'package:energy_tracker/services/tariff/tariff_repository.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
@@ -53,6 +54,11 @@ Future<void> main() async {
     !kDebugMode,
   );
 
+  // Load the published tariff/AFA schedule before the first calculation.
+  // Falls back to the bundled schedule when offline or unpublished.
+  final tariff = await TariffRepository().load();
+  TariffRates.configure(tariff);
+
   runApp(
     const ProviderScope(
       observers: [CrashlyticsProviderObserver()],
@@ -86,6 +92,10 @@ class MainApp extends ConsumerWidget {
     return ScreenUtilInit(
       designSize: const Size(390, 844),
       minTextAdapt: true,
+      fontSizeResolver: (fontSize, instance) {
+        final scale = instance.scaleWidth.clamp(1.0, 1.50);
+        return fontSize * scale;
+      },
       builder: (context, child) => MaterialApp.router(
         title: 'Energy Tracker',
         debugShowCheckedModeBanner: false,

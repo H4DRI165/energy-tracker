@@ -1,6 +1,5 @@
 import 'package:energy_tracker/constants/tariff_rates.dart';
 import 'package:energy_tracker/extensions/date_time_extension.dart';
-import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 
 class AddReadingPageState {
   const AddReadingPageState({
@@ -41,27 +40,19 @@ class AddReadingPageState {
 
   double get cumulativeKwh => monthToDateKwhBeforeThisReading + usageKwh;
 
-  double incrementalCost(TariffType tariffType) =>
-      TariffRates.calculate(cumulativeKwh, tariffType) -
-      TariffRates.calculate(monthToDateKwhBeforeThisReading, tariffType);
+  double incrementalCost() =>
+      TariffRates.calculate(cumulativeKwh, billingMonth: selectedDate) -
+      TariffRates.calculate(
+        monthToDateKwhBeforeThisReading,
+        billingMonth: selectedDate,
+      );
 
-  // For domestic, returns the EEI band number rather than the old usage tier.
-  // For commercial, still returns the 2-tier int (unchanged tariff structure).
-  int currentTier(TariffType tariffType) => tariffType == TariffType.domestic
-      ? currentEeiBand.number
-      : TariffRates.getTier(cumulativeKwh, TariffType.commercial);
+  /// EEI band number for the cumulative month usage (0 = no rebate).
+  int get currentTier => currentEeiBand.number;
 
   EeiBand get currentEeiBand => TariffRates.getEeiBand(cumulativeKwh);
 
-  String tierLabel(TariffType tariffType) {
-    if (tariffType == TariffType.domestic) {
-      return TariffRates.getEeiBand(cumulativeKwh).label;
-    }
-    return TariffRates.getTierPriceKwhLabel(
-      TariffRates.getTier(cumulativeKwh, TariffType.commercial),
-      TariffType.commercial,
-    );
-  }
+  String get tierLabel => currentEeiBand.label;
 
   bool get hasUsage => usageKwh > 0;
 

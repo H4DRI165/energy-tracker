@@ -60,7 +60,6 @@ class SettingsNotifier extends AsyncNotifier<SettingsPageState>
       fullName: data['fullName'] as String? ?? authName,
       email: authEmail,
       tnbAccountNo: data['tnbAccountNo'] as String? ?? '',
-      tariffType: data['tariffType'] as String? ?? 'domestic',
       monthlyBudget: (data['monthlyBudget'] as num?)?.toDouble() ?? 150.0,
       budgetAlertsEnabled: data['budgetAlertsEnabled'] as bool? ?? true,
       billRemindersEnabled: data['billRemindersEnabled'] as bool? ?? true,
@@ -68,23 +67,6 @@ class SettingsNotifier extends AsyncNotifier<SettingsPageState>
       photoUrl: data['photoUrl'] as String?,
       photoVersion: photoUpdatedAt?.millisecondsSinceEpoch,
     );
-  }
-
-  Future<bool> updateTariffType(String value) async {
-    final previous = state.value;
-    _updateState((s) => s.copyWith(tariffType: value, errorMessage: null));
-
-    final ok = await _updateFirestore({'tariffType': value});
-
-    if (!ok && previous != null) {
-      state = AsyncData(
-        previous.copyWith(
-          errorMessage: 'Failed to update tariff type. Please try again.',
-        ),
-      );
-    }
-
-    return ok;
   }
 
   Future<bool> updateMonthlyBudget(double value) async {

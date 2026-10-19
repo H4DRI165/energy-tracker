@@ -4,7 +4,6 @@ class SettingsPageState {
     this.fullName = '',
     this.email = '',
     this.tnbAccountNo = '',
-    this.tariffType = 'domestic',
     this.monthlyBudget = 150.0,
     this.budgetAlertsEnabled = true,
     this.billRemindersEnabled = true,
@@ -20,7 +19,6 @@ class SettingsPageState {
   final String fullName;
   final String email;
   final String tnbAccountNo;
-  final String tariffType;
   final double monthlyBudget;
   final bool budgetAlertsEnabled;
   final bool billRemindersEnabled;
@@ -63,15 +61,6 @@ class SettingsPageState {
     return '?';
   }
 
-  String get tariffLabel {
-    switch (tariffType) {
-      case 'commercial':
-        return 'Commercial';
-      default:
-        return 'Domestic';
-    }
-  }
-
   String get formattedBudget => 'RM ${monthlyBudget.toStringAsFixed(0)}';
 
   SettingsPageState copyWith({
@@ -79,7 +68,6 @@ class SettingsPageState {
     String? fullName,
     String? email,
     String? tnbAccountNo,
-    String? tariffType,
     double? monthlyBudget,
     bool? budgetAlertsEnabled,
     bool? billRemindersEnabled,
@@ -95,7 +83,6 @@ class SettingsPageState {
       fullName: fullName ?? this.fullName,
       email: email ?? this.email,
       tnbAccountNo: tnbAccountNo ?? this.tnbAccountNo,
-      tariffType: tariffType ?? this.tariffType,
       monthlyBudget: monthlyBudget ?? this.monthlyBudget,
       budgetAlertsEnabled: budgetAlertsEnabled ?? this.budgetAlertsEnabled,
       billRemindersEnabled: billRemindersEnabled ?? this.billRemindersEnabled,

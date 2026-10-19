@@ -1,5 +1,4 @@
 import 'package:energy_tracker/constants/tariff_rates.dart';
-import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 import 'package:energy_tracker/theme/app_colors.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -41,7 +40,6 @@ class DashboardPageState {
     this.monthlyBudget = 150,
     this.dailyAvg = 0,
     this.currentEeiBand = EeiBand.none,
-    this.tariffType = TariffType.domestic,
     this.daysLeft = 0,
     this.percentageVsLastMonth = 0,
     this.projectedBill,
@@ -57,7 +55,6 @@ class DashboardPageState {
   final double monthlyBudget;
   final double dailyAvg;
   final EeiBand currentEeiBand;
-  final TariffType tariffType;
   final int daysLeft;
   final double percentageVsLastMonth;
   final double? projectedBill;
@@ -102,24 +99,12 @@ class DashboardPageState {
     }
   }
 
-  Color get tierColor => tariffType == TariffType.domestic
-      ? currentEeiBand.color
-      : TariffRates.getTierColor(currentEeiBand.number, TariffType.commercial);
+  Color get tierColor => currentEeiBand.color;
 
-  String get tierRange => tariffType == TariffType.domestic
-      ? currentEeiBand.kwhRange
-      : TariffRates.getTierKwhRange(
-          currentEeiBand.number,
-          TariffType.commercial,
-        );
+  String get tierRange => currentEeiBand.kwhRange;
 
-  // New — used by StatCardsRow badge.
-  String get tierBadgeLabel => tariffType == TariffType.domestic
-      ? currentEeiBand.label
-      : TariffRates.tierBadgeLabel(
-          currentEeiBand.number,
-          TariffType.commercial,
-        );
+  // Used by StatCardsRow badge.
+  String get tierBadgeLabel => currentEeiBand.label;
 
   String get greetingEmoji {
     switch (budgetStatus) {
@@ -139,7 +124,6 @@ class DashboardPageState {
     double? monthlyBudget,
     double? dailyAvg,
     EeiBand? currentEeiBand,
-    TariffType? tariffType,
     int? daysLeft,
     double? percentageVsLastMonth,
     Object? projectedBill = _unset,
@@ -155,7 +139,6 @@ class DashboardPageState {
       monthlyBudget: monthlyBudget ?? this.monthlyBudget,
       dailyAvg: dailyAvg ?? this.dailyAvg,
       currentEeiBand: currentEeiBand ?? this.currentEeiBand,
-      tariffType: tariffType ?? this.tariffType,
       daysLeft: daysLeft ?? this.daysLeft,
       percentageVsLastMonth:
           percentageVsLastMonth ?? this.percentageVsLastMonth,
@@ -184,9 +167,6 @@ class DashboardPageState {
       kwhUsed: other.kwhUsed != 0 ? other.kwhUsed : null,
       estimatedBill: other.estimatedBill != 0 ? other.estimatedBill : null,
       currentEeiBand: otherHasUsageData ? other.currentEeiBand : null,
-      tariffType: other.tariffType != TariffType.domestic
-          ? other.tariffType
-          : null,
       dailyAvg: other.dailyAvg != 0 ? other.dailyAvg : null,
       daysLeft: other.daysLeft != 0 ? other.daysLeft : null,
       percentageVsLastMonth: other.percentageVsLastMonth != 0
@@ -209,7 +189,6 @@ class DashboardPageState {
         other.monthlyBudget == monthlyBudget &&
         other.dailyAvg == dailyAvg &&
         other.currentEeiBand == currentEeiBand &&
-        other.tariffType == tariffType &&
         other.daysLeft == daysLeft &&
         other.percentageVsLastMonth == percentageVsLastMonth &&
         other.projectedBill == projectedBill &&
@@ -227,7 +206,6 @@ class DashboardPageState {
     monthlyBudget,
     dailyAvg,
     currentEeiBand,
-    tariffType,
     daysLeft,
     percentageVsLastMonth,
     projectedBill,

@@ -216,3 +216,81 @@ exports.sendMonthlyReadingReminder = onSchedule(
       }
     },
 );
+
+// ---------------------------------------------------------------------------
+// Tariff data: monthly AFA sync
+//
+// TNB publishes declared AFA values in the tariff microsite's translation
+// bundle (`afaGraph.data`). The schedule itself (base rates, EEI bands and
+// protection periods) is seeded from assets/tariff/domestic_general.json via
+// `npm run seed:tariff`.
+// ---------------------------------------------------------------------------
+
+const AFA_MONTHS = {
+  JAN: 1, FEB: 2, MAR: 3, MAC: 3, APR: 4, MAY: 5, MEI: 5, JUN: 6,
+  JUL: 7, AUG: 8, OGO: 8, SEP: 9, OCT: 10, OKT: 10, NOV: 11, DEC: 12,
+  DIS: 12,
+};
+
+exports.syncAfaRates = onSchedule(
+    {
+      // TNB usually publishes the month's rate around the 1st.
+      schedule: "0 9 2 * *",
+      timeZone: "Asia/Kuala_Lumpur",
+      retryCount: 3,
+    },
+    async () => {
+      const response = await fetch("https://www.mytnb.com.my/tariff/EN.json", {
+        headers: {"user-agent": "energy-tracker/1.0"},
+      });
+      if (!response.ok) {
+        throw new Error(`TNB tariff fetch failed: HTTP ${response.status}`);
+      }
+
+      const payload = await response.json();
+      const rows = payload?.afaGraph?.data;
+      if (!Array.isArray(rows) || rows.length === 0) {
+        throw new Error("TNB tariff payload has no afaGraph.data rows");
+      }
+
+      const updates = {};
+      for (const row of rows) {
+        const month = AFA_MONTHS[String(row.month).toUpperCase()];
+        const value = Number(row.value);
+        if (!month || !Number.isFinite(value) || Math.abs(value) > 20) {
+          continue;
+        }
+        const key = `${row.year}-${String(month).padStart(2, "0")}`;
+        updates[key] = {
+          senPerKwh: value,
+          status: "final",
+        };
+      }
+
+      if (Object.keys(updates).length === 0) {
+        throw new Error("No valid AFA rows parsed");
+      }
+
+      const ref = admin.firestore().doc("tariffs/domestic_general");
+      const snapshot = await ref.get();
+      if (!snapshot.exists) {
+        throw new Error(
+            "tariffs/domestic_general is not seeded; run npm run seed:tariff",
+        );
+      }
+      const existing = snapshot.data()?.afaByMonth || {};
+
+      await ref.set(
+          {
+            afaByMonth: {...existing, ...updates},
+            source: "https://www.mytnb.com.my/tariff/EN.json",
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          },
+          {merge: true},
+      );
+
+      console.log(
+          `Synced ${Object.keys(updates).length} AFA months`,
+      );
+    },
+);

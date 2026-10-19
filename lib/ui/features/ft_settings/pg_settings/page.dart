@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:energy_tracker/app.dart';
-import 'package:energy_tracker/services/notifier/user_profile_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_settings/pg_settings/notifier/notifier.dart';
 import 'package:energy_tracker/ui/features/ft_settings/pg_settings/widgets/widgets.dart';
@@ -196,21 +195,15 @@ class _TariffAndBudgetTiles extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final (tariffLabel, formattedBudget) = ref.watch(
+    final formattedBudget = ref.watch(
       settingsProvider.select((async) {
         final s = async.maybeWhen(data: (value) => value, orElse: () => null);
-        return (s?.tariffLabel ?? '', s?.formattedBudget ?? '');
+        return s?.formattedBudget ?? '';
       }),
     );
 
     return Column(
       children: [
-        SettingsListTile(
-          icon: '🏠',
-          label: 'Tariff Type',
-          trailing: tariffLabel,
-          onTap: () => _showTariffSheet(context, ref),
-        ),
         SettingsListTile(
           icon: '🎯',
           label: 'Monthly Budget',
@@ -219,39 +212,6 @@ class _TariffAndBudgetTiles extends ConsumerWidget {
           isLast: true,
         ),
       ],
-    );
-  }
-
-  void _showTariffSheet(BuildContext context, WidgetRef ref) {
-    final state = ref
-        .read(settingsProvider)
-        .maybeWhen(data: (value) => value, orElse: () => null);
-    if (state == null) return;
-
-    unawaited(
-      showModalBottomSheet(
-        context: context,
-        backgroundColor: Colors.transparent,
-        builder: (_) => TariffTypeSheet(
-          selected: state.tariffType,
-          onSelect: (value) async {
-            final saved = await ref
-                .read(settingsProvider.notifier)
-                .updateTariffType(value);
-
-            if (!context.mounted) return;
-
-            if (!saved) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Failed to update tariff type.')),
-              );
-              return;
-            }
-
-            Navigator.pop(context);
-          },
-        ),
-      ),
     );
   }
 
@@ -267,7 +227,6 @@ class _TariffAndBudgetTiles extends ConsumerWidget {
         backgroundColor: Colors.transparent,
         isScrollControlled: true,
         builder: (_) => BudgetSheet(
-          tariffType: ref.read(tariffTypeProvider),
           current: state.monthlyBudget,
           onSave: (value) async {
             final saved = await ref

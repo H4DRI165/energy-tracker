@@ -1,5 +1,4 @@
 import 'package:energy_tracker/constants/tariff_rates.dart';
-import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 import 'package:energy_tracker/models/bill_record.dart';
 import 'package:flutter/foundation.dart';
 
@@ -12,14 +11,12 @@ class MonthlyUsage {
     required this.year,
     required this.kwh,
     required this.bill,
-    required this.isPaid,
   });
 
   final String month;
   final int year;
   final double kwh;
   final double bill;
-  final bool isPaid;
 
   String get monthYear => '$month $year';
 
@@ -30,12 +27,11 @@ class MonthlyUsage {
         other.month == month &&
         other.year == year &&
         other.kwh == kwh &&
-        other.bill == bill &&
-        other.isPaid == isPaid;
+        other.bill == bill;
   }
 
   @override
-  int get hashCode => Object.hash(month, year, kwh, bill, isPaid);
+  int get hashCode => Object.hash(month, year, kwh, bill);
 }
 
 @immutable
@@ -46,7 +42,6 @@ class UsageState {
     this.billHistory = const [],
     this.currentKwh = 0,
     this.currentBill = 0,
-    this.currentTariffType = TariffType.domestic,
     this.currentMonthLabel = '',
   });
 
@@ -55,11 +50,10 @@ class UsageState {
   final List<BillRecord> billHistory;
   final double currentKwh;
   final double currentBill;
-  final TariffType currentTariffType;
   final String currentMonthLabel;
 
   List<ChargeLineItem> get chargeBreakdown =>
-      TariffRates.breakdownFor(currentKwh, currentTariffType);
+      TariffRates.breakdownFor(currentKwh, billingMonth: DateTime.now());
 
   List<MonthlyUsage> get chartData {
     if (filter == UsageFilter.yearly) {
@@ -82,7 +76,6 @@ class UsageState {
     List<BillRecord>? billHistory,
     double? currentKwh,
     double? currentBill,
-    TariffType? currentTariffType,
     String? currentMonthLabel,
   }) {
     return UsageState(
@@ -91,7 +84,6 @@ class UsageState {
       billHistory: billHistory ?? this.billHistory,
       currentKwh: currentKwh ?? this.currentKwh,
       currentBill: currentBill ?? this.currentBill,
-      currentTariffType: currentTariffType ?? this.currentTariffType,
       currentMonthLabel: currentMonthLabel ?? this.currentMonthLabel,
     );
   }
@@ -105,7 +97,6 @@ class UsageState {
         listEquals(other.billHistory, billHistory) &&
         other.currentKwh == currentKwh &&
         other.currentBill == currentBill &&
-        other.currentTariffType == currentTariffType &&
         other.currentMonthLabel == currentMonthLabel;
   }
 
@@ -116,7 +107,6 @@ class UsageState {
     Object.hashAll(billHistory),
     currentKwh,
     currentBill,
-    currentTariffType,
     currentMonthLabel,
   );
 }
