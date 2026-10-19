@@ -5,6 +5,7 @@ class BillRecord {
     required this.kwh,
     required this.amount,
     required this.date,
+    this.isEstimated = false,
   });
 
   final String id;
@@ -12,6 +13,7 @@ class BillRecord {
   final double kwh;
   final double amount;
   final DateTime date;
+  final bool isEstimated;
 
   BillRecord copyWith({
     String? id,
@@ -19,6 +21,7 @@ class BillRecord {
     double? kwh,
     double? amount,
     DateTime? date,
+    bool? isEstimated,
   }) {
     return BillRecord(
       id: id ?? this.id,
@@ -26,6 +29,7 @@ class BillRecord {
       kwh: kwh ?? this.kwh,
       amount: amount ?? this.amount,
       date: date ?? this.date,
+      isEstimated: isEstimated ?? this.isEstimated,
     );
   }
 }

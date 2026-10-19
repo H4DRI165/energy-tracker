@@ -19,6 +19,7 @@ void main() {
       isLoadingLastReading: false,
       lastReading: 500,
       lastReadingDate: DateTime(2026, 6),
+      selectedDate: DateTime(2026, 6, 20),
       currentReading: 700,
     );
 
@@ -44,11 +45,27 @@ void main() {
     },
   );
 
+  test('only previews the current month share of a long gap', () {
+    final state = AddReadingPageState(
+      isLoadingLastReading: false,
+      lastReading: 1000,
+      lastReadingDate: DateTime(2026, 1),
+      selectedDate: DateTime(2026, 7, 15),
+      currentReading: 2200,
+    );
+
+    expect(state.usageKwh, 1200);
+    expect(state.currentMonthUsageShare, greaterThan(0));
+    expect(state.currentMonthUsageShare, lessThan(state.usageKwh));
+    expect(state.cumulativeKwh, lessThan(state.usageKwh));
+  });
+
   test('uses domestic EEI bands for the current tier', () {
     final state = AddReadingPageState(
       isLoadingLastReading: false,
       lastReading: 100,
       lastReadingDate: DateTime(2026, 6),
+      selectedDate: DateTime(2026, 6, 30),
       currentReading: 1100,
     );
 

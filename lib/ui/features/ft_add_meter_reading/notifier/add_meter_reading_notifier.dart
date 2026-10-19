@@ -273,21 +273,22 @@ class AddReadingNotifier extends Notifier<AddReadingPageState>
   Future<bool> _applyChainFixAndRecalculate(
     String uid,
     DateTime date,
+    DateTime? previousDate,
   ) async {
     final next = await _chainService.findNext(uid, date);
     if (next != null) {
       final fix = _chainService.computeFix(next, state.currentReading);
       final batch = _firestore.batch();
-      _chainService.applyFix(batch, uid, fix);
+      _chainService.applyFix(batch, uid, fix, periodStart: date);
       await batch.commit();
-
-      final sameMonth =
-          fix.date.year == date.year && fix.date.month == date.month;
-      if (!sameMonth) {
-        await _billService.recalculateMonth(uid, fix.date);
-      }
     }
-    await _billService.recalculateMonth(uid, date);
+
+    // Recalculate every month touched by this reading's interval and the
+    // following reading's interval. This is what spreads a long gap instead
+    // of dumping it into one month.
+    final from = previousDate ?? date;
+    final to = next?.date ?? date;
+    await _billService.recalculateRange(uid, from, to);
     return true;
   }
 
@@ -313,10 +314,12 @@ class AddReadingNotifier extends Notifier<AddReadingPageState>
         'date': Timestamp.fromDate(date),
         'notes': state.notes.trim(),
         'tier': state.currentTier,
+        if (state.lastReadingDate != null)
+          'periodStart': Timestamp.fromDate(state.lastReadingDate!),
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      await _applyChainFixAndRecalculate(uid, date);
+      await _applyChainFixAndRecalculate(uid, date, state.lastReadingDate);
 
       state = state.copyWith(isSaving: false);
       return true;
@@ -380,9 +383,12 @@ class AddReadingNotifier extends Notifier<AddReadingPageState>
             'kwh': state.usageKwh,
             'notes': state.notes.trim(),
             'tier': state.currentTier,
+            'periodStart': state.lastReadingDate == null
+                ? FieldValue.delete()
+                : Timestamp.fromDate(state.lastReadingDate!),
           });
 
-      await _applyChainFixAndRecalculate(uid, date);
+      await _applyChainFixAndRecalculate(uid, date, state.lastReadingDate);
 
       state = state.copyWith(isSaving: false);
       return true;

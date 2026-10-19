@@ -39,6 +39,42 @@ void main() {
     expect(snapshot.exists, isFalse);
   });
 
+  test('spreads a long gap across months and marks them estimated', () async {
+    await readings.add({
+      'reading': 1000.0,
+      'kwh': 0.0,
+      'date': Timestamp.fromDate(DateTime(2026, 1)),
+    });
+    await readings.add({
+      'reading': 2200.0,
+      'kwh': 1200.0,
+      'periodStart': Timestamp.fromDate(DateTime(2026, 1)),
+      'date': Timestamp.fromDate(DateTime(2026, 7)),
+    });
+
+    await service.recalculateRange(
+      'user-1',
+      DateTime(2026, 1),
+      DateTime(2026, 7),
+    );
+
+    final bills = firestore
+        .collection('users')
+        .doc('user-1')
+        .collection('bills');
+
+    var total = 0.0;
+    for (var month = 1; month <= 6; month++) {
+      final snapshot = await bills.doc('2026-0$month').get();
+      final data = snapshot.data();
+      expect(data, isNotNull, reason: 'month $month');
+      expect(data!['isEstimated'], isTrue);
+      total += (data['kwh'] as num).toDouble();
+    }
+    expect(total, closeTo(1200, 0.000001));
+    expect((await bills.doc('2026-07').get()).exists, isFalse);
+  });
+
   test('sums readings and stores the calculated monthly bill', () async {
     await readings.add({
       'kwh': 80.0,
@@ -47,12 +83,6 @@ void main() {
     await readings.add({
       'kwh': 120.0,
       'date': Timestamp.fromDate(DateTime(2026, 7, 20)),
-    });
-
-    // Reading outside the month — should NOT be included in the sum.
-    await readings.add({
-      'kwh': 500.0,
-      'date': Timestamp.fromDate(DateTime(2026, 8)),
     });
 
     await service.recalculateMonth(

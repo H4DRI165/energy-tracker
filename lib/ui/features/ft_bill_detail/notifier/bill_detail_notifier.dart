@@ -159,6 +159,7 @@ class BillDetailNotifier extends Notifier<BillDetailPageState>
         kwh: (data['kwh'] as num).toDouble(),
         amount: (data['amount'] as num).toDouble(),
         date: (data['date'] as Timestamp).toDate(),
+        isEstimated: data['isEstimated'] as bool? ?? false,
       );
     } on FirebaseException catch (e, st) {
       logError(
@@ -214,21 +215,20 @@ class BillDetailNotifier extends Notifier<BillDetailPageState>
         // If there's no previous reading, the deleted reading WAS the
         // baseline — next becomes the new baseline (kwh: 0).
         fix = _chainService.computeFix(next, previous?.reading);
-        _chainService.applyFix(batch, uid, fix);
+        _chainService.applyFix(
+          batch,
+          uid,
+          fix,
+          periodStart: previous?.date,
+        );
       }
 
       await batch.commit();
       committed = true;
 
-      await _billService.recalculateMonth(uid, reading.date);
-
-      final fixInDifferentMonth =
-          fix != null &&
-          (fix.date.year != reading.date.year ||
-              fix.date.month != reading.date.month);
-      if (fixInDifferentMonth) {
-        await _billService.recalculateMonth(uid, fix.date);
-      }
+      final from = previous?.date ?? reading.date;
+      final to = next?.date ?? reading.date;
+      await _billService.recalculateRange(uid, from, to);
 
       // Local state can no longer be cheaply patched given possible
       // cross-month effects — reload from source of truth.

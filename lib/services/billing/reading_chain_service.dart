@@ -109,10 +109,18 @@ class ReadingChainService {
 
   /// Writes a [ChainFixResult] to the reading document. Caller is
   /// responsible for recalculating any affected month's bill afterward.
-  void applyFix(WriteBatch batch, String uid, ChainFixResult fix) {
+  void applyFix(
+    WriteBatch batch,
+    String uid,
+    ChainFixResult fix, {
+    DateTime? periodStart,
+  }) {
     batch.update(_readingsCol(uid).doc(fix.readingId), {
       'kwh': fix.newKwh,
       'tier': fix.newTier,
+      'periodStart': periodStart == null
+          ? FieldValue.delete()
+          : Timestamp.fromDate(periodStart),
     });
   }
 }
