@@ -18,6 +18,20 @@ exports.checkBudgetOnBillUpdate = functions.onDocumentWritten(
       const beforeBill = event.data.before?.data();
       if (beforeBill && beforeBill.amount === bill.amount) return;
 
+      // Historical bill recalculations must not send budget alerts. Only the
+      // current MYT month is actionable.
+      const billDate = bill.date?.toDate ? bill.date.toDate() : null;
+      if (!billDate) return;
+      const monthFormatter = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Kuala_Lumpur",
+        year: "numeric",
+        month: "2-digit",
+      });
+      if (monthFormatter.format(billDate) !==
+          monthFormatter.format(new Date())) {
+        return;
+      }
+
       const userRef = admin.firestore().collection("users").doc(uid);
       const userDoc = await userRef.get();
       const user = userDoc.data();
