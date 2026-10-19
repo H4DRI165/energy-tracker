@@ -1,0 +1,24 @@
+rules_version = '2';
+
+// Avatar storage. Files live under users/{uid}/profile_<millis>.jpg.
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    match /users/{uid}/{fileName} {
+      // Avatars are non-sensitive; fixed download URLs are fetched by
+      // CachedNetworkImage without Firebase Auth headers.
+      allow read: if true;
+
+      allow create, update: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+
+      allow delete: if request.auth != null && request.auth.uid == uid;
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
