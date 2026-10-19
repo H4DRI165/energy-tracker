@@ -4,7 +4,6 @@ import 'package:energy_tracker/ui/features/ft_dashboard/widgets/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:go_router/go_router.dart';
 
 class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
@@ -224,11 +223,6 @@ class _BodyContent extends ConsumerWidget {
                   const SavingTipsCard(),
                   SizedBox(height: 14.h),
                 ],
-                QuickActions(
-                  onAddReading: () => context.push(AppRoutes.addReading),
-                  onScanBill: () => context.push(AppRoutes.scanBill),
-                ),
-                SizedBox(height: 24.h),
               ],
             ),
           ),
