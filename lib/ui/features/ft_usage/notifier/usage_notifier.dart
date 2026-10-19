@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/constants/tariff_rates.dart';
 import 'package:energy_tracker/models/bill_record.dart';
 import 'package:energy_tracker/services/auth/providers/current_uid_provider.dart';
+import 'package:energy_tracker/services/notifier/user_profile_notifier.dart';
 import 'package:energy_tracker/ui/components/logging/notifier/loggable_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_usage/notifier/usage_state.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -24,9 +25,14 @@ class UsageNotifier extends AsyncNotifier<UsageState>
     final uid = ref.watch(currentUidProvider).value;
     if (uid == null) return const UsageState();
 
+    final monthlyBudget =
+        ref.watch(userProfileProvider).profile?.monthlyBudget ?? 0;
     final selectedFilter = state.value?.filter ?? UsageFilter.monthly;
     final fresh = await _fetchUsageData(uid);
-    return fresh.copyWith(filter: selectedFilter);
+    return fresh.copyWith(
+      filter: selectedFilter,
+      monthlyBudget: monthlyBudget,
+    );
   }
 
   Future<void> refresh() async {

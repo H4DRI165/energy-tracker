@@ -43,6 +43,7 @@ class UsageState {
     this.currentKwh = 0,
     this.currentBill = 0,
     this.currentMonthLabel = '',
+    this.monthlyBudget = 0,
   });
 
   final UsageFilter filter;
@@ -51,6 +52,7 @@ class UsageState {
   final double currentKwh;
   final double currentBill;
   final String currentMonthLabel;
+  final double monthlyBudget;
 
   List<ChargeLineItem> get chargeBreakdown =>
       TariffRates.breakdownFor(currentKwh, billingMonth: DateTime.now());
@@ -77,6 +79,7 @@ class UsageState {
     double? currentKwh,
     double? currentBill,
     String? currentMonthLabel,
+    double? monthlyBudget,
   }) {
     return UsageState(
       filter: filter ?? this.filter,
@@ -85,6 +88,7 @@ class UsageState {
       currentKwh: currentKwh ?? this.currentKwh,
       currentBill: currentBill ?? this.currentBill,
       currentMonthLabel: currentMonthLabel ?? this.currentMonthLabel,
+      monthlyBudget: monthlyBudget ?? this.monthlyBudget,
     );
   }
 
@@ -97,7 +101,8 @@ class UsageState {
         listEquals(other.billHistory, billHistory) &&
         other.currentKwh == currentKwh &&
         other.currentBill == currentBill &&
-        other.currentMonthLabel == currentMonthLabel;
+        other.currentMonthLabel == currentMonthLabel &&
+        other.monthlyBudget == monthlyBudget;
   }
 
   @override
@@ -108,5 +113,6 @@ class UsageState {
     currentKwh,
     currentBill,
     currentMonthLabel,
+    monthlyBudget,
   );
 }

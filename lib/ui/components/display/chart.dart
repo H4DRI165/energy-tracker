@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:energy_tracker/app.dart';
 import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_usage/notifier/usage_notifier.dart';
+import 'package:energy_tracker/ui/features/ft_usage/notifier/usage_state.dart';
 import 'package:energy_tracker/ui/features/ft_usage/widgets/usage_filter_tab.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -14,11 +15,15 @@ class BarChartEntry {
   const BarChartEntry({
     required this.label,
     required this.kwh,
+    this.detail,
     this.isHighlighted = false,
   });
 
   final String label;
   final double kwh;
+
+  /// Optional secondary value shown in the tooltip (e.g. the bill amount).
+  final String? detail;
   final bool isHighlighted;
 }
 
@@ -32,11 +37,23 @@ class WeeklyUsageChartCard extends ConsumerWidget {
         (asyncState) => asyncState.value?.weeklyUsage ?? const [],
       ),
     );
+    final weeklyTotal = weeklyUsage.fold<double>(
+      0,
+      (total, day) => total + day.kwh,
+    );
 
     return UsageBarChartCard(
       title: '7-Day Usage',
       subtitle: 'kWh/day',
-      chartHeight: 80,
+      chartHeight: 76,
+      insight: weeklyUsage.isEmpty
+          ? null
+          : Text(
+              'Total ${weeklyTotal.toStringAsFixed(0)} kWh this week',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTextStyles.caption.copyWith(color: AppColors.text2),
+            ),
       entries: weeklyUsage
           .map(
             (day) => BarChartEntry(
@@ -62,12 +79,73 @@ class MonthlyUsageChartCard extends ConsumerWidget {
     }
 
     final notifier = ref.read(usageProvider.notifier);
-    final currentMonthAbbr = DateFormat('MMM').format(DateTime.now());
-    final currentYear = DateTime.now().year;
+    final now = DateTime.now();
+    final currentMonthAbbr = DateFormat('MMM').format(now);
+    final currentYear = now.year;
+    final displayed = state.chartData;
+    final hasCurrentMonth =
+        displayed.isNotEmpty &&
+        displayed.last.year == currentYear &&
+        displayed.last.month == currentMonthAbbr;
+    final monthlyBudget = state.monthlyBudget;
+    final targetKwh = monthlyBudget > 0
+        ? TariffRates.estimateKwhFromBudget(monthlyBudget)
+        : null;
+
+    double? trendPercent;
+    String? previousMonthLabel;
+    String? trendBasis;
+    if (hasCurrentMonth && state.monthlyData.length >= 2) {
+      final current = state.monthlyData.last;
+      final previous = state.monthlyData[state.monthlyData.length - 2];
+      if (current.kwh > 0 && previous.kwh > 0) {
+        final monthComplete =
+            now.day >= DateUtils.getDaysInMonth(now.year, now.month);
+        if (monthComplete) {
+          trendPercent = ((current.kwh - previous.kwh) / previous.kwh) * 100;
+          trendBasis = 'total';
+        } else {
+          final previousDays = DateUtils.getDaysInMonth(
+            previous.year,
+            now.month - 1,
+          );
+          final currentPace = current.kwh / now.day;
+          final previousPace = previous.kwh / previousDays;
+          if (previousPace > 0) {
+            trendPercent = ((currentPace - previousPace) / previousPace) * 100;
+            trendBasis = 'daily pace';
+          }
+        }
+        previousMonthLabel = previous.month;
+      }
+    }
+
+    // If this month has no readings yet, still show a meaningful trend from
+    // the last two months that do.
+    if (trendPercent == null) {
+      final withData = state.monthlyData.where((m) => m.kwh > 0).toList();
+      if (withData.length >= 2) {
+        final latest = withData.last;
+        final previous = withData[withData.length - 2];
+        trendPercent = ((latest.kwh - previous.kwh) / previous.kwh) * 100;
+        previousMonthLabel = previous.month;
+        trendBasis = 'total';
+      }
+    }
 
     return UsageBarChartCard(
       title: 'Usage Trend',
       subtitle: 'kWh',
+      chartHeight: 96,
+      showValueLabels: state.filter == UsageFilter.monthly,
+      targetKwh: targetKwh,
+      insight: trendPercent == null || previousMonthLabel == null
+          ? null
+          : _TrendIndicator(
+              percent: trendPercent,
+              previousMonthLabel: previousMonthLabel,
+              basis: trendBasis ?? 'total',
+            ),
       trailing: SizedBox(
         width: 116.w,
         child: UsageFilterTabs(
@@ -75,16 +153,92 @@ class MonthlyUsageChartCard extends ConsumerWidget {
           onChanged: notifier.setFilter,
         ),
       ),
-      entries: state.chartData
+      entries: displayed
           .map(
             (month) => BarChartEntry(
               label: month.month,
               kwh: month.kwh,
+              detail: month.kwh > 0
+                  ? 'RM ${month.bill.toStringAsFixed(2)}'
+                  : null,
               isHighlighted:
                   month.year == currentYear && month.month == currentMonthAbbr,
             ),
           )
           .toList(),
+    );
+  }
+}
+
+class _TrendIndicator extends StatelessWidget {
+  const _TrendIndicator({
+    required this.percent,
+    required this.previousMonthLabel,
+    required this.basis,
+  });
+
+  final double percent;
+  final String previousMonthLabel;
+  final String basis;
+
+  @override
+  Widget build(BuildContext context) {
+    final isFlat = percent.abs() < 0.5;
+    final isUp = percent > 0;
+    final color = isFlat
+        ? AppColors.text3
+        : isUp
+        ? AppColors.danger
+        : AppColors.accent;
+    final icon = isFlat
+        ? Icons.trending_flat_rounded
+        : isUp
+        ? Icons.trending_up_rounded
+        : Icons.trending_down_rounded;
+    final direction = isUp ? 'higher' : 'lower';
+    final subject = basis == 'total' ? 'Total usage' : 'Usage pace';
+
+    return Semantics(
+      label: isFlat
+          ? '$subject is flat versus $previousMonthLabel'
+          : '$subject is ${percent.abs().toStringAsFixed(0)} percent '
+                '$direction than $previousMonthLabel',
+      child: Wrap(
+        spacing: 6.w,
+        runSpacing: 2.h,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 22.r, color: color),
+                SizedBox(width: 4.w),
+                Text(
+                  isFlat
+                      ? '0%'
+                      : '${isUp ? '+' : '−'}'
+                            '${percent.abs().toStringAsFixed(0)}%',
+                  style: AppTextStyles.displayMd.copyWith(
+                    color: color,
+                    height: 1,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            'vs $previousMonthLabel · $basis',
+            style: AppTextStyles.caption.copyWith(
+              color: AppColors.text3,
+              fontSize: 11.sp,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -95,6 +249,9 @@ class UsageBarChartCard extends StatefulWidget {
     required this.subtitle,
     required this.entries,
     this.trailing,
+    this.insight,
+    this.showValueLabels = true,
+    this.targetKwh,
     this.chartHeight = 110,
     super.key,
   });
@@ -105,6 +262,15 @@ class UsageBarChartCard extends StatefulWidget {
 
   /// Replaces the default legend on the right of the header (e.g. a filter).
   final Widget? trailing;
+
+  /// Optional summary line under the header (average, trend, etc.).
+  final Widget? insight;
+
+  /// Per-bar value labels. Off keeps 12-month charts compact.
+  final bool showValueLabels;
+
+  /// Optional monthly kWh target, drawn as a dashed line.
+  final double? targetKwh;
   final double chartHeight;
 
   @override
@@ -147,10 +313,13 @@ class _UsageBarChartCardState extends State<UsageBarChartCard>
   @override
   Widget build(BuildContext context) {
     final entries = widget.entries;
-    final maxKwh = entries.isEmpty
+    final dataMax = entries.isEmpty
         ? 1.0
         : entries.map((e) => e.kwh).reduce((a, b) => a > b ? a : b);
-    final maxBarHeight = widget.chartHeight.h - _valueLabelHeight.h - 3.h;
+    final target = widget.targetKwh ?? 0;
+    final maxKwh = dataMax > target ? dataMax : (target > 0 ? target : 1.0);
+    final valueLabelHeight = widget.showValueLabels ? _valueLabelHeight.h : 0.0;
+    final maxBarHeight = widget.chartHeight.h - valueLabelHeight - 3.h;
 
     return Container(
       padding: EdgeInsets.all(AppDimensions.cardPaddingSm),
@@ -191,7 +360,11 @@ class _UsageBarChartCardState extends State<UsageBarChartCard>
                   ),
             ],
           ),
-          SizedBox(height: 16.h),
+          SizedBox(height: 8.h),
+          if (widget.insight != null) ...[
+            widget.insight!,
+            SizedBox(height: 8.h),
+          ],
           if (entries.isEmpty)
             Center(
               child: Padding(
@@ -203,37 +376,133 @@ class _UsageBarChartCardState extends State<UsageBarChartCard>
             RepaintBoundary(
               child: SizedBox(
                 height: widget.chartHeight.h,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: List.generate(entries.length, (i) {
-                    final entry = entries[i];
-                    final heightFraction = maxKwh > 0
-                        ? (entry.kwh <= 0
-                              ? 0.0
-                              : (entry.kwh / maxKwh).clamp(0.05, 1.0))
-                        : 0.0;
-
-                    final start = (i / entries.length) * 0.3;
-                    final animation = CurvedAnimation(
-                      parent: _controller,
-                      curve: Interval(start, 1, curve: Curves.easeOutQuart),
-                    );
-
-                    return Expanded(
-                      key: ValueKey(entry.label),
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 4.w),
-                        child: _SlimBar(
-                          animation: animation,
-                          heightFraction: heightFraction,
-                          isHighlighted: entry.isHighlighted,
-                          kwh: entry.kwh,
-                          maxBarHeight: maxBarHeight,
-                          valueLabelHeight: _valueLabelHeight.h,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Positioned(
+                      top: valueLabelHeight + 3.h,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      child: IgnorePointer(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: List.generate(
+                            4,
+                            (i) => Container(
+                              height: 1,
+                              color: AppColors.text3.withValues(
+                                alpha: i == 3 ? 0.16 : 0.06,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
-                    );
-                  }),
+                    ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: List.generate(entries.length, (i) {
+                        final entry = entries[i];
+                        final heightFraction = maxKwh > 0
+                            ? (entry.kwh <= 0
+                                  ? 0.0
+                                  : (entry.kwh / maxKwh).clamp(0.05, 1.0))
+                            : 0.0;
+
+                        final start = (i / entries.length) * 0.3;
+                        final animation = CurvedAnimation(
+                          parent: _controller,
+                          curve: Interval(start, 1, curve: Curves.easeOutQuart),
+                        );
+                        final detail = entry.detail;
+                        final semanticsLabel =
+                            '${entry.label}: '
+                            '${entry.kwh.toStringAsFixed(0)} kWh'
+                            '${detail != null ? ', $detail' : ''}';
+                        final tooltipMessage =
+                            '${entry.label} · '
+                            '${entry.kwh.toStringAsFixed(0)} kWh'
+                            '${detail != null ? ' · $detail' : ''}';
+
+                        return Expanded(
+                          key: ValueKey(entry.label),
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 3.w),
+                            child: Semantics(
+                              label: semanticsLabel,
+                              child: Tooltip(
+                                message: tooltipMessage,
+                                triggerMode: TooltipTriggerMode.tap,
+                                child: ExcludeSemantics(
+                                  child: _SlimBar(
+                                    animation: animation,
+                                    heightFraction: heightFraction,
+                                    isHighlighted: entry.isHighlighted,
+                                    kwh: entry.kwh,
+                                    maxBarHeight: maxBarHeight,
+                                    valueLabelHeight: valueLabelHeight,
+                                    showValueLabel: widget.showValueLabels,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+                    if (widget.targetKwh != null && widget.targetKwh! > 0)
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: maxBarHeight * (widget.targetKwh! / maxKwh),
+                        child: IgnorePointer(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Expanded(
+                                child: SizedBox(
+                                  height: 1,
+                                  child: CustomPaint(
+                                    painter: _DashedLinePainter(
+                                      color: AppColors.warn.withValues(
+                                        alpha: 0.55,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: 4.w),
+                              Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 3.w,
+                                  vertical: 1.h,
+                                ),
+                                color: AppColors.surface2,
+                                child: Text(
+                                  'Budget',
+                                  style: AppTextStyles.caption.copyWith(
+                                    fontSize: 9.sp,
+                                    color: AppColors.warn,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: CustomPaint(
+                          painter: _TrendLinePainter(
+                            values: entries.map((e) => e.kwh).toList(),
+                            maxValue: maxKwh,
+                            barAreaHeight: maxBarHeight,
+                            color: AppColors.accent.withValues(alpha: 0.55),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -272,6 +541,7 @@ class _SlimBar extends StatelessWidget {
     required this.kwh,
     required this.maxBarHeight,
     required this.valueLabelHeight,
+    required this.showValueLabel,
   });
 
   final Animation<double> animation;
@@ -280,6 +550,7 @@ class _SlimBar extends StatelessWidget {
   final double kwh;
   final double maxBarHeight;
   final double valueLabelHeight;
+  final bool showValueLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -287,25 +558,29 @@ class _SlimBar extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        SizedBox(
-          height: valueLabelHeight,
-          child: kwh > 0
-              ? Align(
-                  alignment: Alignment.bottomCenter,
-                  child: Text(
-                    kwh.toStringAsFixed(0),
-                    style: AppTextStyles.caption.copyWith(
-                      fontSize: 9.sp,
-                      color: isHighlighted ? AppColors.accent : AppColors.text3,
-                      fontWeight: isHighlighted
-                          ? FontWeight.w600
-                          : FontWeight.w400,
+        if (showValueLabel) ...[
+          SizedBox(
+            height: valueLabelHeight,
+            child: kwh > 0
+                ? Align(
+                    alignment: Alignment.bottomCenter,
+                    child: Text(
+                      kwh.toStringAsFixed(0),
+                      style: AppTextStyles.caption.copyWith(
+                        fontSize: 9.sp,
+                        color: isHighlighted
+                            ? AppColors.accent
+                            : AppColors.text3,
+                        fontWeight: isHighlighted
+                            ? FontWeight.w600
+                            : FontWeight.w400,
+                      ),
                     ),
-                  ),
-                )
-              : const SizedBox.shrink(),
-        ),
-        SizedBox(height: 3.h),
+                  )
+                : const SizedBox.shrink(),
+          ),
+          SizedBox(height: 3.h),
+        ],
         AnimatedBuilder(
           animation: animation,
           builder: (context, _) {
@@ -317,7 +592,7 @@ class _SlimBar extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: isHighlighted
                         ? AppColors.accent
-                        : AppColors.accent.withValues(alpha: 0.12),
+                        : AppColors.accent.withValues(alpha: 0.22),
                     borderRadius: BorderRadius.vertical(
                       top: Radius.circular(4.r),
                     ),
@@ -330,4 +605,90 @@ class _SlimBar extends StatelessWidget {
       ],
     );
   }
+}
+
+class _DashedLinePainter extends CustomPainter {
+  const _DashedLinePainter({required this.color});
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1;
+    const dash = 4.0;
+    const gap = 4.0;
+    var x = 0.0;
+    while (x < size.width) {
+      final end = x + dash > size.width ? size.width : x + dash;
+      canvas.drawLine(Offset(x, 0), Offset(end, 0), paint);
+      x += dash + gap;
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashedLinePainter oldDelegate) =>
+      oldDelegate.color != color;
+}
+
+class _TrendLinePainter extends CustomPainter {
+  const _TrendLinePainter({
+    required this.values,
+    required this.maxValue,
+    required this.barAreaHeight,
+    required this.color,
+  });
+
+  final List<double> values;
+  final double maxValue;
+  final double barAreaHeight;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (values.length < 2 || maxValue <= 0 || barAreaHeight <= 0) return;
+
+    final line = Paint()
+      ..color = color
+      ..strokeWidth = 1.5
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    final dot = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    final step = size.width / values.length;
+    final path = Path();
+    final points = <Offset>[];
+
+    for (var i = 0; i < values.length; i++) {
+      final fraction = values[i] <= 0
+          ? 0.0
+          : (values[i] / maxValue).clamp(0.0, 1.0);
+      final point = Offset(
+        step * (i + 0.5),
+        size.height - barAreaHeight * fraction,
+      );
+      points.add(point);
+      if (i == 0) {
+        path.moveTo(point.dx, point.dy);
+      } else {
+        path.lineTo(point.dx, point.dy);
+      }
+    }
+
+    canvas.drawPath(path, line);
+    for (final point in points) {
+      canvas.drawCircle(point, 1.8, dot);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_TrendLinePainter oldDelegate) =>
+      !listEquals(oldDelegate.values, values) ||
+      oldDelegate.maxValue != maxValue ||
+      oldDelegate.barAreaHeight != barAreaHeight ||
+      oldDelegate.color != color;
 }
