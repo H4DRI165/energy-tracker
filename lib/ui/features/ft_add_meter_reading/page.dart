@@ -173,7 +173,7 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
               controller: _readingController,
             ),
             SizedBox(height: 10.h),
-            const _AutoCalcCard(),
+            _AutoCalcCard(isEdit: _isEdit),
             Text('Notes (optional)', style: AppTextStyles.label),
             SizedBox(height: 6.h),
             _NotesField(controller: _notesController),
@@ -228,12 +228,50 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
   }
 
   Future<void> _handleSave() async {
+    final readingState = ref.read(addReadingProvider);
+
+    if (_isEdit) {
+      final confirmed = await ConfirmDialog.show(
+        context,
+        title: 'Save Changes?',
+        message: 'Update this meter reading?',
+        confirmLabel: 'Save Changes',
+        warning:
+            "The kWh used, this month's bill and the next reading's usage "
+            'will be recalculated.',
+      );
+
+      if (!confirmed || !mounted) return;
+    } else if (readingState.isLongGap) {
+      final days = readingState.intervalDays ?? 0;
+      final confirmed = await ConfirmDialog.show(
+        context,
+        title: 'Long gap between readings',
+        message:
+            'This reading covers $days days. Usage will be split across '
+            'the months it covers.',
+        confirmLabel: 'Split & Save',
+        warning:
+            'Months without a reading will be marked as estimated. '
+            'Add the missing monthly readings later for an exact bill.',
+      );
+
+      if (!confirmed || !mounted) return;
+    }
+
     final notifier = ref.read(addReadingProvider.notifier);
+    final isFirstReading = !_isEdit && readingState.lastReadingDate == null;
     final success = _isEdit
         ? await notifier.updateReading(widget.reading!)
         : await notifier.saveReading();
 
     if (success && mounted) {
+      final successMessage = _isEdit
+          ? 'Reading updated'
+          : isFirstReading
+          ? 'Baseline saved — add your next reading to see usage'
+          : 'Reading saved successfully';
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -244,9 +282,11 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
                 size: 18,
               ),
               SizedBox(width: 10.w),
-              Text(
-                _isEdit ? 'Reading updated' : 'Reading saved successfully',
-                style: AppTextStyles.bodyMd,
+              Expanded(
+                child: Text(
+                  successMessage,
+                  style: AppTextStyles.bodyMd,
+                ),
               ),
             ],
           ),
@@ -530,12 +570,30 @@ class _MeterReadingField extends ConsumerWidget {
 }
 
 class _AutoCalcCard extends ConsumerWidget {
-  const _AutoCalcCard();
+  const _AutoCalcCard({required this.isEdit});
+
+  final bool isEdit;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final hasUsage = ref.watch(addReadingProvider.select((s) => s.hasUsage));
-    if (!hasUsage) return const SizedBox.shrink();
+    final data = ref.watch(
+      addReadingProvider.select(
+        (s) => (
+          hasUsage: s.hasUsage,
+          lastReadingDate: s.lastReadingDate,
+          isLoading: s.isLoadingLastReading,
+        ),
+      ),
+    );
+
+    if (data.isLoading) return const SizedBox.shrink();
+
+    if (!data.hasUsage) {
+      if (!isEdit && data.lastReadingDate == null) {
+        return const _BaselineHintCard();
+      }
+      return const SizedBox.shrink();
+    }
 
     final usageKwh = ref.watch(addReadingProvider.select((s) => s.usageKwh));
     final cumulativeKwh = ref.watch(
@@ -604,6 +662,57 @@ class _AutoCalcCard extends ConsumerWidget {
         ),
         SizedBox(height: 16.h),
       ],
+    );
+  }
+}
+
+class _BaselineHintCard extends StatelessWidget {
+  const _BaselineHintCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(14.r),
+      decoration: BoxDecoration(
+        color: AppColors.accent.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+        border: Border.all(color: AppColors.borderAccent),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.flag_outlined,
+            size: 18.r,
+            color: AppColors.accent,
+          ),
+          SizedBox(width: 10.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'This is your starting point',
+                  style: AppTextStyles.bodySm.copyWith(
+                    color: AppColors.accent,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  'Your first reading will be saved as the baseline. Add a '
+                  'second reading later to calculate usage and your estimated '
+                  'bill.',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.text2,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
