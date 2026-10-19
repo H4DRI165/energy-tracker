@@ -11,12 +11,14 @@ class MonthlyUsage {
     required this.year,
     required this.kwh,
     required this.bill,
+    this.isEstimated = false,
   });
 
   final String month;
   final int year;
   final double kwh;
   final double bill;
+  final bool isEstimated;
 
   String get monthYear => '$month $year';
 
@@ -27,11 +29,12 @@ class MonthlyUsage {
         other.month == month &&
         other.year == year &&
         other.kwh == kwh &&
-        other.bill == bill;
+        other.bill == bill &&
+        other.isEstimated == isEstimated;
   }
 
   @override
-  int get hashCode => Object.hash(month, year, kwh, bill);
+  int get hashCode => Object.hash(month, year, kwh, bill, isEstimated);
 }
 
 @immutable
@@ -44,6 +47,7 @@ class UsageState {
     this.currentBill = 0,
     this.currentMonthLabel = '',
     this.monthlyBudget = 0,
+    this.readingCount = 0,
   });
 
   final UsageFilter filter;
@@ -53,6 +57,13 @@ class UsageState {
   final double currentBill;
   final String currentMonthLabel;
   final double monthlyBudget;
+
+  /// Number of saved readings. One reading is only a baseline; a second
+  /// reading is needed before any usage can be calculated.
+  final int readingCount;
+
+  bool get hasUsage =>
+      monthlyData.any((month) => month.kwh > 0) || billHistory.isNotEmpty;
 
   List<ChargeLineItem> get chargeBreakdown =>
       TariffRates.breakdownFor(currentKwh, billingMonth: DateTime.now());
@@ -80,6 +91,7 @@ class UsageState {
     double? currentBill,
     String? currentMonthLabel,
     double? monthlyBudget,
+    int? readingCount,
   }) {
     return UsageState(
       filter: filter ?? this.filter,
@@ -89,6 +101,7 @@ class UsageState {
       currentBill: currentBill ?? this.currentBill,
       currentMonthLabel: currentMonthLabel ?? this.currentMonthLabel,
       monthlyBudget: monthlyBudget ?? this.monthlyBudget,
+      readingCount: readingCount ?? this.readingCount,
     );
   }
 
@@ -102,7 +115,8 @@ class UsageState {
         other.currentKwh == currentKwh &&
         other.currentBill == currentBill &&
         other.currentMonthLabel == currentMonthLabel &&
-        other.monthlyBudget == monthlyBudget;
+        other.monthlyBudget == monthlyBudget &&
+        other.readingCount == readingCount;
   }
 
   @override
@@ -114,5 +128,6 @@ class UsageState {
     currentBill,
     currentMonthLabel,
     monthlyBudget,
+    readingCount,
   );
 }

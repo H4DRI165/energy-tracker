@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/constants/tariff_rates.dart';
 import 'package:energy_tracker/models/bill_record.dart';
+import 'package:energy_tracker/models/reading_record.dart';
 import 'package:energy_tracker/services/auth/providers/current_uid_provider.dart';
+import 'package:energy_tracker/services/billing/usage_allocation_service.dart';
 import 'package:energy_tracker/services/notifier/user_profile_notifier.dart';
 import 'package:energy_tracker/ui/components/logging/notifier/loggable_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_usage/notifier/usage_state.dart';
@@ -43,18 +45,11 @@ class UsageNotifier extends AsyncNotifier<UsageState>
   Future<UsageState> _fetchUsageData(String uid) async {
     final now = DateTime.now();
 
-    // Fetch readings for the past 12 months
-    final startOf12MonthsAgo = DateTime(now.year - 1, now.month);
-
     final results = await Future.wait([
       _firestore
           .collection('users')
           .doc(uid)
           .collection('readings')
-          .where(
-            'date',
-            isGreaterThanOrEqualTo: Timestamp.fromDate(startOf12MonthsAgo),
-          )
           .orderBy('date', descending: false)
           .get(),
       _firestore
@@ -69,17 +64,30 @@ class UsageNotifier extends AsyncNotifier<UsageState>
     final billsSnap = results[1];
 
     final billHistory = _buildBillHistory(billsSnap.docs);
-    // Current month data
-    final currentMonthReadings = readingsSnap.docs.where((doc) {
-      final date = (doc.data()['date'] as Timestamp).toDate();
-      return date.year == now.year && date.month == now.month;
+    final readings = readingsSnap.docs
+        .map((doc) => ReadingRecord.fromDoc(doc.id, doc.data()))
+        .toList();
+    final allocations = UsageAllocationService.monthly(
+      readings: readings,
+      from: DateTime(now.year, now.month - 11),
+      to: now,
+    );
+
+    final monthlyData = allocations.map((allocation) {
+      final month = DateTime(allocation.year, allocation.month);
+      return MonthlyUsage(
+        month: DateFormat('MMM').format(month),
+        year: allocation.year,
+        kwh: allocation.kwh,
+        bill: TariffRates.calculate(
+          allocation.kwh,
+          billingMonth: month,
+        ),
+        isEstimated: allocation.isEstimated,
+      );
     }).toList();
-
-    final currentKwh = currentMonthReadings.fold<double>(0, (total, doc) {
-      return total + ((doc.data()['kwh'] as num?)?.toDouble() ?? 0);
-    });
-
-    final monthlyData = _buildMonthlyData(readingsSnap.docs, now);
+    final current = allocations.last;
+    final currentKwh = current.kwh;
     final currentBill = TariffRates.calculate(
       currentKwh,
       billingMonth: now,
@@ -92,48 +100,12 @@ class UsageNotifier extends AsyncNotifier<UsageState>
       currentKwh: currentKwh,
       currentBill: currentBill,
       currentMonthLabel: currentMonthLabel,
+      readingCount: readings.length,
     );
   }
 
   void setFilter(UsageFilter filter) {
     state = state.whenData((s) => s.copyWith(filter: filter));
-  }
-
-  List<MonthlyUsage> _buildMonthlyData(
-    List<QueryDocumentSnapshot> docs,
-    DateTime now,
-  ) {
-    final monthlyKwh = <String, double>{};
-    final formatter = DateFormat('MMM-yyyy');
-
-    for (final doc in docs) {
-      final data = doc.data()! as Map<String, dynamic>;
-      final date = (data['date'] as Timestamp).toDate();
-
-      final key = formatter.format(date);
-      final kwh = (data['kwh'] as num?)?.toDouble() ?? 0;
-      monthlyKwh[key] = (monthlyKwh[key] ?? 0) + kwh;
-    }
-
-    final result = <MonthlyUsage>[];
-    for (var i = 11; i >= 0; i--) {
-      final month = DateTime(now.year, now.month - i);
-      final key = formatter.format(month);
-      final kwh = monthlyKwh[key] ?? 0;
-
-      result.add(
-        MonthlyUsage(
-          month: DateFormat('MMM').format(month),
-          year: month.year,
-          kwh: kwh,
-          bill: TariffRates.calculate(
-            kwh,
-            billingMonth: month,
-          ),
-        ),
-      );
-    }
-    return result;
   }
 
   List<BillRecord> _buildBillHistory(
@@ -151,6 +123,7 @@ class UsageNotifier extends AsyncNotifier<UsageState>
         kwh: (data['kwh'] as num?)?.toDouble() ?? 0,
         amount: (data['amount'] as num?)?.toDouble() ?? 0,
         date: date,
+        isEstimated: data['isEstimated'] as bool? ?? false,
       );
     }).toList();
   }
@@ -214,6 +187,9 @@ class UsageNotifier extends AsyncNotifier<UsageState>
                     : m,
               )
               .toList(),
+          readingCount: (s.readingCount - results[0].docs.length)
+              .clamp(0, s.readingCount)
+              .toInt(),
         ),
       );
     } on FirebaseException catch (e, st) {

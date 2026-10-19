@@ -197,6 +197,16 @@ class _BillHistoryTile extends ConsumerWidget {
                       '${bill.kwh.toStringAsFixed(0)} kWh',
                       style: AppTextStyles.caption,
                     ),
+                    if (bill.isEstimated) ...[
+                      SizedBox(height: 2.h),
+                      Text(
+                        'Estimated',
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.text3,
+                          fontSize: 9.sp,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

@@ -216,7 +216,8 @@ class _BillSummaryCard extends StatelessWidget {
           ),
           SizedBox(height: 4.h),
           Text(
-            '${bill.kwh.toStringAsFixed(0)} kWh · ${bill.monthYear}',
+            '${bill.kwh.toStringAsFixed(0)} kWh · ${bill.monthYear}'
+            '${bill.isEstimated ? ' · Estimated' : ''}',
             style: AppTextStyles.bodySm.copyWith(color: AppColors.text2),
           ),
         ],

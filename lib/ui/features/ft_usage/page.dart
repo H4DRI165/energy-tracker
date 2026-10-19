@@ -24,11 +24,9 @@ class UsagePage extends ConsumerWidget {
             onRetry: () => ref.read(usageProvider.notifier).refresh(),
             message: 'Failed to load usage data',
           ),
-          data: (state) =>
-              state.monthlyData.every((m) => m.kwh == 0) &&
-                  state.billHistory.isEmpty
-              ? _EmptyUsageView()
-              : const _BodyContent(),
+          data: (state) => state.hasUsage
+              ? const _BodyContent()
+              : _EmptyUsageView(readingCount: state.readingCount),
         ),
       ),
     );
@@ -98,8 +96,36 @@ class _BodyContent extends ConsumerWidget {
 }
 
 class _EmptyUsageView extends StatelessWidget {
+  const _EmptyUsageView({required this.readingCount});
+
+  final int readingCount;
+
   @override
   Widget build(BuildContext context) {
+    final isBaseline = readingCount == 1;
+    final hasReadings = readingCount > 0;
+
+    final title = isBaseline
+        ? 'Baseline reading saved'
+        : hasReadings
+        ? 'No usage recorded yet'
+        : 'No usage data yet';
+
+    final message = isBaseline
+        ? 'This is your starting point. Add your next reading to calculate '
+              'the kWh you used and your estimated bill.'
+        : hasReadings
+        ? 'Your readings are saved, but the meter value has not increased '
+              'between them yet. Add a newer reading to see usage.'
+        : 'Add your first meter reading to start'
+              '\ntracking your energy usage.';
+
+    final ctaLabel = isBaseline
+        ? 'Add Next Reading'
+        : hasReadings
+        ? 'Add New Reading'
+        : 'Add First Reading';
+
     return Center(
       child: Padding(
         padding: EdgeInsets.all(AppDimensions.screenPaddingH),
@@ -115,18 +141,46 @@ class _EmptyUsageView extends StatelessWidget {
                 border: Border.all(color: AppColors.borderAccent),
               ),
               child: Center(
-                child: Text('📊', style: TextStyle(fontSize: 32.sp)),
+                child: isBaseline
+                    ? Icon(
+                        Icons.check_rounded,
+                        size: 36.r,
+                        color: AppColors.accent,
+                      )
+                    : Text('📊', style: TextStyle(fontSize: 32.sp)),
               ),
             ),
-            SizedBox(height: 20.h),
+            if (isBaseline) ...[
+              SizedBox(height: 14.h),
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: 10.w,
+                  vertical: 5.h,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.accent.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(20.r),
+                  border: Border.all(color: AppColors.borderAccent),
+                ),
+                child: Text(
+                  '1 OF 2 READINGS · BASELINE',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.accent,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.4,
+                  ),
+                ),
+              ),
+            ],
+            SizedBox(height: isBaseline ? 12.h : 20.h),
             Text(
-              'No usage data yet',
+              title,
+              textAlign: TextAlign.center,
               style: AppTextStyles.titleMd,
             ),
             SizedBox(height: 8.h),
             Text(
-              'Add your first meter reading to start'
-              '\ntracking your energy usage.',
+              message,
               textAlign: TextAlign.center,
               style: AppTextStyles.bodyMd.copyWith(color: AppColors.text2),
             ),
@@ -144,7 +198,7 @@ class _EmptyUsageView extends StatelessWidget {
                   boxShadow: AppColors.btnPrimaryShadow,
                 ),
                 child: Text(
-                  'Add First Reading',
+                  ctaLabel,
                   style: AppTextStyles.button,
                 ),
               ),

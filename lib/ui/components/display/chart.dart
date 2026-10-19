@@ -16,6 +16,7 @@ class BarChartEntry {
     required this.label,
     required this.kwh,
     this.detail,
+    this.isEstimated = false,
     this.isHighlighted = false,
   });
 
@@ -24,6 +25,7 @@ class BarChartEntry {
 
   /// Optional secondary value shown in the tooltip (e.g. the bill amount).
   final String? detail;
+  final bool isEstimated;
   final bool isHighlighted;
 }
 
@@ -161,6 +163,7 @@ class MonthlyUsageChartCard extends ConsumerWidget {
               detail: month.kwh > 0
                   ? 'RM ${month.bill.toStringAsFixed(2)}'
                   : null,
+              isEstimated: month.isEstimated,
               isHighlighted:
                   month.year == currentYear && month.month == currentMonthAbbr,
             ),
@@ -415,14 +418,19 @@ class _UsageBarChartCardState extends State<UsageBarChartCard>
                           curve: Interval(start, 1, curve: Curves.easeOutQuart),
                         );
                         final detail = entry.detail;
+                        final estimated = entry.isEstimated
+                            ? ' (estimated)'
+                            : '';
                         final semanticsLabel =
                             '${entry.label}: '
                             '${entry.kwh.toStringAsFixed(0)} kWh'
-                            '${detail != null ? ', $detail' : ''}';
+                            '${detail != null ? ', $detail' : ''}'
+                            '$estimated';
                         final tooltipMessage =
                             '${entry.label} · '
                             '${entry.kwh.toStringAsFixed(0)} kWh'
-                            '${detail != null ? ' · $detail' : ''}';
+                            '${detail != null ? ' · $detail' : ''}'
+                            '$estimated';
 
                         return Expanded(
                           key: ValueKey(entry.label),
@@ -438,6 +446,7 @@ class _UsageBarChartCardState extends State<UsageBarChartCard>
                                     animation: animation,
                                     heightFraction: heightFraction,
                                     isHighlighted: entry.isHighlighted,
+                                    isEstimated: entry.isEstimated,
                                     kwh: entry.kwh,
                                     maxBarHeight: maxBarHeight,
                                     valueLabelHeight: valueLabelHeight,
@@ -511,7 +520,7 @@ class _UsageBarChartCardState extends State<UsageBarChartCard>
               children: entries.map((entry) {
                 return Expanded(
                   child: Text(
-                    entry.label,
+                    entry.isEstimated ? '${entry.label}*' : entry.label,
                     textAlign: TextAlign.center,
                     style: AppTextStyles.caption.copyWith(
                       fontSize: 10.sp,
@@ -538,6 +547,7 @@ class _SlimBar extends StatelessWidget {
     required this.animation,
     required this.heightFraction,
     required this.isHighlighted,
+    required this.isEstimated,
     required this.kwh,
     required this.maxBarHeight,
     required this.valueLabelHeight,
@@ -547,6 +557,7 @@ class _SlimBar extends StatelessWidget {
   final Animation<double> animation;
   final double heightFraction;
   final bool isHighlighted;
+  final bool isEstimated;
   final double kwh;
   final double maxBarHeight;
   final double valueLabelHeight;
@@ -591,8 +602,17 @@ class _SlimBar extends StatelessWidget {
                 child: Container(
                   decoration: BoxDecoration(
                     color: isHighlighted
-                        ? AppColors.accent
-                        : AppColors.accent.withValues(alpha: 0.22),
+                        ? AppColors.accent.withValues(
+                            alpha: isEstimated ? 0.60 : 1,
+                          )
+                        : AppColors.accent.withValues(
+                            alpha: isEstimated ? 0.10 : 0.22,
+                          ),
+                    border: isEstimated
+                        ? Border.all(
+                            color: AppColors.accent.withValues(alpha: 0.45),
+                          )
+                        : null,
                     borderRadius: BorderRadius.vertical(
                       top: Radius.circular(4.r),
                     ),
