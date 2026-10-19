@@ -16,9 +16,9 @@ class UsageFilterTabs extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(4.r),
+      padding: EdgeInsets.all(2.r),
       decoration: BoxDecoration(
-        color: AppColors.surface2,
+        color: AppColors.surface3,
         borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
       ),
       child: Row(
@@ -40,7 +40,7 @@ class UsageFilterTabs extends StatelessWidget {
                   onTap: () => onChanged(filter),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
-                    padding: EdgeInsets.symmetric(vertical: 8.h),
+                    padding: EdgeInsets.symmetric(vertical: 5.h),
                     decoration: BoxDecoration(
                       color: isSelected ? AppColors.accent : Colors.transparent,
                       borderRadius: BorderRadius.circular(9.r),
