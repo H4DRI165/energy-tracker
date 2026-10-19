@@ -156,6 +156,6 @@ See [BILLING.md §9](BILLING.md#9-when-tnb-changes-rates).
 |---|---|
 | Build fails with missing `firebase_options.dart` | Not generated locally; run `flutterfire configure` |
 | Android build fails signing | Missing `key.properties` / keystore (release only) |
-| Avatar never appears | `photoUrl` vs `photoURL` field mismatch (see `DATA_MODEL.md` #1) |
+| Avatar never appears | Check the deployed Storage rules, the `photoUrl` field, and that the Firebase project's billing account is active (Storage returns 402 when billing is closed) |
 | Notification toggles do nothing | Settings model writes fields the functions don't read (`DATA_MODEL.md` #2) |
-| Estimates don't match a real bill | AFA excluded by default; also check EEI band edge values |
+| Estimates don't match a real bill | Check the AFA month in `tariffs/domestic_general`; also check EEI band edge values |

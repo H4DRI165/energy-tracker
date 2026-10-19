@@ -22,6 +22,12 @@ Storage:
 users/{uid}/profile_<millis>.jpg   # avatar (Firebase Storage)
 ```
 
+Published reference data:
+
+```
+tariffs/domestic_general   # base rates, EEI bands, protection periods, AFA by month
+```
+
 ## 2. `users/{uid}`
 
 | Field | Type | Default / notes | Written by |
@@ -30,7 +36,6 @@ users/{uid}/profile_<millis>.jpg   # avatar (Firebase Storage)
 | `fullName` | string | — | register, edit profile |
 | `email` | string | From FirebaseAuth | register |
 | `tnbAccountNo` | string | 12 digits | register, edit profile |
-| `tariffType` | `"domestic"` \| `"commercial"` | `"domestic"` | register, onboarding, settings |
 | `monthlyBudget` | number | `150` | register, onboarding, settings |
 | `onboardingCompleted` | bool | `false` | register, onboarding |
 | `createdAt` | timestamp | server | register |
@@ -41,7 +46,6 @@ users/{uid}/profile_<millis>.jpg   # avatar (Firebase Storage)
 | `alert100Enabled` | bool | `true` | dashboard notification sheet |
 | `photoUrl` | string | — | edit profile |
 | `photoUpdatedAt` | timestamp | — | edit profile |
-| `photoURL` | null | — | register (legacy/inconsistent — see §5) |
 | `budgetAlertsEnabled` | bool | read as `true` | **settings model only — no writer** |
 | `billRemindersEnabled` | bool | read as `true` | **settings model only — no writer** |
 | `monthlySummaryEnabled` | bool | read as `true` (profile) / `false` (settings) | **no writer** |
@@ -54,8 +58,7 @@ users/{uid}/profile_<millis>.jpg   # avatar (Firebase Storage)
 | `kwh` | number | Delta vs previous reading for that date |
 | `date` | timestamp | Reading date |
 | `notes` | string | Optional user note |
-| `tier` | number | EEI band number (domestic) or tier (commercial) at time of reading |
-| `tariffType` | string | Tariff at creation; preserved for history |
+| `tier` | number | EEI band number at time of reading |
 | `createdAt` | timestamp | Set on create only (preserved on edit) |
 
 > `ReadingRecord.estimatedBill` and `ReadingRecord.tierLabel` exist in the model, but the add/update path does not persist `estimatedBill`. Treat it as effectively unused; no writer exists.
@@ -67,11 +70,9 @@ Doc id is the month key, e.g. `2026-07`.
 | Field | Type | Notes |
 |---|---|---|
 | `kwh` | number | Sum of that month's reading kWh |
-| `amount` | number | `TariffRates.calculate(kwh, tariffType)` |
+| `amount` | number | `TariffRates.calculate(kwh, billingMonth)` |
 | `tier` | number | Tier/band for the month total |
-| `tariffType` | string | Resolved from the latest reading that month |
 | `date` | timestamp | Start of the month |
-| `isPaid` | bool | Toggled from bill detail (updates all docs for the month) |
 | `alertTierSent` | number | `0` \| `80` \| `100`; alert reservation (Cloud Function only) |
 
 Bills are **derived, not authored**: `BillRecalculationService.recalculateMonth` upserts the doc from current readings, and deletes it if the month has no readings.
@@ -91,24 +92,23 @@ Bills are **derived, not authored**: `BillRecalculationService.recalculateMonth`
 Computed on read from readings + profile:
 - Current-month `kwhUsed`, `estimatedBill`, `dailyAvg`, projected bill.
 - Budget status (`normal` / `warning`≥80% / `exceeded`≥100%).
-- EEI band / commercial tier for a running kWh total.
+- EEI band for a running kWh total.
 - 7-day and 12-month usage series.
 
 ## 7. Known issues
 
 | # | Issue | Impact | Suggested fix |
 |---|---|---|---|
-| 1 | `photoURL` (register) vs `photoUrl` (edit/settings) | Avatar reads/writes use different keys; register's null is harmless today but confusing | Standardize on `photoUrl` everywhere |
 | 2 | Notification toggles: functions + sheet use `alert80Enabled`/`alert100Enabled`; settings model reads `budgetAlertsEnabled`/`billRemindersEnabled` | Re-enabling the settings notification section would write fields nothing reads, so toggles would do nothing | Use `alert80Enabled`/`alert100Enabled` in settings, or add a migration |
 | 3 | `monthlySummaryEnabled` default differs (`true` in `UserProfile`, `false` in settings) and has no writer | Dead/contradictory config | Pick one default or remove |
 | 4 | No `schemaVersion` field | Hard to migrate safely later | Add `schemaVersion` on the user doc |
-| 5 | Firestore security rules are not in the repo (`firebase.json` lists only Functions) | Rules live only in the console; unreviewable and unreproducible | Add `firestore.rules` + reference it in `firebase.json` and CI |
+| 5 | Firestore/Storage rules are in the repo but deployment is manual | A stale console ruleset can break tariff reads or avatar loading | Deploy `firestore.rules` and `storage.rules` with every rules change |
 | 6 | `estimatedBill` on readings is modeled but never written | Possible source of confusion | Remove from model or start writing it |
-| 7 | Bills stored per reading-total; deleting all readings deletes the bill | Historical "paid" state is lost with the month | If history matters, soft-delete instead |
+| 7 | Bills stored per reading-total; deleting all readings deletes the bill | Historical bill records are lost with the month | If history matters, soft-delete instead |
 
 ## 8. Indexing notes
 
-Queries filter on `date` with `orderBy('date')` (range + order on the same field) — served by the default single-field index. The monthly reminder queries bills by document id, so no composite index is required. Multi-field filters (e.g. `tariffType` + `date`) require a composite index.
+Queries filter on `date` with `orderBy('date')` (range + order on the same field) — served by the default single-field index. The monthly reminder queries bills by document id, so no composite index is required.
 
 ## 9. Retention & deletion (planned)
 
@@ -121,3 +121,24 @@ Recommended implementation:
 - Commit `firestore.rules` restricting `users/{uid}/**` to the authenticated owner.
 
 When this ships, update the field tables above to include any new `expireAt` field.
+
+## 11. Published tariff data
+
+`tariffs/domestic_general` is read-only reference data published by TNB and maintained by the `syncAfaRates` Cloud Function. It is not user data.
+
+| Field | Type | Notes |
+|---|---|---|
+| `schemaVersion` | number | Must match the app's supported schema |
+| `formulaVersion` | number | Tracks calculation-rule compatibility |
+| `effectiveFrom` / `effectiveTo` | date string | Schedule validity |
+| `energySenPerKwh` / `energyHighSenPerKwh` | number | Energy charge (sen/kWh) |
+| `capacitySenPerKwh` / `networkSenPerKwh` | number | Flat charges (sen/kWh) |
+| `retailRmPerMonth` | number | RM 10 |
+| `kwtbbRate` / `sstRate` | number | Fractions |
+| `baseProtectionThresholdKwh` | number | 600 normally |
+| `protectionPeriods` | array | Temporary thresholds, e.g. 800 kWh Sep–Dec 2026 |
+| `eeiBands` | array | `{maxKwh, senPerKwh}` sorted ascending |
+| `afaByMonth` | map | `YYYY-MM → {senPerKwh, status}` |
+| `source` / `updatedAt` | string / timestamp | Provenance |
+
+The app prefers this document, then `assets/tariff/domestic_general.json`, then `DomesticTariff.fallback`.

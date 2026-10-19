@@ -9,16 +9,14 @@ Domain and technical terms used across the app, docs, and code.
 - **Meter reading** — the cumulative number shown on an electricity meter; never decreases.
 - **kWh used** — the difference between consecutive meter readings; the billable consumption.
 - **Tariff A (Domestic)** — residential tariff category.
-- **Tariff B / Non-Domestic LV** — commercial low-voltage tariff category (shops, offices).
 - **LV** — Low Voltage.
 - **RM** — Malaysian Ringgit; app currency.
 - **sen** — 1/100 of a Ringgit; rates are often quoted in sen/kWh.
-- **AFA (Automatic Fuel Adjustment)** — a fuel-cost adjustment TNB republishes monthly. **Excluded** from the app's estimates by default.
-- **EEI (Energy Efficiency Incentive)** — a per-kWh rebate that shrinks as usage rises. Domestic uses a 17-band table; commercial is flat 11 sen/kWh for ≤200 kWh.
-- **Band** — an EEI rebate bracket (domestic), numbered 1–17; `0` means "no rebate" (usage > 1000 kWh).
-- **Tier** — usage bracket used for the commercial 2-tier structure; also used as a generic badge concept.
+- **AFA (Automatic Fuel Adjustment)** — a fuel-cost adjustment TNB republishes monthly; included automatically from the published schedule.
+- **EEI (Energy Efficiency Incentive)** — a per-kWh rebate that shrinks as usage rises, using a 17-band table.
+- **Band** — an EEI rebate bracket numbered 1–17; `0` means "no rebate" (usage > 1000 kWh).
 - **KWTBB** — Kumpulan Wang Tenaga Boleh Baharu (renewable energy fund levy), 1.6% of certain components.
-- **SST** — Sales and Service Tax (8%), applied to the domestic portion above 600 kWh; not applicable to commercial LV.
+- **SST** — Sales and Service Tax (8%), applied to domestic usage above the protection threshold (600 kWh, or 800 kWh for Sep–Dec 2026).
 - **Net charge** — subtotal after adding all per-kWh charges and subtracting the EEI rebate, before levies.
 
 ## App concepts

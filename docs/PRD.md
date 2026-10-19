@@ -49,7 +49,7 @@ For the **portfolio audience**, the headline is different and should lead with c
 3. **Budget awareness** — show progress toward a monthly budget and alert before/after exceeding it.
 4. **Historical insight** — monthly/yearly usage charts and per-month bill history.
 5. **Appliance-level awareness** — estimate what individual appliances cost per month.
-6. **Trust** — correct handling of edits/deletes (recompute dependent bills) and honest disclaimers (AFA excluded).
+6. **Trust** — correct handling of edits/deletes (recompute dependent bills) and honest estimates using published AFA rates.
 
 ## 5. Non-goals
 
@@ -63,18 +63,16 @@ For the **portfolio audience**, the headline is different and should lead with c
 
 ## 6. Target users
 
-Energy Tracker is portfolio-first. The primary audience is the portfolio reviewer; the target end user is a Malaysian domestic TNB customer. Commercial accounts are supported but are not the focus.
+Energy Tracker is portfolio-first. The primary audience is the portfolio reviewer; the target end user is a Malaysian domestic TNB customer.
 
 | Priority | Persona | Description | What they need |
 |---|---|---|---|
 | **1** | **The portfolio reviewer** | Recruiter / senior engineer / collaborator evaluating the project | Clean architecture, working APK, readable docs, evidence of product thinking |
 | **2** | **The budget-conscious homeowner** | Malaysian household (Tariff A), wants no bill shock | Quick reading log, clear RM estimate, budget alerts |
-| **3** | **The small-business operator** | Shop/office on Non-Domestic LV (Tariff B) | Commercial tariff estimate, usage history |
 
 Design priorities:
 - Optimise the **reviewer experience** (README, docs, APK, code quality, tests) without neglecting real usability.
 - The **homeowner** is the design target for flows and copy.
-- **Commercial** must remain correct but does not need dedicated UX investment.
 
 ## 7. Success metrics
 
@@ -102,12 +100,12 @@ Success is measured in two layers: portfolio outcomes first, product health seco
 Firebase Analytics is already integrated, but only auto events exist. Add a small, deliberate set (privacy-safe, no PII):
 
 ```
-onboarding_completed         { tariff_type }
-reading_logged               { tariff_type, is_edit }
+onboarding_completed         { }
+reading_logged               { is_edit }
 budget_alert_received        { tier: 80|100 }
 budget_alert_opened          { tier }
 bill_marked_paid
-tariff_calculator_used       { tariff_type }
+tariff_calculator_used       { }
 appliance_added              { category }
 profile_updated
 ```
@@ -122,13 +120,13 @@ Guidance:
 ### In scope (v0.5.x)
 
 - Email/password + Google authentication, password reset.
-- First-run onboarding: tariff type + monthly budget.
+- First-run onboarding: monthly budget.
 - Dashboard: estimated bill, budget progress, 7-day chart, saving tips.
 - Meter readings: add / edit / delete, with chain re-computation.
-- Bill detail: itemized breakdown, paid toggle, readings list.
+- Bill detail: itemized breakdown and readings list.
 - Usage: monthly/yearly chart, bill history, delete month.
 - Appliances: CRUD + monthly cost estimate.
-- Settings: profile, tariff, budget, sign out, app version.
+- Settings: profile, budget, sign out, app version.
 - Tariff calculator (standalone).
 - Push notifications: budget threshold (80/100%) + end-of-month reminder.
 - Observability: Crashlytics, Analytics, App Check.
@@ -149,22 +147,22 @@ Guidance:
 
 ## 9. Key user journeys
 
-1. **First run:** splash → landing → sign in/register → onboarding (tariff + budget) → dashboard.
+1. **First run:** splash → landing → sign in/register → onboarding (budget) → dashboard.
 2. **Log a reading:** dashboard/tab → Add Reading → enter reading + date → auto-calc kWh/cost → save → dashboard + usage refresh.
-3. **Understand a bill:** usage → bill history → bill detail → itemized breakdown + readings → mark paid.
+3. **Understand a bill:** usage → bill history → bill detail → itemized breakdown + readings.
 4. **Fix a mistake:** bill detail → swipe a reading → delete/edit → dependent kWh + bills recompute.
 5. **Set budget:** onboarding or settings/dashboard → budget sheet → confirm → alert thresholds active.
-6. **Convert a number:** settings → tariff calculator → enter kWh → see breakdown for either tariff.
+6. **Convert a number:** settings → tariff calculator → enter kWh → see the domestic breakdown.
 
 ## 10. Functional requirements (summary)
 
 Detailed inventory is in [FEATURES.md](FEATURES.md).
 
 - **FR-1 Auth:** users can register (name, email, 12-digit TNB account, password), sign in, sign in with Google, and reset password.
-- **FR-2 Onboarding:** users choose domestic/commercial and set a monthly budget (RM 50–300 in onboarding; RM 50–500 in settings).
+- **FR-2 Onboarding:** users set a monthly budget (RM 50–300 in onboarding; RM 50–500 in settings). The app is domestic-only.
 - **FR-3 Readings:** users log a monotonic meter reading per date; app computes kWh delta vs previous reading and estimated cost.
 - **FR-4 Integrity:** editing/deleting a reading fixes the next reading's kWh and recalculates affected monthly bills.
-- **FR-5 Bills:** the app maintains one bill document per user per month (sum of kWh, amount, tier, tariff).
+- **FR-5 Bills:** the app maintains one bill document per user per month (sum of kWh, amount, tier).
 - **FR-6 Budget:** app tracks budget % used and can alert at 80% and 100%.
 - **FR-7 Usage:** app shows monthly/yearly kWh charts and bill history; deleting a month removes its readings and bill.
 - **FR-8 Appliances:** users manage appliances and see estimated monthly kWh/cost.
@@ -176,22 +174,22 @@ Detailed inventory is in [FEATURES.md](FEATURES.md).
 - Tariff figures reflect **post-1 July 2025** TNB rates and are hard-coded in `lib/constants/tariff_rates.dart`.
 - **AFA** (Automatic Fuel Adjustment) is intentionally **excluded** from estimates because TNB republishes it monthly.
 - Meter readings must be **monotonically increasing** within the chain (a reading cannot be lower than the previous one).
-- A billing month must not mix tariff types.
 - Estimates are labelled as estimates, not official TNB invoices.
-- **Accuracy bar:** the estimate should match a real TNB bill within **±5%**, measured **excluding AFA**, across the validated sample set (300 / 600 / 900 / 1100 / 1600 kWh). See [Accuracy](#accuracy-note) for why AFA matters.
+- **Accuracy bar:** the estimate should match TNB's public bill calculator to the sen for a single-month billing period, across the validated sample set (200 / 601 / 700 / 800 / 900 / 1600 kWh).
 - **Data retention:** raw readings are retained for **12 months**, then deleted. See [§15 Data & Privacy](#15-data--privacy).
 
 ### Accuracy note
 
-The billing formula is deterministic, so excluding AFA the estimate should be **~exactly** right. The real risk to a 95% target is AFA:
+The billing formula is deterministic. AFA is now loaded from the published monthly schedule, so the remaining variance comes from billing-period proration, TNB adjustments and the meter reading:
 
-- AFA is 0 ≤ 600 kWh, but around **2.59 sen/kWh** above 600 kWh (June 2026 example).
-- On a 700 kWh month that is ~RM 18 (~6% of the bill) — enough to blow the ±5% band on its own.
+- AFA is waived at or below the protection threshold (600 kWh, or 800 kWh for Sep–Dec 2026) and varies monthly above it.
+- The schedule is refreshed from Firestore at startup; offline runs use the bundled copy.
+- TNB prorates when a billing cycle spans a threshold change; the app treats a month as whole.
 
 Recommendation:
-1. Define the accuracy bar as **±5% excluding AFA**, and state that prominently in the UI (already partly done via disclaimers).
-2. For high-usage customers, add an optional **"current AFA rate" setting** (the user enters the monthly figure from their TNB bill). This is the most impactful single accuracy improvement.
-3. Add a `tariff_rates_test.dart` case per sample kWh so the bar is enforced by tests, not hopes.
+1. Keep the per-sample golden tests in `tariff_rates_test.dart` as the accuracy bar.
+2. Keep the monthly AFA Cloud Function healthy and monitor for missing months.
+3. Store the schedule/AFA used on each bill if exact historical reproduction becomes a requirement.
 
 ## 12. Release & versioning
 
@@ -216,11 +214,11 @@ Captured 2026-10-02.
 
 | # | Question | Decision |
 |---|---|---|
-| 1 | Primary audience | **Portfolio reviewers first**; target end user is the Malaysian domestic TNB customer. Commercial supported, not a focus. |
+| 1 | Primary audience | **Portfolio reviewers first**; target end user is the Malaysian domestic TNB customer. |
 | 2 | Monetization | **None.** Portfolio piece, free. |
 | 3 | Positioning | **Combined:** "Track, estimate, and understand your TNB bill" (estimator + budget tracker + tariff education). |
 | 4 | Platform priority | **Android only.** iOS/web/desktop are non-goals. |
-| 5 | Accuracy bar | **±5% excluding AFA** on validated samples. Optional "current AFA rate" setting recommended. See §11. |
+| 5 | Accuracy bar | Matches TNB's calculator to the sen for single-month billing. See §11. |
 | 6 | Next WIP features | **In-app notification settings, ToS/Privacy, guest mode.** Bill scanning is out of scope. |
 | 7 | Analytics | Optional; define a small privacy-safe event set (see §7). |
 | 8 | Data & privacy | Retain raw readings **12 months**, then delete. See §15. |

@@ -21,7 +21,7 @@ Jump to: [Auth](#auth) · [Onboarding](#onboarding) · [Dashboard](#dashboard) �
 
 **Details**
 - Email/password via Firebase Auth; Google via `google_sign_in`.
-- Register captures name, email, 12-digit TNB account, password; writes `users/{uid}` with defaults (`tariffType: domestic`, `monthlyBudget: 150`, `onboardingCompleted: false`).
+- Register captures name, email, 12-digit TNB account, password; writes `users/{uid}` with defaults (`monthlyBudget: 150`, `onboardingCompleted: false`).
 - Registration rolls back the Firestore doc and auth user if the profile write fails.
 - Error codes mapped in `lib/ui/components/logging/app_logger.dart:90` (`mapFirebaseAuthError`).
 
@@ -36,16 +36,16 @@ Jump to: [Auth](#auth) · [Onboarding](#onboarding) · [Dashboard](#dashboard) �
 ## Onboarding
 **Status:** Shipped
 
-**What it does:** Three steps — choose tariff type, set monthly budget, summary — then writes `tariffType`, `monthlyBudget`, and `onboardingCompleted: true`.
+**What it does:** Two steps — set the monthly budget and review the summary — then writes `monthlyBudget` and `onboardingCompleted: true`.
 
-**User flow:** Register → Step 1 Tariff → Step 2 Budget → Step 3 Complete → "Start Tracking".
+**User flow:** Register → Step 1 Budget → Step 2 Complete → "Start Tracking".
 
 **Key files**
 - Screen: `lib/ui/features/ft_onboarding/page.dart`
 - State: `ft_onboarding/notifier/onboarding_notifier.dart`, `onboarding_state.dart`
 
 **Details**
-- Tariff options from `TariffType` enum (`domestic` / `commercial`).
+- Domestic tariff only (TNB Tariff A).
 - Budget slider RM 50–300 plus quick presets.
 - Progress header ("1 of 3") and back handling via `PopScope`.
 
@@ -58,14 +58,14 @@ Jump to: [Auth](#auth) · [Onboarding](#onboarding) · [Dashboard](#dashboard) �
 ## Dashboard
 **Status:** Shipped
 
-**What it does:** The home screen. Shows current-month estimated bill, budget progress, 7-day usage chart, EEI band / tariff tier, saving tips, and quick actions.
+**What it does:** The home screen. Shows current-month estimated bill, budget progress, 7-day usage chart, EEI band, saving tips, and quick actions.
 
 **Key files**
 - Screen: `lib/ui/features/ft_dashboard/page.dart`
 - State: `ft_dashboard/notifier/dashboard_notifier.dart`, `dashboard_state.dart`
 - Widgets: `ft_dashboard/widgets/*`
 
-**Data read:** current-month readings, previous-month readings, user profile (name, budget), derived tariff from the latest reading.
+**Data read:** current-month readings, previous-month readings, user profile (name, budget).
 **Derived values:** `kwhUsed`, `estimatedBill`, `dailyAvg`, projected bill, `percentageVsLastMonth`, budget status (normal/warning/exceeded at 80/100%), 7-day usage series.
 
 **Gaps / issues**
@@ -77,7 +77,7 @@ Jump to: [Auth](#auth) · [Onboarding](#onboarding) · [Dashboard](#dashboard) �
 ## Meter readings
 **Status:** Shipped
 
-**What it does:** Add/edit/delete a meter reading for a date. Computes kWh delta vs the previous reading, itemized cost, and the current EEI band / commercial tier.
+**What it does:** Add/edit/delete a meter reading for a date. Computes kWh delta vs the previous reading, itemized cost, and the current EEI band.
 
 **User flow:** Dashboard/tab → Add Reading → pick date → enter reading (kWh) → see auto-calc → save → dashboard + usage refresh.
 
@@ -89,12 +89,10 @@ Jump to: [Auth](#auth) · [Onboarding](#onboarding) · [Dashboard](#dashboard) �
 **Rules**
 - Reading must be > 0 and cannot be lower than the previous reading or higher than the next.
 - Edit mode fixes the date (read-only).
-- A month cannot mix tariff types (`_checkTariffConflict`).
 - Saving recalculates the affected month's bill and the next reading if the chain shifted.
 
 **Gaps / issues**
 - Save button disabled with no explanation (fixed C2).
-- Tariff-conflict error is verbose and has no action (M4).
 
 ---
 
@@ -114,7 +112,6 @@ Jump to: [Auth](#auth) · [Onboarding](#onboarding) · [Dashboard](#dashboard) �
 
 **Gaps / issues**
 - Delete failure copy was misleading (see `ux-review` H4).
-- "Tap to mark as paid" caption but only the small toggle is tappable (M2).
 
 ---
 
@@ -160,12 +157,12 @@ Jump to: [Auth](#auth) · [Onboarding](#onboarding) · [Dashboard](#dashboard) �
 ## Settings
 **Status:** Shipped
 
-**What it does:** Profile card, account section (Edit Profile, Tariff Type, Monthly Budget), Tools (Tariff Calculator), About (version), and Sign Out.
+**What it does:** Profile card, account section (Edit Profile, Monthly Budget), Tools (Tariff Calculator), About (version), and Sign Out.
 
-**Key files:** `lib/ui/features/ft_settings/pg_settings/page.dart`, `widgets/settings_layout.dart`, `widgets/budget_sheet.dart`, `widgets/tariff_type_sheet.dart`, `notifier/settings_notifier.dart`
+**Key files:** `lib/ui/features/ft_settings/pg_settings/page.dart`, `widgets/settings_layout.dart`, `widgets/budget_sheet.dart`, `notifier/settings_notifier.dart`
 
 **Details**
-- Tariff switch and budget change are confirmed via dialogs.
+- Budget changes are confirmed via a dialog.
 - Sign out is confirmed and redirects to login.
 
 **Gaps / issues**
@@ -195,7 +192,7 @@ Jump to: [Auth](#auth) · [Onboarding](#onboarding) · [Dashboard](#dashboard) �
 ## Tariff calculator
 **Status:** Shipped
 
-**What it does:** Standalone calculator: enter kWh, switch between domestic/commercial, see itemized breakdown, total, min-charge and EEI band/tier. Includes tariff reference cards.
+**What it does:** Standalone calculator: enter kWh, see the itemized domestic breakdown, total and EEI band. Includes tariff reference cards.
 
 **Key files:** `lib/ui/features/ft_settings/pg_tariff_calculator/page.dart`, `notifier/tariff_calculator_notifier.dart`
 

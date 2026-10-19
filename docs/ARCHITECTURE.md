@@ -61,13 +61,13 @@ lib/
 ├── app.dart                  # barrel export
 ├── firebase_options.dart     # generated (gitignored in CI, restored from secret)
 ├── constants/tariff_rates.dart
-├── extensions/               # DateTime + TariffType extensions
+├── extensions/               # DateTime extensions
 ├── models/                   # Appliance, BillRecord, ReadingRecord, UserProfile
 ├── services/
 │   ├── auth/                 # AuthService singleton + currentUidProvider
 │   ├── billing/              # ReadingChainService, BillRecalculationService
 │   ├── notification/         # FCM/local notifications + prefs
-│   ├── notifier/             # AppUserNotifier, userProfileProvider, tariffTypeProvider
+│   ├── notifier/             # AppUserNotifier, userProfileProvider
 │   └── observers/            # CrashlyticsProviderObserver
 ├── theme/                    # AppColors, AppDimensions, AppTextStyles, AppTheme
 └── ui/
@@ -85,7 +85,7 @@ Feature slice convention: `pg_<name>/page.dart` (the screen) + `notifier/<name>_
 - **Riverpod** providers, mostly:
   - `AsyncNotifierProvider` for async screen data (`dashboardProvider`, `usageProvider`, `settingsProvider`, `editProfileProvider`).
   - `NotifierProvider` for synchronous/form state (`loginProvider`, `registerProvider`, `addReadingProvider`, `addApplianceProvider`, `billDetailProvider`, `onboardingProvider`).
-  - `Provider` for derived values (`tariffTypeProvider`, `isProfileLoadingProvider`).
+  - `Provider` for derived values (`isProfileLoadingProvider`).
   - `ChangeNotifierProvider` bridging `AppUserNotifier` (`userProfileProvider`).
   - `StreamProvider` for uid (`currentUidProvider`).
 - Screen state classes use a `_unset` sentinel so `copyWith` can distinguish "no change" from "set to null".
@@ -149,7 +149,7 @@ Full domain detail: [BILLING.md](BILLING.md).
 
 ## 12. Known architectural risks / tech debt
 
-1. **Field-name drift** between settings and notification systems (`photoURL` vs `photoUrl`; `budgetAlertsEnabled` vs `alert80Enabled`). See `DATA_MODEL.md`.
+1. **Field-name drift** between settings and notification systems (`budgetAlertsEnabled` vs `alert80Enabled`). See `DATA_MODEL.md`.
 2. **No Firestore security rules in the repo** — `firebase.json` only declares Functions. Rules are not version-controlled here.
 3. **All migration/versioning is implicit** — no schema version field; older docs fall back via `??` defaults.
 4. **Hard-coded tariff constants** — a TNB update requires a code change and release.
