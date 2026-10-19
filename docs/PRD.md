@@ -137,7 +137,6 @@ Guidance:
 
 - In-app notification settings section (currently commented out; prefs live in a dashboard sheet).
 - Terms of Service / Privacy Policy screens (referenced in register, not built).
-- Guest mode (`isGuest` field exists, no flow yet).
 
 **Deliberately out of scope:**
 
@@ -219,7 +218,7 @@ Captured 2026-10-02.
 | 3 | Positioning | **Combined:** "Track, estimate, and understand your TNB bill" (estimator + budget tracker + tariff education). |
 | 4 | Platform priority | **Android only.** iOS/web/desktop are non-goals. |
 | 5 | Accuracy bar | Matches TNB's calculator to the sen for single-month billing. See §11. |
-| 6 | Next WIP features | **In-app notification settings, ToS/Privacy, guest mode.** Bill scanning is out of scope. |
+| 6 | Next WIP features | **In-app notification settings, ToS/Privacy.** Bill scanning is out of scope. |
 | 7 | Analytics | Optional; define a small privacy-safe event set (see §7). |
 | 8 | Data & privacy | Retain raw readings **12 months**, then delete. See §15. |
 
@@ -283,7 +282,7 @@ Ordered so each milestone de-risks the next. (UX details live in [ux-review/](..
 |---|---|---|---|
 | **M0** | Core app | v0.5.7 feature set + Critical UX fixes (C1 raw error, C2 disabled CTAs) | Done |
 | **M1** | Trust & accessibility | ux-review Milestones 1–2 (copy honesty H4–H7, contrast H1, semantics/touch targets H3) | Next |
-| **M2** | WIP features | Notification settings (fix field mismatch first), ToS/Privacy screens, guest mode | Planned |
+| **M2** | WIP features | Notification settings (fix field mismatch first), ToS/Privacy screens | Planned |
 | **M3** | Accuracy | Optional current-AFA-rate setting; per-sample accuracy tests; prominent "excl. AFA" labelling | Planned |
 | **M4** | Privacy & compliance | 12-month retention job, account deletion flow, `firestore.rules`, privacy policy | Planned |
 | **M5** | Polish | Remaining UX consistency/loading/error items; copy centralization | Planned |

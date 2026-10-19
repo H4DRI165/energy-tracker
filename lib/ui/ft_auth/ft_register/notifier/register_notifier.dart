@@ -195,7 +195,6 @@ class RegisterNotifier extends Notifier<RegisterPageState>
         'onboardingCompleted': false,
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
-        'isGuest': false,
       });
       userDocWritten = true;
 

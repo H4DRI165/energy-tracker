@@ -40,7 +40,6 @@ tariffs/domestic_general   # base rates, EEI bands, protection periods, AFA by m
 | `onboardingCompleted` | bool | `false` | register, onboarding |
 | `createdAt` | timestamp | server | register |
 | `updatedAt` | timestamp | server | register, onboarding, settings, edit profile |
-| `isGuest` | bool | `false` | register (no flow yet) |
 | `fcmToken` | string | — | notification service; deleted on logout/account switch |
 | `alert80Enabled` | bool | `true` | dashboard notification sheet |
 | `alert100Enabled` | bool | `true` | dashboard notification sheet |
@@ -49,6 +48,8 @@ tariffs/domestic_general   # base rates, EEI bands, protection periods, AFA by m
 | `budgetAlertsEnabled` | bool | read as `true` | **settings model only — no writer** |
 | `billRemindersEnabled` | bool | read as `true` | **settings model only — no writer** |
 | `monthlySummaryEnabled` | bool | read as `true` (profile) / `false` (settings) | **no writer** |
+
+Authentication is required; there is no guest profile variant.
 
 ## 3. `users/{uid}/readings/{autoId}`
 

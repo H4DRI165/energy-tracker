@@ -4,7 +4,6 @@ class UserProfile {
     required this.monthlyBudget,
     required this.tnbAccountNo,
     required this.monthlySummaryEnabled,
-    required this.isGuest,
     required this.onboardingCompleted,
   });
 
@@ -16,7 +15,6 @@ class UserProfile {
       data['monthlySummaryEnabled'],
       fallback: true,
     ),
-    isGuest: _readBool(data['isGuest']),
     onboardingCompleted: _readBool(data['onboardingCompleted']),
   );
 
@@ -33,7 +31,6 @@ class UserProfile {
   final double monthlyBudget;
   final String tnbAccountNo;
   final bool monthlySummaryEnabled;
-  final bool isGuest;
   final bool onboardingCompleted;
 
   UserProfile copyWith({
@@ -41,7 +38,6 @@ class UserProfile {
     double? monthlyBudget,
     String? tnbAccountNo,
     bool? monthlySummaryEnabled,
-    bool? isGuest,
     bool? onboardingCompleted,
   }) {
     return UserProfile(
@@ -50,7 +46,6 @@ class UserProfile {
       tnbAccountNo: tnbAccountNo ?? this.tnbAccountNo,
       monthlySummaryEnabled:
           monthlySummaryEnabled ?? this.monthlySummaryEnabled,
-      isGuest: isGuest ?? this.isGuest,
       onboardingCompleted: onboardingCompleted ?? this.onboardingCompleted,
     );
   }

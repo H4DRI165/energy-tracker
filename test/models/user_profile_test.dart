@@ -8,7 +8,6 @@ void main() {
       'monthlyBudget': 150,
       'tnbAccountNo': '123456789012',
       'monthlySummaryEnabled': false,
-      'isGuest': false,
       'onboardingCompleted': true,
     });
 
@@ -28,7 +27,6 @@ void main() {
     expect(profile.monthlyBudget, 0);
     expect(profile.tnbAccountNo, '');
     expect(profile.monthlySummaryEnabled, isTrue);
-    expect(profile.isGuest, isFalse);
     expect(profile.onboardingCompleted, isFalse);
   });
 
@@ -38,7 +36,6 @@ void main() {
       monthlyBudget: 100,
       tnbAccountNo: '123',
       monthlySummaryEnabled: true,
-      isGuest: false,
       onboardingCompleted: false,
     );
 

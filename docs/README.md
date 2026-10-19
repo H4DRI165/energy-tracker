@@ -37,4 +37,4 @@ Used in `FEATURES.md`:
 
 ## Current direction
 
-Energy Tracker is an Android-only portfolio project. Positioning: "Track, estimate, and understand your TNB bill." The active milestone is the WIP feature set — in-app notification settings, Terms/Privacy screens, and guest mode. Full detail in [PRD.md](PRD.md) §16 **Roadmap**.
+Energy Tracker is an Android-only portfolio project. Positioning: "Track, estimate, and understand your TNB bill." The active milestone is the WIP feature set — in-app notification settings and Terms/Privacy screens. Full detail in [PRD.md](PRD.md) §16 **Roadmap**.

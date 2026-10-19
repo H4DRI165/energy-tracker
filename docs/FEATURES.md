@@ -21,13 +21,13 @@ Jump to: [Auth](#auth) · [Onboarding](#onboarding) · [Dashboard](#dashboard) �
 
 **Details**
 - Email/password via Firebase Auth; Google via `google_sign_in`.
+- Authentication is required; guest mode is not supported.
 - Register captures name, email, 12-digit TNB account, password; writes `users/{uid}` with defaults (`monthlyBudget: 150`, `onboardingCompleted: false`).
 - Registration rolls back the Firestore doc and auth user if the profile write fails.
 - Error codes mapped in `lib/ui/components/logging/app_logger.dart:90` (`mapFirebaseAuthError`).
 
 **Gaps / issues**
 - Email verification is disabled (`register_notifier.dart:204-205` TODO).
-- No guest mode despite an `isGuest` field.
 - Password policy is inconsistent between hint/checklist and validator (see `ux-review/FINDINGS.md` H5).
 - No autofill/keyboard actions (H2).
 
@@ -240,12 +240,11 @@ Jump to: [Auth](#auth) · [Onboarding](#onboarding) · [Dashboard](#dashboard) �
 
 ## WIP / Planned
 
-Priorities ([PRD.md](PRD.md) §14): **next milestone = notification settings, ToS/Privacy, guest mode**. Bill scanning is explicitly out of scope.
+Priorities ([PRD.md](PRD.md) §14): **next milestone = notification settings, ToS/Privacy**. Bill scanning is explicitly out of scope.
 
 | Feature | Priority | Status | Evidence / note |
 |---|---|---|---|
 | In-app notification settings section | **Next** | WIP / Hidden | Commented block in `pg_settings/page.dart:155-181`. Fix the field mismatch (`DATA_MODEL.md` #2) before enabling |
 | Terms of Service / Privacy Policy | **Next** | Planned | Referenced in register (`ft_register/page.dart:353-363`) and commented in settings; no routes. Pair with the privacy policy in `PRD.md` §15 |
-| Guest mode | **Next** | Planned | `isGuest` written in register; no flow. Needs auth + router changes |
 | Scan TNB bill (camera/AI) | Out of scope | WIP / Hidden | `AppRoutes.scanBill` → `ComingSoonPage`; QuickActions Scan tile commented out (`ft_dashboard/widgets/quick_actions.dart:27-35`) |
 | Email verification | Backlog | WIP / Hidden | Commented in `register_notifier.dart:204-205` |
