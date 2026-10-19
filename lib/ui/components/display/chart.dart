@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:energy_tracker/app.dart';
 import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_usage/notifier/usage_notifier.dart';
+import 'package:energy_tracker/ui/features/ft_usage/widgets/usage_filter_tab.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -54,19 +55,27 @@ class MonthlyUsageChartCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final chartData = ref.watch(
-      usageProvider.select(
-        (asyncState) => asyncState.value?.chartData ?? const [],
-      ),
-    );
+    final state = ref.watch(usageProvider).value;
 
+    if (state == null) {
+      return const SizedBox.shrink();
+    }
+
+    final notifier = ref.read(usageProvider.notifier);
     final currentMonthAbbr = DateFormat('MMM').format(DateTime.now());
     final currentYear = DateTime.now().year;
 
     return UsageBarChartCard(
-      title: 'kWh Usage',
+      title: 'Usage Trend',
       subtitle: 'kWh',
-      entries: chartData
+      trailing: SizedBox(
+        width: 116.w,
+        child: UsageFilterTabs(
+          selected: state.filter,
+          onChanged: notifier.setFilter,
+        ),
+      ),
+      entries: state.chartData
           .map(
             (month) => BarChartEntry(
               label: month.month,
@@ -85,6 +94,7 @@ class UsageBarChartCard extends StatefulWidget {
     required this.title,
     required this.subtitle,
     required this.entries,
+    this.trailing,
     this.chartHeight = 110,
     super.key,
   });
@@ -92,6 +102,9 @@ class UsageBarChartCard extends StatefulWidget {
   final String title;
   final String subtitle;
   final List<BarChartEntry> entries;
+
+  /// Replaces the default legend on the right of the header (e.g. a filter).
+  final Widget? trailing;
   final double chartHeight;
 
   @override
@@ -152,26 +165,30 @@ class _UsageBarChartCardState extends State<UsageBarChartCard>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                widget.title,
-                style: AppTextStyles.bodyMd.copyWith(
-                  fontWeight: FontWeight.w700,
+              Expanded(
+                child: Text(
+                  widget.title,
+                  style: AppTextStyles.bodyMd.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
-              Row(
-                children: [
-                  Container(
-                    width: 8.r,
-                    height: 8.r,
-                    decoration: BoxDecoration(
-                      color: AppColors.accent,
-                      borderRadius: BorderRadius.circular(2.r),
-                    ),
+              SizedBox(width: AppDimensions.s8),
+              widget.trailing ??
+                  Row(
+                    children: [
+                      Container(
+                        width: 8.r,
+                        height: 8.r,
+                        decoration: BoxDecoration(
+                          color: AppColors.accent,
+                          borderRadius: BorderRadius.circular(2.r),
+                        ),
+                      ),
+                      SizedBox(width: 4.w),
+                      Text(widget.subtitle, style: AppTextStyles.caption),
+                    ],
                   ),
-                  SizedBox(width: 4.w),
-                  Text(widget.subtitle, style: AppTextStyles.caption),
-                ],
-              ),
             ],
           ),
           SizedBox(height: 16.h),

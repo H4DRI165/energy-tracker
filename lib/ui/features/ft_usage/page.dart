@@ -16,64 +16,20 @@ class UsagePage extends ConsumerWidget {
     return ColoredBox(
       color: AppColors.bg,
       child: SafeArea(
-        child: Column(
-          children: [
-            _Header(),
-            Expanded(
-              child: state.when(
-                loading: () => const Center(
-                  child: CircularProgressIndicator(color: AppColors.accent),
-                ),
-                error: (e, _) => ErrorView(
-                  onRetry: () => ref.read(usageProvider.notifier).refresh(),
-                  message: 'Failed to load usage data',
-                ),
-                data: (state) =>
-                    state.monthlyData.every((m) => m.kwh == 0) &&
-                        state.billHistory.isEmpty
-                    ? _EmptyUsageView()
-                    : const _BodyContent(),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _Header extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        AppDimensions.screenPaddingH,
-        12.h,
-        AppDimensions.screenPaddingH,
-        16.h,
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text('Usage History', style: AppTextStyles.titleMd),
-          GestureDetector(
-            onTap: () => context.push(AppRoutes.addReading),
-            child: Container(
-              width: 36.r,
-              height: 36.r,
-              decoration: BoxDecoration(
-                color: AppColors.surface2,
-                borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Icon(
-                Icons.add_rounded,
-                size: 20.r,
-                color: AppColors.text2,
-              ),
-            ),
+        child: state.when(
+          loading: () => const Center(
+            child: CircularProgressIndicator(color: AppColors.accent),
           ),
-        ],
+          error: (e, _) => ErrorView(
+            onRetry: () => ref.read(usageProvider.notifier).refresh(),
+            message: 'Failed to load usage data',
+          ),
+          data: (state) =>
+              state.monthlyData.every((m) => m.kwh == 0) &&
+                  state.billHistory.isEmpty
+              ? _EmptyUsageView()
+              : const _BodyContent(),
+        ),
       ),
     );
   }
@@ -90,43 +46,53 @@ class _BodyContent extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    return RefreshIndicator(
-      color: AppColors.accent,
-      backgroundColor: AppColors.surface2,
-      onRefresh: notifier.refresh,
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: EdgeInsets.symmetric(
-          horizontal: AppDimensions.screenPaddingH,
-          vertical: 4.h,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: EdgeInsets.fromLTRB(
+            AppDimensions.screenPaddingH,
+            12.h,
+            AppDimensions.screenPaddingH,
+            0,
+          ),
+          child: UsageSummaryRow(
+            kwh: state.currentKwh,
+            bill: state.currentBill,
+            monthLabel: state.currentMonthLabel,
+          ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            UsageFilterTabs(
-              selected: state.filter,
-              onChanged: notifier.setFilter,
+        SizedBox(height: 10.h),
+        Expanded(
+          child: RefreshIndicator(
+            color: AppColors.accent,
+            backgroundColor: AppColors.surface2,
+            onRefresh: notifier.refresh,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: EdgeInsets.fromLTRB(
+                AppDimensions.screenPaddingH,
+                0,
+                AppDimensions.screenPaddingH,
+                24.h,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  BillBreakdownCard(
+                    items: state.chargeBreakdown,
+                    emptyLabel: 'No usage data for ${state.currentMonthLabel}',
+                  ),
+                  SizedBox(height: 14.h),
+                  const MonthlyUsageChartCard(),
+                  SizedBox(height: 14.h),
+                  BillHistoryList(bills: state.billHistory),
+                ],
+              ),
             ),
-            SizedBox(height: 16.h),
-            UsageSummaryRow(
-              kwh: state.currentKwh,
-              bill: state.currentBill,
-              monthLabel: state.currentMonthLabel,
-              tariffType: state.currentTariffType,
-            ),
-            SizedBox(height: 14.h),
-            const MonthlyUsageChartCard(),
-            SizedBox(height: 14.h),
-            BillBreakdownCard(
-              items: state.chargeBreakdown,
-              emptyLabel: 'No usage data for ${state.currentMonthLabel}',
-            ),
-            SizedBox(height: 14.h),
-            BillHistoryList(bills: state.billHistory),
-            SizedBox(height: 24.h),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 }

@@ -1,5 +1,3 @@
-import 'package:energy_tracker/constants/tariff_rates.dart';
-import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 import 'package:energy_tracker/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -9,47 +7,21 @@ class UsageSummaryRow extends StatelessWidget {
     required this.kwh,
     required this.bill,
     required this.monthLabel,
-    required this.tariffType,
     super.key,
   });
 
   final double kwh;
   final double bill;
   final String monthLabel;
-  final TariffType tariffType;
-
-  bool get _billExcludesAfa => TariffRates.afaApplies(tariffType, kwh);
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Text(
-              monthLabel,
-              style: AppTextStyles.bodySm.copyWith(color: AppColors.text2),
-            ),
-            SizedBox(width: 6.w),
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
-              decoration: BoxDecoration(
-                color: AppColors.surface3,
-                borderRadius: BorderRadius.circular(6.r),
-                border: Border.all(
-                  color: AppColors.text3.withValues(alpha: 0.3),
-                ),
-              ),
-              child: Text(
-                tariffType.shortLabel,
-                style: AppTextStyles.caption.copyWith(
-                  color: AppColors.text2,
-                  fontSize: 9.sp,
-                ),
-              ),
-            ),
-          ],
+        Text(
+          monthLabel,
+          style: AppTextStyles.bodySm.copyWith(color: AppColors.text2),
         ),
         SizedBox(height: 8.h),
         Row(
@@ -67,7 +39,6 @@ class UsageSummaryRow extends StatelessWidget {
               child: _BillStat(
                 bill: bill,
                 monthLabel: monthLabel,
-                excludesAfa: _billExcludesAfa,
               ),
             ),
           ],
@@ -126,12 +97,10 @@ class _BillStat extends StatelessWidget {
   const _BillStat({
     required this.bill,
     required this.monthLabel,
-    required this.excludesAfa,
   });
 
   final double bill;
   final String monthLabel;
-  final bool excludesAfa;
 
   @override
   Widget build(BuildContext context) {
@@ -145,22 +114,7 @@ class _BillStat extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Text('Est. Bill', style: AppTextStyles.caption),
-              if (excludesAfa) ...[
-                SizedBox(width: 4.w),
-                Tooltip(
-                  message: 'AFA not included — published monthly by TNB.',
-                  child: Icon(
-                    Icons.info_outline_rounded,
-                    size: 11.r,
-                    color: AppColors.warn,
-                  ),
-                ),
-              ],
-            ],
-          ),
+          Text('Est. Bill', style: AppTextStyles.caption),
           SizedBox(height: 4.h),
           Text(
             'RM ${bill.toStringAsFixed(2)}',
@@ -168,9 +122,9 @@ class _BillStat extends StatelessWidget {
           ),
           SizedBox(height: 2.h),
           Text(
-            excludesAfa ? 'excl. AFA · $monthLabel' : monthLabel,
+            monthLabel,
             style: AppTextStyles.caption.copyWith(
-              color: excludesAfa ? AppColors.warn : AppColors.text3,
+              color: AppColors.text3,
               fontSize: 10.sp,
             ),
           ),
