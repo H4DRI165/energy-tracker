@@ -55,48 +55,44 @@ class _LoginPageState extends ConsumerState<LoginPage>
   Widget build(BuildContext context) {
     final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
 
-    return GestureDetector(
-      onTap: () => FocusScope.of(context).unfocus(),
-      behavior: HitTestBehavior.opaque,
-      child: Scaffold(
-        backgroundColor: AppColors.bg,
-        resizeToAvoidBottomInset: true,
-        body: SafeArea(
-          child: FadeTransition(
-            opacity: _fadeIn,
-            child: SlideTransition(
-              position: _slideIn,
-              child: Column(
-                children: [
-                  Expanded(
-                    child: SingleChildScrollView(
-                      keyboardDismissBehavior:
-                          ScrollViewKeyboardDismissBehavior.onDrag,
-                      padding: EdgeInsets.symmetric(
-                        horizontal: AppDimensions.screenPaddingH,
-                        vertical: AppDimensions.screenPaddingV,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SizedBox(height: 8.h),
-                          const _Header(),
-                          SizedBox(height: 32.h),
-                          const _BodyContent(),
-                        ],
-                      ),
+    return Scaffold(
+      backgroundColor: AppColors.bg,
+      resizeToAvoidBottomInset: true,
+      body: SafeArea(
+        child: FadeTransition(
+          opacity: _fadeIn,
+          child: SlideTransition(
+            position: _slideIn,
+            child: Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppDimensions.screenPaddingH,
+                      vertical: AppDimensions.screenPaddingV,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(height: 8.h),
+                        const _Header(),
+                        SizedBox(height: 32.h),
+                        const _BodyContent(),
+                      ],
                     ),
                   ),
-                  if (!keyboardOpen)
-                    Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: AppDimensions.screenPaddingH,
-                        vertical: 16.h,
-                      ),
-                      child: const _RegisterAccountRow(),
+                ),
+                if (!keyboardOpen)
+                  Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppDimensions.screenPaddingH,
+                      vertical: 16.h,
                     ),
-                ],
-              ),
+                    child: const _RegisterAccountRow(),
+                  ),
+              ],
             ),
           ),
         ),

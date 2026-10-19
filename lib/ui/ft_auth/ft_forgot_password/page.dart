@@ -53,47 +53,43 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage>
   Widget build(BuildContext context) {
     final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
 
-    return GestureDetector(
-      onTap: () => FocusScope.of(context).unfocus(),
-      behavior: HitTestBehavior.opaque,
-      child: Scaffold(
-        backgroundColor: AppColors.bg,
-        resizeToAvoidBottomInset: true,
-        body: SafeArea(
-          child: FadeTransition(
-            opacity: _fadeIn,
-            child: SlideTransition(
-              position: _slideIn,
-              child: Column(
-                children: [
-                  Expanded(
-                    child: SingleChildScrollView(
-                      keyboardDismissBehavior:
-                          ScrollViewKeyboardDismissBehavior.onDrag,
-                      padding: EdgeInsets.symmetric(
-                        horizontal: AppDimensions.screenPaddingH,
-                        vertical: AppDimensions.screenPaddingV,
-                      ),
-                      child: const Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _Header(),
-                          SizedBox(height: 32),
-                          _BodyContent(),
-                        ],
-                      ),
+    return Scaffold(
+      backgroundColor: AppColors.bg,
+      resizeToAvoidBottomInset: true,
+      body: SafeArea(
+        child: FadeTransition(
+          opacity: _fadeIn,
+          child: SlideTransition(
+            position: _slideIn,
+            child: Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppDimensions.screenPaddingH,
+                      vertical: AppDimensions.screenPaddingV,
+                    ),
+                    child: const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _Header(),
+                        SizedBox(height: 32),
+                        _BodyContent(),
+                      ],
                     ),
                   ),
-                  if (!keyboardOpen)
-                    Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: AppDimensions.screenPaddingH,
-                        vertical: 24,
-                      ),
-                      child: _BackToLoginRow(),
+                ),
+                if (!keyboardOpen)
+                  Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppDimensions.screenPaddingH,
+                      vertical: 24,
                     ),
-                ],
-              ),
+                    child: _BackToLoginRow(),
+                  ),
+              ],
             ),
           ),
         ),

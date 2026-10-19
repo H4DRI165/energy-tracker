@@ -49,6 +49,7 @@ class AppTextFloatingLabelField extends StatelessWidget {
     this.clearable = false,
     this.readonly = false,
     this.padding,
+    this.scrollPadding = const EdgeInsets.all(20),
   });
 
   // ---------------------------------- FIELDS ---------------------------------
@@ -86,6 +87,7 @@ class AppTextFloatingLabelField extends StatelessWidget {
   final bool clearable;
   final bool readonly;
   final EdgeInsets? padding;
+  final EdgeInsets scrollPadding;
 
   // --------------------------------- METHODS ---------------------------------
   @override
@@ -221,6 +223,9 @@ class AppTextFloatingLabelField extends StatelessWidget {
                 obscureText: obscureText,
                 onChanged: onChanged,
                 onSubmitted: onSubmitted,
+                onTapOutside: (_) =>
+                    FocusManager.instance.primaryFocus?.unfocus(),
+                scrollPadding: scrollPadding,
                 inputFormatters: inputFormatters,
                 enabled: enabled,
                 readOnly: readonly,

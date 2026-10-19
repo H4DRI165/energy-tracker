@@ -56,48 +56,44 @@ class _RegisterPageState extends ConsumerState<RegisterPage>
   Widget build(BuildContext context) {
     final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
 
-    return GestureDetector(
-      onTap: () => FocusScope.of(context).unfocus(),
-      behavior: HitTestBehavior.opaque,
-      child: Scaffold(
-        backgroundColor: AppColors.bg,
-        resizeToAvoidBottomInset: true,
-        body: SafeArea(
-          child: FadeTransition(
-            opacity: _fadeIn,
-            child: SlideTransition(
-              position: _slideIn,
-              child: Column(
-                children: [
-                  Expanded(
-                    child: SingleChildScrollView(
-                      keyboardDismissBehavior:
-                          ScrollViewKeyboardDismissBehavior.onDrag,
-                      padding: EdgeInsets.symmetric(
-                        horizontal: AppDimensions.screenPaddingH,
-                        vertical: AppDimensions.screenPaddingV,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SizedBox(height: 24.h),
-                          const _Header(),
-                          SizedBox(height: 32.h),
-                          const _BodyContent(),
-                        ],
-                      ),
+    return Scaffold(
+      backgroundColor: AppColors.bg,
+      resizeToAvoidBottomInset: true,
+      body: SafeArea(
+        child: FadeTransition(
+          opacity: _fadeIn,
+          child: SlideTransition(
+            position: _slideIn,
+            child: Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppDimensions.screenPaddingH,
+                      vertical: AppDimensions.screenPaddingV,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(height: 24.h),
+                        const _Header(),
+                        SizedBox(height: 32.h),
+                        const _BodyContent(),
+                      ],
                     ),
                   ),
-                  if (!keyboardOpen)
-                    Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: AppDimensions.screenPaddingH,
-                        vertical: 24.h,
-                      ),
-                      child: const _LoginAccountRow(),
+                ),
+                if (!keyboardOpen)
+                  Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppDimensions.screenPaddingH,
+                      vertical: 24.h,
                     ),
-                ],
-              ),
+                    child: const _LoginAccountRow(),
+                  ),
+              ],
             ),
           ),
         ),
@@ -150,6 +146,12 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
   final _passwordController = TextEditingController();
   final _confirmedPasswordController = TextEditingController();
 
+  final _fullNameFocusNode = FocusNode();
+  final _emailFocusNode = FocusNode();
+  final _tnbAccountFocusNode = FocusNode();
+  final _passwordFocusNode = FocusNode();
+  final _confirmedPasswordFocusNode = FocusNode();
+
   @override
   void initState() {
     super.initState();
@@ -180,18 +182,25 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
     _tnbAccountController.dispose();
     _passwordController.dispose();
     _confirmedPasswordController.dispose();
+    _fullNameFocusNode.dispose();
+    _emailFocusNode.dispose();
+    _tnbAccountFocusNode.dispose();
+    _passwordFocusNode.dispose();
+    _confirmedPasswordFocusNode.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(registerProvider);
+    final fieldScrollPadding = EdgeInsets.only(bottom: 80.h);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppTextFloatingLabelField(
           controller: _fullNameController,
+          focusNode: _fullNameFocusNode,
           labelText: 'Full Name',
           hintText: 'e.g. Ahmad Faiz bin Ali',
           border: AppFormFieldBorder.roundedOutlined,
@@ -203,6 +212,10 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
           errorText: state.fullNameError,
           clearable: true,
           maxLength: 60,
+          textCapitalization: TextCapitalization.words,
+          textInputAction: TextInputAction.next,
+          onSubmitted: (_) => _emailFocusNode.requestFocus(),
+          scrollPadding: fieldScrollPadding,
           inputFormatters: [
             LengthLimitingTextInputFormatter(60),
             FilteringTextInputFormatter.allow(RegExp(r"[a-zA-Z\s'\-\.]")),
@@ -211,6 +224,7 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
         SizedBox(height: 16.h),
         AppTextFloatingLabelField(
           controller: _emailController,
+          focusNode: _emailFocusNode,
           keyboardType: TextInputType.emailAddress,
           labelText: 'Email Address',
           hintText: 'name@example.com',
@@ -222,10 +236,14 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
           ),
           errorText: state.emailError,
           clearable: true,
+          textInputAction: TextInputAction.next,
+          onSubmitted: (_) => _tnbAccountFocusNode.requestFocus(),
+          scrollPadding: fieldScrollPadding,
         ),
         SizedBox(height: 16.h),
         AppTextFloatingLabelField(
           controller: _tnbAccountController,
+          focusNode: _tnbAccountFocusNode,
           keyboardType: TextInputType.number,
           labelText: 'TNB Account No.',
           hintText: 'e.g. 123456789012',
@@ -238,6 +256,9 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
           errorText: state.tnbAccountError,
           clearable: true,
           maxLength: 12,
+          textInputAction: TextInputAction.next,
+          onSubmitted: (_) => _passwordFocusNode.requestFocus(),
+          scrollPadding: fieldScrollPadding,
           inputFormatters: [
             FilteringTextInputFormatter.digitsOnly,
             LengthLimitingTextInputFormatter(12),
@@ -246,6 +267,7 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
         SizedBox(height: 16.h),
         AppTextFloatingLabelField(
           controller: _passwordController,
+          focusNode: _passwordFocusNode,
           labelText: 'Password',
           hintText: 'At least 8 characters, with a number',
           border: AppFormFieldBorder.roundedOutlined,
@@ -256,6 +278,9 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
           ),
           errorText: state.passwordError,
           obscureText: state.obscurePassword,
+          textInputAction: TextInputAction.next,
+          onSubmitted: (_) => _confirmedPasswordFocusNode.requestFocus(),
+          scrollPadding: fieldScrollPadding,
           suffixIcon: IconButton(
             onPressed: ref
                 .read(registerProvider.notifier)
@@ -281,6 +306,7 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
         SizedBox(height: 16.h),
         AppTextFloatingLabelField(
           controller: _confirmedPasswordController,
+          focusNode: _confirmedPasswordFocusNode,
           labelText: 'Confirm Password',
           border: AppFormFieldBorder.roundedOutlined,
           prefixIcon: Icon(
@@ -290,6 +316,9 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
           ),
           errorText: state.confirmedPasswordError,
           obscureText: state.obscureConfirmedPassword,
+          textInputAction: TextInputAction.done,
+          onSubmitted: (_) => _confirmedPasswordFocusNode.unfocus(),
+          scrollPadding: fieldScrollPadding,
           suffixIcon: IconButton(
             onPressed: ref
                 .read(registerProvider.notifier)
