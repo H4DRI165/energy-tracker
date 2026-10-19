@@ -112,7 +112,7 @@ Navigation is a `StatefulShellRoute.indexedStack` with four branches (Dashboard,
 
 - Reads happen in notifiers via Firestore queries scoped to `users/{uid}/…`.
 - Writes that must stay consistent use **`WriteBatch`** (reading delete + chain fix) or **transactions** (budget-alert reservation in the Cloud Function).
-- Bills are **denormalized**: one `bills/{YYYY-MM}` doc per month, recomputed by `BillRecalculationService.recalculateMonth` whenever readings change.
+- Bills are **denormalized**: one `bills/{YYYY-MM}` doc per month, recomputed by `BillRecalculationService.recalculateRange` whenever readings change; reading intervals are allocated across the months they cover.
 - Tariff is resolved from the **most recent reading** of the month, falling back to the live profile tariff.
 
 See [DATA_MODEL.md](DATA_MODEL.md) and [BILLING.md](BILLING.md).

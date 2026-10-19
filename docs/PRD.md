@@ -160,7 +160,7 @@ Detailed inventory is in [FEATURES.md](FEATURES.md).
 - **FR-1 Auth:** users can register (name, email, 12-digit TNB account, password), sign in, sign in with Google, and reset password.
 - **FR-2 Onboarding:** users set a monthly budget (RM 50–300 in onboarding; RM 50–500 in settings). The app is domestic-only.
 - **FR-3 Readings:** users log a monotonic meter reading per date; app computes kWh delta vs previous reading and estimated cost.
-- **FR-4 Integrity:** editing/deleting a reading fixes the next reading's kWh and recalculates affected monthly bills.
+- **FR-4 Integrity:** editing/deleting a reading fixes the next reading's kWh/interval and recalculates every month touched by the intervals. Long gaps are split across months and marked as estimated.
 - **FR-5 Bills:** the app maintains one bill document per user per month (sum of kWh, amount, tier).
 - **FR-6 Budget:** app tracks budget % used and can alert at 80% and 100%.
 - **FR-7 Usage:** app shows monthly/yearly kWh charts and bill history; deleting a month removes its readings and bill.

@@ -89,7 +89,9 @@ Jump to: [Auth](#auth) · [Onboarding](#onboarding) · [Dashboard](#dashboard) �
 **Rules**
 - Reading must be > 0 and cannot be lower than the previous reading or higher than the next.
 - Edit mode fixes the date (read-only).
-- Saving recalculates the affected month's bill and the next reading if the chain shifted.
+- Saving recalculates every month touched by the reading intervals and the next reading if the chain shifted.
+- Long gaps are split across the covered months and flagged as estimated; the add screen warns before saving.
+- The first reading is a baseline: the add screen explains this, and the success snackbar prompts for a second reading.
 
 **Gaps / issues**
 - Save button disabled with no explanation (fixed C2).
@@ -127,6 +129,7 @@ Jump to: [Auth](#auth) · [Onboarding](#onboarding) · [Dashboard](#dashboard) �
 
 **Details**
 - Empty state with "Add First Reading" CTA.
+- After only a baseline reading exists, the empty state changes to "Baseline reading saved / 1 of 2 readings" and prompts for the next reading, so a zero-usage screen is not mistaken for a broken refresh.
 - Deleting a bill month removes all its readings + bill docs in a batch.
 - AFA disclaimer shown for applicable tariffs.
 

@@ -73,26 +73,59 @@ EEI band lookup (`eeiBands`): 17 bands from `≤200 kWh → 25.0 sen` down to `�
 - The AFA line appears in the bill breakdown only when it is chargeable and non-zero.
 - Forecast values (future months) are marked `status: forecast` in the schedule.
 
-## 5. Reading chain
+## 5. Reading intervals
 
-Handled by `lib/services/billing/reading_chain_service.dart`.
+A reading is not a monthly total. It is an interval delta:
 
-- Readings form a global, date-ordered chain across **all** months.
-- `findPrevious` / `findNext` return true neighbors from Firestore (not just in-memory).
-- When a reading is inserted/edited/deleted, the **next** reading's `kwh` must be recomputed as `next.reading - previous.reading`.
-- If a deleted/replaced reading was the baseline, the next reading becomes the new baseline (`kwh = 0`).
-- Invariant enforced: `next.reading >= previous.reading`, else `StateError`.
-- `tier` is recomputed with `TariffRates.getTier(newKwh)` (the EEI band).
+```
+periodStart = previous reading date (or null for the first reading)
+periodEnd   = this reading date
+kwh         = meter reading − previous meter reading
+```
 
-## 6. Bill recalculation
+`lib/services/billing/usage_allocation_service.dart` spreads each interval
+across the calendar months it overlaps, proportional to days:
 
-Handled by `lib/services/billing/bill_recalculation_service.dart`.
+```
+monthKwh = intervalKwh × overlapDays / intervalDays
+```
+
+This matters when a reading is taken near a month boundary, and especially
+when readings were missed. A six-month gap is distributed across those six
+months instead of being charged entirely to the month the reading was entered.
+
+- Intervals longer than **35 days** are marked `isEstimated`.
+- Months containing an estimated share are marked in the chart (`*` label,
+  outlined bar) and in the bill detail.
+- Legacy readings without `periodStart` use the previous reading date.
+- The first reading is a baseline (`kwh = 0`); a legacy first reading with a
+  non-zero delta stays in its own month.
+- Same-day readings attribute their delta to that day/month. The latest daily
+  interval includes its end day, so "Today" is not left at 0.
+- The add-reading screen warns before saving a gap and offers to split it
+  (monthly backfill is the recommended follow-up for exact bills).
+
+## 6. Reading chain and bill recalculation
+
+Readings form a global, date-ordered chain across all months. When a reading is
+inserted/edited/deleted:
+
+- The next reading's `kwh` is recomputed as `next.reading − previous.reading`.
+- Its `periodStart` is updated to the new previous reading date.
+- If a deleted/replaced reading was the baseline, the next reading becomes the
+  new baseline (`kwh = 0`, `periodStart` cleared).
+- Invariant: `next.reading >= previous.reading`, else `StateError`.
+
+Bills:
 
 - One bill doc per month at `users/{uid}/bills/{YYYY-MM}`.
-- `recalculateMonth` sums all readings in the month and upserts `kwh`, `amount`, `tier`, `date`.
-- If the month has **no readings**, the bill doc is **deleted**.
-- Called after add/update/delete of a reading, and for the neighboring month if a chain fix crosses a month boundary.
+- `recalculateRange` loads all readings, allocates intervals, and upserts every
+  affected month's `kwh`, `amount`, `tier`, `isEstimated`, `date`.
+- Add/edit/delete recalculates every month touched by the previous interval and
+  the next interval, not just the reading's own month.
+- If a month has no allocated usage, its bill doc is deleted.
 - `alertTierSent` is preserved via `SetOptions(merge: true)`.
+- `recalculateAll(uid)` rebuilds the full bill history; run it once when migrating existing data to interval allocation.
 
 ## 7. Worked examples
 

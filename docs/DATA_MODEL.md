@@ -59,7 +59,8 @@ Authentication is required; there is no guest profile variant.
 | `kwh` | number | Delta vs previous reading for that date |
 | `date` | timestamp | Reading date |
 | `notes` | string | Optional user note |
-| `tier` | number | EEI band number at time of reading |
+| `tier` | number | EEI band at time of reading (display only) |
+| `periodStart` | timestamp | Previous reading date; start of this interval (null for baseline) |
 | `createdAt` | timestamp | Set on create only (preserved on edit) |
 
 > `ReadingRecord.estimatedBill` and `ReadingRecord.tierLabel` exist in the model, but the add/update path does not persist `estimatedBill`. Treat it as effectively unused; no writer exists.
@@ -73,10 +74,11 @@ Doc id is the month key, e.g. `2026-07`.
 | `kwh` | number | Sum of that month's reading kWh |
 | `amount` | number | `TariffRates.calculate(kwh, billingMonth)` |
 | `tier` | number | Tier/band for the month total |
+| `isEstimated` | bool | True when the month includes a long-interval estimate |
 | `date` | timestamp | Start of the month |
 | `alertTierSent` | number | `0` \| `80` \| `100`; alert reservation (Cloud Function only) |
 
-Bills are **derived, not authored**: `BillRecalculationService.recalculateMonth` upserts the doc from current readings, and deletes it if the month has no readings.
+Bills are **derived, not authored**: `BillRecalculationService.recalculateRange` allocates reading intervals across the months they cover, upserts each month's doc, and deletes it if the month has no allocated usage.
 
 ## 5. `users/{uid}/appliances/{autoId}`
 
