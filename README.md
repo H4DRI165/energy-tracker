@@ -4,6 +4,33 @@ A Flutter app for Malaysian domestic TNB customers. Log meter readings, see wher
 
 > Detailed product, architecture, billing, data, and development documentation lives in [`docs/`](docs/README.md).
 
+## 📦 Live APK (Download & Test)
+
+Latest build is automatically generated via GitHub Actions:
+
+👉 View latest release: https://github.com/H4DRI165/energy-tracker/releases/latest
+
+Built for portfolio demonstration — install and test without any setup required.
+
+### Demo account
+
+Use email sign-in with the demo account:
+
+```text
+Email:    demo@test.gmail.com
+Password: Demo123@
+```
+
+Google sign-in uses your own Google account.
+
+## Screenshots
+
+<p align="center">
+  <img src="docs/screenshots/dashboard_page.jpg" width="240" alt="Dashboard with usage, budget and bill summary" />
+  <img src="docs/screenshots/usage_page.jpg" width="240" alt="Usage trends and recent bills" />
+  <img src="docs/screenshots/devices_page.jpg" width="240" alt="Appliance cost estimates" />
+</p>
+
 ## Features
 
 - **Meter readings** — manual readings with automatic kWh deltas and chain-safe edit/delete.
@@ -17,18 +44,38 @@ A Flutter app for Malaysian domestic TNB customers. Log meter readings, see wher
 - **Light / dark mode** — persisted preference with a smooth theme transition.
 - **Offline-aware writes** — clear connection errors instead of endless loading.
 
-## Tariff scope
+## Domestic tariff
 
-Domestic TNB tariff only. The calculation includes Energy, Capacity, Network, Retail, EEI, KWTBB, SST and monthly AFA where applicable. It does not model commercial tariffs, net metering, or bill payment.
+Domestic TNB tariff only. The estimate includes every applicable charge and
+does not model commercial tariffs, net metering, or bill payment.
+
+| Component | Rate / rule |
+|---|---|
+| Energy | 27.03 sen/kWh up to 1,500 kWh; 37.03 sen/kWh above 1,500 kWh |
+| Capacity | 4.55 sen/kWh |
+| Network | 12.85 sen/kWh |
+| Retail | RM 10/month above the protection threshold |
+| EEI | 0.5–25 sen/kWh rebate, based on whole-month usage |
+| AFA | Published monthly; applies above the protection threshold |
+| KWTBB | 1.6% of eligible charges above 300 kWh |
+| SST | 8% on the taxable slice above the protection threshold |
+
+**Protection threshold:** 600 kWh, or 800 kWh from September to December 2026.
+
+> AFA is included automatically from the published monthly tariff schedule.
+> Energy Tracker is an estimator, not an official TNB invoice.
 
 ## Tech stack
 
 | Layer | Technology |
 |---|---|
 | App | Flutter / Dart, Riverpod, go_router |
-| Backend | Firebase Auth, Cloud Firestore, Cloud Functions, FCM |
+| Backend | Firebase Auth, Cloud Firestore, Cloud Functions |
+| Push notifications | Firebase Cloud Messaging, flutter_local_notifications |
+| Storage | Firebase Storage |
 | Reporting | Firebase Crashlytics |
 | Integrity | Firebase App Check |
+| CI/CD | GitHub Actions |
 | UI | flutter_screenutil, Google Fonts (bundled locally) |
 
 ## Run locally
