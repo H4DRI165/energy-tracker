@@ -116,13 +116,11 @@ class NotificationService {
   }
 
   void _listenNotificationTaps() {
-    // App was backgrounded, user tapped the notification to return
     FirebaseMessaging.onMessageOpenedApp.listen((message) {
       debugPrint('Notification opened app: ${message.messageId}');
       _handleNotificationTap(message.data['type'] as String?);
     });
 
-    // App was fully terminated, user tapped notification to launch it
     unawaited(
       _fcm.getInitialMessage().then((message) {
         if (message != null) {
@@ -131,6 +129,16 @@ class NotificationService {
         }
       }),
     );
+  }
+
+  /// Saves the current token once the user profile exists. Called after
+  /// onboarding creates the profile for a brand-new Google account.
+  Future<void> syncToken() async {
+    try {
+      await _saveTokenToFirestore();
+    } on Object catch (error) {
+      debugPrint('Failed to sync FCM token: $error');
+    }
   }
 
   Future<void> _saveTokenToFirestore() async {
@@ -144,9 +152,18 @@ class NotificationService {
   Future<void> _updateTokenInFirestore(String token) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
-    await FirebaseFirestore.instance.collection('users').doc(uid).set(
-      {'fcmToken': token},
-      SetOptions(merge: true),
-    );
+
+    final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
+    try {
+      // A Google account has no Firestore profile until onboarding finishes.
+      // Writing only fcmToken with merge:true would be a create and would be
+      // rejected by the user-document rules.
+      final profile = await userRef.get();
+      if (!profile.exists) return;
+
+      await userRef.set({'fcmToken': token}, SetOptions(merge: true));
+    } on FirebaseException catch (e) {
+      debugPrint('Failed to save FCM token: ${e.code}');
+    }
   }
 }

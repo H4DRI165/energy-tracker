@@ -1,6 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/constants/tariff_rates.dart';
-import 'package:energy_tracker/extensions/tariff_type_extension.dart';
+
+/// The estimate range shown in the UI. Usage is rarely exactly the same every
+/// day, so costs are presented as a range around the user's typical hours.
+const double kApplianceEstimateLowFactor = 0.5;
+const double kApplianceEstimateHighFactor = 1.5;
 
 class Appliance {
   const Appliance({
@@ -49,13 +53,32 @@ class Appliance {
   double get monthlyKwh => (wattage / 1000) * dailyHours * 30;
   double get dailyKwh => (wattage / 1000) * dailyHours;
 
-  double monthlyCost(TariffType tariffType) =>
-      TariffRates.marginalCost(monthlyKwh, tariffType);
+  double monthlyKwhAt(double hours) => (wattage / 1000) * hours * 30;
 
-  double dailyCost(TariffType tariffType) =>
-      TariffRates.marginalCost(dailyKwh, tariffType);
+  double monthlyCost() => TariffRates.marginalCost(monthlyKwh);
 
-  String get categoryEmoji {
+  double monthlyCostAt(double hours) =>
+      TariffRates.marginalCost(monthlyKwhAt(hours));
+
+  double dailyCost() => TariffRates.marginalCost(dailyKwh);
+
+  /// Marginal cost of running this appliance for one hour.
+  double get hourlyCost => TariffRates.marginalCost(wattage / 1000);
+
+  double get estimatedLowMonthlyCost =>
+      monthlyCostAt(dailyHours * kApplianceEstimateLowFactor);
+
+  double get estimatedHighMonthlyCost =>
+      monthlyCostAt(dailyHours * kApplianceEstimateHighFactor);
+
+  double get estimatedLowDailyHours => dailyHours * kApplianceEstimateLowFactor;
+
+  double get estimatedHighDailyHours =>
+      dailyHours * kApplianceEstimateHighFactor;
+
+  String get categoryEmoji => emojiForCategory(category);
+
+  static String emojiForCategory(String category) {
     switch (category) {
       case 'Cooling':
         return '❄️';

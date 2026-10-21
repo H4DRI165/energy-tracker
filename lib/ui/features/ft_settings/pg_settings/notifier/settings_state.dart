@@ -4,12 +4,10 @@ class SettingsPageState {
     this.fullName = '',
     this.email = '',
     this.tnbAccountNo = '',
-    this.tariffType = 'domestic',
     this.monthlyBudget = 150.0,
     this.budgetAlertsEnabled = true,
     this.billRemindersEnabled = true,
     this.monthlySummaryEnabled = false,
-    this.isDarkMode = true,
     this.isSigningOut = false,
     this.errorMessage,
     this.photoUrl,
@@ -20,12 +18,10 @@ class SettingsPageState {
   final String fullName;
   final String email;
   final String tnbAccountNo;
-  final String tariffType;
   final double monthlyBudget;
   final bool budgetAlertsEnabled;
   final bool billRemindersEnabled;
   final bool monthlySummaryEnabled;
-  final bool isDarkMode;
   final bool isSigningOut;
   final String? errorMessage;
   final String? photoUrl;
@@ -63,15 +59,6 @@ class SettingsPageState {
     return '?';
   }
 
-  String get tariffLabel {
-    switch (tariffType) {
-      case 'commercial':
-        return 'Commercial';
-      default:
-        return 'Domestic';
-    }
-  }
-
   String get formattedBudget => 'RM ${monthlyBudget.toStringAsFixed(0)}';
 
   SettingsPageState copyWith({
@@ -79,12 +66,10 @@ class SettingsPageState {
     String? fullName,
     String? email,
     String? tnbAccountNo,
-    String? tariffType,
     double? monthlyBudget,
     bool? budgetAlertsEnabled,
     bool? billRemindersEnabled,
     bool? monthlySummaryEnabled,
-    bool? isDarkMode,
     bool? isSigningOut,
     Object? errorMessage = _unset,
     Object? photoUrl = _unset,
@@ -95,13 +80,11 @@ class SettingsPageState {
       fullName: fullName ?? this.fullName,
       email: email ?? this.email,
       tnbAccountNo: tnbAccountNo ?? this.tnbAccountNo,
-      tariffType: tariffType ?? this.tariffType,
       monthlyBudget: monthlyBudget ?? this.monthlyBudget,
       budgetAlertsEnabled: budgetAlertsEnabled ?? this.budgetAlertsEnabled,
       billRemindersEnabled: billRemindersEnabled ?? this.billRemindersEnabled,
       monthlySummaryEnabled:
           monthlySummaryEnabled ?? this.monthlySummaryEnabled,
-      isDarkMode: isDarkMode ?? this.isDarkMode,
       isSigningOut: isSigningOut ?? this.isSigningOut,
       errorMessage: identical(errorMessage, _unset)
           ? this.errorMessage

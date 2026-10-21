@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 import 'package:energy_tracker/services/billing/reading_chain_service.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -26,7 +25,6 @@ void main() {
     date: DateTime(2026, 7, 15),
     notes: 'July reading',
     estimatedBill: 0,
-    tariffType: TariffType.commercial,
   );
 
   test('calculates usage and tier using the previous meter value', () {
@@ -35,14 +33,13 @@ void main() {
     expect(result.readingId, 'reading-2');
     expect(result.newKwh, 200);
     expect(result.newTier, 1);
-    expect(result.tariffType, TariffType.commercial);
   });
 
   test('creates a zero-usage baseline when there is no previous reading', () {
     final result = service.computeFix(nextReading(), null);
 
     expect(result.newKwh, 0);
-    expect(result.newTier, 1);
+    expect(result.newTier, 0);
   });
 
   test('rejects a next reading lower than its previous reading', () {

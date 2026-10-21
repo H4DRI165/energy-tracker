@@ -1,161 +1,117 @@
-# Billing & Tariff Domain
+# Billing and Tariff
 
 - **Status:** Current
-- **Source of truth in code:** `lib/constants/tariff_rates.dart`
-- **Rates version:** post-1 July 2025 TNB restructuring
+- **Code:** `lib/constants/tariff_rates.dart`, `lib/services/billing/*`
+- **Tariff:** TNB Domestic General, effective 1 July 2025
 
-> Estimates exclude **AFA** by default. The app is an estimator, not the official TNB invoice.
+Energy Tracker is an estimator, not an official TNB invoice.
 
-## 1. Core concepts
+## 1. Bill components
 
-- **Meter reading** — the raw cumulative number on the meter (never decreases).
-- **kWh used** — the delta between a reading and the previous reading. This is what gets billed.
-- **Tariff type** — `domestic` (Tariff A) or `commercial` (Non-Domestic LV, Tariff B).
-- **EEI** — Energy Efficiency Incentive, a per-kWh rebate (domestic only uses a band table; commercial has a flat ≤200 kWh rebate).
-- **Tier / Band** — usage bracket used for badges and color. Domestic now uses EEI bands (`EeiBand`), commercial keeps the old 2-tier int.
+| Component | Rate / rule |
+|---|---|
+| Energy | 27.03 sen/kWh up to 1,500 kWh; 37.03 sen/kWh above 1,500 kWh applied to all kWh |
+| Capacity | 4.55 sen/kWh |
+| Network | 12.85 sen/kWh |
+| Retail | RM 10/month, only above the protection threshold |
+| AFA | Published monthly; only above the protection threshold |
+| EEI | Rebate from the 17-band table; applies to the whole month’s kWh |
+| KWTBB | 1.6% of Energy + Capacity + Network − EEI; only above 300 kWh |
+| SST | 8% of the taxable slice above the protection threshold |
 
-## 2. Domestic (Tariff A)
+**Protection threshold:** 600 kWh normally, 800 kWh from September to December
+2026.
 
-Rates (RM per kWh unless noted):
+## 2. Calculation
 
-| Component | Rate | Condition |
-|---|---|---|
-| Energy | 0.2703 | total ≤ 1500 kWh |
-| Energy | 0.3703 | total > 1500 kWh (applies to **all** kWh) |
-| Capacity | 0.0455 | always |
-| Network | 0.1285 | always |
-| Retail | RM 10 | only when total > 600 kWh |
-| AFA | published monthly | 0 by default; applies when total > 600 kWh |
-| EEI rebate | 0.5–25 sen/kWh | lookup table, applies to **all** kWh; 0 above 1000 kWh |
-| KWTBB | 1.6% of (Energy + Capacity + Network − EEI) | only when total > 300 kWh |
-| SST | 8% of the net subtotal attributable to kWh above 600 | only when total > 600 kWh |
+```text
+threshold  = 600 or 800 kWh for the billing month
+taxable    = max(0, kwh - threshold)
+nonTaxable = kwh - taxable
 
-Formula (`_domesticCharges`, `tariff_rates.dart:288-314`):
-
-```
-energy   = kwh * (kwh > 1500 ? 0.3703 : 0.2703)
-afa      = kwh > 600 ? kwh * afaRate : 0
-capacity = kwh * 0.0455
-network  = kwh * 0.1285
-retail   = kwh > 600 ? 10 : 0
-eei      = kwh * (eeiSen(kwh) / 100)
-net      = energy + afa + capacity + network + retail - eei
-kwtbb    = kwh > 300 ? (energy + capacity + network - eei) * 0.016 : 0
-sst      = kwh > 600 ? net * ((kwh - 600) / kwh) * 0.08 : 0
-total    = net + kwtbb + sst
+energy     = round(nonTaxable × energyRate) + round(taxable × energyRate)
+capacity   = round(nonTaxable × 0.0455) + round(taxable × 0.0455)
+network    = round(nonTaxable × 0.1285) + round(taxable × 0.1285)
+retail     = taxable > 0 ? 10 : 0
+afa        = taxable > 0 ? kwh × publishedAfaRate : 0
+eei        = kwh × currentEeiRate
+net        = energy + capacity + network + retail + afa - eei
+kwtbb      = kwh > 300 ? (energy + capacity + network - eei) × 0.016 : 0
+sst        = taxable > 0 ? taxable-slice value × 0.08 : 0
+total      = net + kwtbb + sst
 ```
 
-EEI band lookup (`_eeiBands`, `tariff_rates.dart:240-258`): 17 bands from `≤200 kWh → 25.0 sen` down to `≤1000 kWh → 0.5 sen`, then no rebate above 1000 kWh. The rebate is applied to the **entire month's kWh**, not incrementally.
+Values are rounded to sen using the same half-away-from-zero behaviour as TNB.
+The calculation mirrors TNB’s threshold split so the estimate matches its
+calculator to the sen.
 
-## 3. Commercial LV (Tariff B)
+## 3. EEI bands
 
-Rates:
+The EEI rate is selected from whole-month kWh and applied to every kWh, not just
+the marginal portion. Bands run from 25 sen/kWh at ≤200 kWh down to 0.5
+sen/kWh at ≤1,000 kWh. Above 1,000 kWh there is no rebate.
 
-| Component | Rate | Condition |
-|---|---|---|
-| Energy | 0.2703 | flat (no 1500 kWh crossover) |
-| Capacity | 0.0883 | always |
-| Network | 0.1482 | always |
-| Retail | RM 20 | always |
-| AFA | published monthly | excluded by default |
-| EEI rebate | 11 sen/kWh | only when total ≤ 200 kWh |
-| KWTBB | 1.6% of (Energy + Capacity + Network − EEI) | always (no threshold) |
-| SST | not applicable | — |
+## 4. Breakdown display
 
-Formula (`_commercialCharges`, `tariff_rates.dart:567-589`):
+`TariffRates.domesticBreakdown` is shared by Usage, Bill Detail and the Tariff
+Calculator. It deliberately returns every TNB calculator row, including zero
+rows:
 
-```
-energy   = kwh * 0.2703
-afa      = kwh * afaRate
-capacity = kwh * 0.0883
-network  = kwh * 0.1482
-eei      = kwh <= 200 ? kwh * 0.11 : 0
-net      = energy + afa + capacity + network + 20 - eei
-kwtbb    = (energy + capacity + network - eei) * 0.016
-total    = net + kwtbb
-```
+- Energy
+- Forecast AFA for the current month
+- Forecast AFA for the next month (reference only, amount RM 0.00)
+- Capacity
+- Network
+- Retail
+- Energy Efficiency Incentive
+- Service Tax (ST) (8%)
+- KWTBB (1.6%)
 
-## 4. AFA (Automatic Fuel Adjustment)
+The next-month AFA row is informational and is never included in the total.
+Keeping zero rows visible makes the app’s breakdown match what users see on the
+TNB calculator.
 
-- Republished by TNB every month, so it is **not** a hard-coded constant.
-- `TariffRates.calculate(kwh, type, afaSenPerKwh: ...)` accepts it; all callers currently use the default `0`.
-- The UI shows a disclaimer wherever AFA is excluded (`BillBreakdownCard`, usage summary, tariff calculator).
+## 5. Readings are intervals
 
-## 5. Reading chain
+A reading is not a monthly total. Its `kwh` is the delta since the previous
+reading:
 
-Handled by `lib/services/billing/reading_chain_service.dart`.
-
-- Readings form a global, date-ordered chain across **all** months.
-- `findPrevious` / `findNext` return true neighbors from Firestore (not just in-memory).
-- When a reading is inserted/edited/deleted, the **next** reading's `kwh` must be recomputed as `next.reading - previous.reading`.
-- If a deleted/replaced reading was the baseline, the next reading becomes the new baseline (`kwh = 0`).
-- Invariant enforced: `next.reading >= previous.reading`, else `StateError`.
-- `tier` is recomputed with `TariffRates.getTier(newKwh, tariffType)`.
-
-## 6. Bill recalculation
-
-Handled by `lib/services/billing/bill_recalculation_service.dart`.
-
-- One bill doc per month at `users/{uid}/bills/{YYYY-MM}`.
-- `recalculateMonth` sums all readings in the month, resolves the tariff from the **latest** reading (fallback to the caller's tariff), and upserts `kwh`, `amount`, `tier`, `tariffType`, `date`.
-- If the month has **no readings**, the bill doc is **deleted**.
-- Called after add/update/delete of a reading, and for the neighboring month if a chain fix crosses a month boundary.
-- `isPaid` and `alertTierSent` are preserved via `SetOptions(merge: true)`.
-
-## 7. Worked examples
-
-### Domestic, 300 kWh
-
-```
-energy   300 * 0.2703 = 81.09
-capacity 300 * 0.0455 = 13.65
-network  300 * 0.1285 = 38.55
-eei      300 * 0.2250 = 67.50   (band ≤300 kWh → 22.5 sen)
-net      81.09 + 13.65 + 38.55 - 67.50 = 65.79
-kwtbb    0            (needs > 300 kWh)
-sst      0            (needs > 600 kWh)
-total    RM 65.79
+```text
+periodStart = previous reading date (or explicit stored period start)
+periodEnd   = this reading date
+kwh         = current meter value - previous meter value
 ```
 
-### Domestic, 700 kWh (shows Retail + SST)
+`UsageAllocationService` spreads each interval across the calendar months it
+overlaps, proportional to days. This prevents a missed reading from dumping a
+six-month gap into one month.
 
-```
-energy   700 * 0.2703 = 189.21
-capacity 700 * 0.0455 = 31.85
-network  700 * 0.1285 = 89.95
-retail   10.00
-eei      700 * 0.0550 = 38.50   (band ≤700 kWh → 5.5 sen)
-net      189.21 + 31.85 + 89.95 + 10 - 38.50 = 282.51
-kwtbb    (189.21 + 31.85 + 89.95 - 38.50) * 0.016 = 4.36
-sst      282.51 * (100/700) * 0.08 = 3.23
-total    RM 290.10
-```
+- Intervals longer than 35 days are marked estimated.
+- Months containing estimated shares are marked in charts and bill detail.
+- First readings are baselines with zero usage.
+- Same-day readings attribute their delta to that day.
 
-### Commercial, 200 kWh
+## 6. Reading edits and bill recalculation
 
-```
-energy   200 * 0.2703 = 54.06
-capacity 200 * 0.0883 = 17.66
-network  200 * 0.1482 = 29.64
-retail   20.00
-eei      200 * 0.1100 = 22.00   (≤200 kWh)
-net      54.06 + 17.66 + 29.64 + 20 - 22.00 = 99.36
-kwtbb    (54.06 + 17.66 + 29.64 - 22.00) * 0.016 = 1.27
-total    RM 100.63
-```
+Readings form a global date-ordered chain. After an insert, edit or delete:
 
-(Values rounded for display; the code computes in full precision.)
+1. Find the previous and next reading globally.
+2. Recompute the next reading’s kWh and EEI tier.
+3. Update `periodStart` where needed.
+4. Recalculate every month touched by the affected intervals.
+5. Upsert or delete the corresponding `bills/{YYYY-MM}` documents.
 
-## 8. Edge cases & invariants
+Deleting a baseline promotes the next reading to baseline (`kwh: 0`).
 
-- `kwh <= 0` → calculate returns `0`; breakdown returns `[]`.
-- EEI rebate for domestic disappears above 1000 kWh; `EeiBand.number == 0` means "no rebate", which is also used for >1000 kWh (not "no usage").
-- Mixing tariff types in one month is blocked (`_checkTariffConflict`), so a month's tariff is unambiguous.
-- Deleting all readings in a month deletes that month's bill (and its paid state).
+## 7. AFA
 
-## 9. When TNB changes rates
+AFA is stored by month in the tariff schedule and can be a surcharge or rebate.
+Published values are used for historical months; future months may be marked
+forecast. If a month has no published value, the app uses 0 and displays the
+current schedule’s disclaimer.
 
-1. Update the constants and `_eeiBands` in `lib/constants/tariff_rates.dart`.
-2. Re-run the worked examples mentally or add a test; existing tests include `test/tariff_rates_test.dart`.
-3. Update the tables in this doc and in the root README.
-4. Note that AFA may need the current published rate passed in (currently defaults to 0).
+## 8. Tests
+
+`test/constants/tariff_rates_test.dart` covers domestic totals, threshold
+windows, EEI boundaries, zero-value breakdown rows and TNB calculator samples.
+`test/services/billing/*` covers interval allocation and bill recalculation.

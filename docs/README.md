@@ -1,40 +1,36 @@
-# Energy Tracker — Documentation
+# Energy Tracker Documentation
 
-This folder is the source of truth for **what** the product is, **why** it exists, and **how** it is built.
+Current documentation for the Energy Tracker Flutter app. The root
+[README](../README.md) is the short public overview; this folder contains the
+maintainer-level detail.
 
-## Start here
+## Documents
 
-| Doc | Read it when you want to… |
+| Document | Purpose |
 |---|---|
-| [PRD.md](PRD.md) | Review the vision, goals, users, scope, and product decisions |
-| [FEATURES.md](FEATURES.md) | See every feature, its status, its flow, and where the code lives |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Understand the layers, state management, auth/routing, notifications |
-| [DATA_MODEL.md](DATA_MODEL.md) | Look up Firestore fields, collections, and known schema issues |
-| [BILLING.md](BILLING.md) | Understand the TNB tariff math, reading chain, and bill recalculation |
-| [DEVELOPMENT.md](DEVELOPMENT.md) | Set up, run, test, build, release, and follow conventions |
-| [GLOSSARY.md](GLOSSARY.md) | Decode domain terms (EEI, AFA, KWTBB, SST, tier, band…) |
-| [ux-review/](ux-review/README.md) | Track UX / microcopy / accessibility findings and fixes |
-| [screenshots/](screenshots/) | Visual reference per screen |
+| [PRD](PRD.md) | Product problem, users, scope and priorities |
+| [Features](FEATURES.md) | What the app does today and where the code lives |
+| [Architecture](ARCHITECTURE.md) | App layers, state, routing, Firebase and UI systems |
+| [Billing](BILLING.md) | Domestic tariff math, reading intervals and bill recalculation |
+| [Data model](DATA_MODEL.md) | Firestore collections, fields and security rules |
+| [Development](DEVELOPMENT.md) | Setup, commands, Firebase, release and conventions |
+| [Glossary](GLOSSARY.md) | TNB and app terminology |
 
-The root [README.md](../README.md) is the short public/portfolio overview; this folder is the working detail.
+## Project snapshot
 
-## Status legend
+- **App version:** `0.6.0+2`
+- **Platform:** Flutter mobile, Android-first
+- **Firebase project:** `energy-tracker-848fa`
+- **Tariff:** TNB Domestic General only
+- **Auth:** Firebase Auth (email/password and Google)
+- **Backend:** Cloud Firestore, Cloud Functions, FCM
+- **UI:** light/dark themes, Riverpod state, go_router navigation
 
-Used in `FEATURES.md`:
+## Documentation rules
 
-| Status | Meaning |
-|---|---|
-| **Shipped** | Implemented, reachable in the UI, considered working |
-| **Shipped (partial)** | Works, but a known sub-part is incomplete or inconsistent |
-| **WIP / Hidden** | Code exists but is commented out, feature-flagged, or not reachable |
-| **Planned** | Described but not implemented |
-
-## Documentation conventions
-
-- Every doc starts with a **Status** line: `Current`, `Approved`, or `Out of date`.
-- Facts cite `path:line` where useful.
-- When a feature changes, update the matching row in `FEATURES.md` and, if data changed, `DATA_MODEL.md`.
-
-## Current direction
-
-Energy Tracker is an Android-only portfolio project. Positioning: "Track, estimate, and understand your TNB bill." The active milestone is the WIP feature set — in-app notification settings, Terms/Privacy screens, and guest mode. Full detail in [PRD.md](PRD.md) §16 **Roadmap**.
+- Keep this folder current with shipped behaviour.
+- Prefer short explanations over screenshots of code.
+- Link to source files for implementation detail.
+- Move planned work to the roadmap or mark it clearly as not implemented.
+- Do not duplicate full content in `index.html`; it is a landing page for these
+  documents.

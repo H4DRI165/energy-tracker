@@ -1,4 +1,4 @@
-import 'package:energy_tracker/extensions/tariff_type_extension.dart';
+import 'package:energy_tracker/constants/tariff_rates.dart';
 import 'package:energy_tracker/theme/theme.dart';
 import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_notifier.dart';
 import 'package:flutter/material.dart';
@@ -11,12 +11,15 @@ class StatCardsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(child: _DailyAvgCard(compact: compact)),
-        SizedBox(width: 10.w),
-        Expanded(child: _TariffCard(compact: compact)),
-      ],
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(child: _DailyAvgCard(compact: compact)),
+          SizedBox(width: 10.w),
+          Expanded(child: _TariffCard(compact: compact)),
+        ],
+      ),
     );
   }
 }
@@ -30,12 +33,31 @@ class _DailyAvgCard extends ConsumerWidget {
     final dailyAvg = ref.watch(
       dashboardProvider.select((s) => s.value?.dailyAvg ?? 0.0),
     );
+    final monthlyBudget = ref.watch(
+      dashboardProvider.select((s) => s.value?.monthlyBudget ?? 0.0),
+    );
+    final now = DateTime.now();
+    final targetDailyKwh = monthlyBudget > 0
+        ? TariffRates.estimateKwhFromBudget(monthlyBudget) /
+              DateUtils.getDaysInMonth(now.year, now.month)
+        : 0.0;
+    final hasUsage = dailyAvg > 0;
+    final isAboveTarget =
+        hasUsage && targetDailyKwh > 0 && dailyAvg > targetDailyKwh * 1.05;
 
-    final badge = dailyAvg <= 8.0 ? '↓ Normal' : '↑ High';
-    final badgeColor = dailyAvg <= 8.0 ? AppColors.accent : AppColors.danger;
-    final badgeBg = dailyAvg <= 8.0
-        ? AppColors.accent.withValues(alpha: 0.12)
-        : AppColors.danger.withValues(alpha: 0.12);
+    final badge = !hasUsage
+        ? 'No usage'
+        : targetDailyKwh <= 0
+        ? 'No budget target'
+        : isAboveTarget
+        ? '↑ Above target'
+        : '↓ On track';
+    final badgeColor = !hasUsage
+        ? AppColors.text3
+        : isAboveTarget
+        ? AppColors.danger
+        : AppColors.accent;
+    final badgeBg = badgeColor.withValues(alpha: 0.12);
 
     return _StatCard(
       label: 'Daily Avg',
@@ -56,28 +78,30 @@ class _TariffCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final tariffType = ref.watch(
-      dashboardProvider.select((s) => s.value?.tariffType),
-    );
     final currentBand = ref.watch(
       dashboardProvider.select((s) => s.value?.currentEeiBand),
+    );
+    final kwhUsed = ref.watch(
+      dashboardProvider.select((s) => s.value?.kwhUsed ?? 0.0),
     );
     final tierColor = ref.watch(
       dashboardProvider.select((s) => s.value?.tierColor),
     );
-    final tierRange = ref.watch(
-      dashboardProvider.select((s) => s.value?.tierRange),
-    );
 
-    final label = tariffType == TariffType.domestic
-        ? 'EEI Band'
-        : 'Tariff Tier';
-    final value = tariffType == TariffType.domestic
-        ? 'Band ${currentBand?.number == 0 ? '—' : currentBand?.number}'
-        : 'Tier ${currentBand?.number}';
-    final badge = tariffType == TariffType.domestic
-        ? currentBand?.description ?? ''
-        : tierRange ?? '';
+    const label = 'EEI Band';
+    final isNoUsage = kwhUsed <= 0;
+    final value = isNoUsage
+        ? 'No usage'
+        : currentBand?.number == 0
+        ? 'No rebate'
+        : 'Band ${currentBand?.number}';
+    final badge = isNoUsage
+        ? 'No usage'
+        : currentBand?.number == 0
+        ? 'No rebate'
+        : currentBand == null
+        ? ''
+        : '${currentBand.rebateSenPerKwh.toStringAsFixed(1)} sen/kWh';
 
     return _StatCard(
       label: label,

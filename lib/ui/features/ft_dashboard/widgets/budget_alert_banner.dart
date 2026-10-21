@@ -23,10 +23,11 @@ class BudgetAlertBanner extends ConsumerWidget {
     final borderColor = color.withValues(alpha: 0.30);
     final icon = isExceeded ? '🚨' : '⚠️';
     final title = isExceeded ? 'Budget Exceeded!' : '80% Budget Reached';
+    final overAmount = (state.estimatedBill - state.monthlyBudget)
+        .toStringAsFixed(2);
     final subtitle = isExceeded
-        ? 'RM ${state.estimatedBill.toStringAsFixed(2)} used — RM '
-              '${(state.estimatedBill - state.monthlyBudget).toStringAsFixed(2)} '
-              'over your target.'
+        ? 'RM ${state.estimatedBill.toStringAsFixed(2)} used — '
+              'RM $overAmount over your target.'
         : 'RM ${state.estimatedBill.toStringAsFixed(0)} used of RM '
               '${state.monthlyBudget.toStringAsFixed(0)} target. '
               '${state.daysLeft} days left.';

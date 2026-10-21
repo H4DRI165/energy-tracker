@@ -165,6 +165,22 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => const AddAppliancePage(),
     ),
     GoRoute(
+      path: AppRoutes.applianceDetail,
+      builder: (context, state) {
+        final extra = state.extra;
+        if (extra is! Appliance) {
+          return const Scaffold(
+            body: Center(
+              child: Text(
+                'Invalid navigation. Please select an appliance.',
+              ),
+            ),
+          );
+        }
+        return ApplianceDetailPage(appliance: extra);
+      },
+    ),
+    GoRoute(
       path: AppRoutes.editAppliance,
       builder: (context, state) {
         final extra = state.extra;
@@ -180,21 +196,6 @@ final GoRouter appRouter = GoRouter(
         }
         return AddAppliancePage(appliance: extra);
       },
-    ),
-
-    // -------------------------------WIP ROUTES--------------------------------
-    GoRoute(
-      path: AppRoutes.scanBill,
-      name: 'scan_bill',
-      pageBuilder: (context, state) => const NoTransitionPage(
-        child: ComingSoonPage(
-          title: 'Scan TNB Bill',
-          subtitle:
-              'Point your camera at your bill and '
-              'let AI extract the data automatically.',
-          icon: Icons.document_scanner_rounded,
-        ),
-      ),
     ),
 
     // --------------------------------ERROR ROUTES-----------------------------
@@ -220,6 +221,9 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state, navigationShell) {
         return Scaffold(
           body: navigationShell,
+          floatingActionButton: const AppAddReadingFab(),
+          floatingActionButtonLocation:
+              FloatingActionButtonLocation.centerDocked,
           bottomNavigationBar: AppBottomNav(
             currentIndex: navigationShell.currentIndex,
             onTap: (index) => navigationShell.goBranch(

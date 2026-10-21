@@ -1,6 +1,6 @@
 import 'package:energy_tracker/constants/tariff_rates.dart';
 import 'package:energy_tracker/extensions/date_time_extension.dart';
-import 'package:energy_tracker/extensions/tariff_type_extension.dart';
+import 'package:energy_tracker/services/billing/usage_allocation_service.dart';
 
 class AddReadingPageState {
   const AddReadingPageState({
@@ -39,29 +39,55 @@ class AddReadingPageState {
     return usage > 0 ? usage : 0;
   }
 
-  double get cumulativeKwh => monthToDateKwhBeforeThisReading + usageKwh;
+  double get cumulativeKwh =>
+      monthToDateKwhBeforeThisReading + currentMonthUsageShare;
 
-  double incrementalCost(TariffType tariffType) =>
-      TariffRates.calculate(cumulativeKwh, tariffType) -
-      TariffRates.calculate(monthToDateKwhBeforeThisReading, tariffType);
+  /// Portion of this reading's interval that falls in the selected month.
+  /// A six-month gap no longer looks like six months of usage this month.
+  double get currentMonthUsageShare {
+    final end = selectedDate ?? DateTime.now();
+    final start = lastReadingDate;
+    if (start == null) return 0;
 
-  // For domestic, returns the EEI band number rather than the old usage tier.
-  // For commercial, still returns the 2-tier int (unchanged tariff structure).
-  int currentTier(TariffType tariffType) => tariffType == TariffType.domestic
-      ? currentEeiBand.number
-      : TariffRates.getTier(cumulativeKwh, TariffType.commercial);
+    final endDate = DateTime(end.year, end.month, end.day);
+    final startDate = DateTime(start.year, start.month, start.day);
+    final monthStart = DateTime(end.year, end.month);
+    final effectiveStart = startDate.isBefore(monthStart)
+        ? monthStart
+        : startDate;
+    final totalDays = endDate.difference(startDate).inDays;
+    if (totalDays <= 0) return 0;
+
+    final shareDays = endDate.difference(effectiveStart).inDays;
+    return usageKwh * shareDays.clamp(0, totalDays) / totalDays;
+  }
+
+  int? get intervalDays {
+    final start = lastReadingDate;
+    final end = selectedDate;
+    if (start == null || end == null) return null;
+    return DateTime(
+      end.year,
+      end.month,
+      end.day,
+    ).difference(DateTime(start.year, start.month, start.day)).inDays;
+  }
+
+  bool get isLongGap =>
+      (intervalDays ?? 0) > UsageAllocationService.estimatedIntervalDays;
+
+  double incrementalCost() =>
+      TariffRates.calculate(cumulativeKwh, billingMonth: selectedDate) -
+      TariffRates.calculate(
+        monthToDateKwhBeforeThisReading,
+        billingMonth: selectedDate,
+      );
+
+  int get currentTier => currentEeiBand.number;
 
   EeiBand get currentEeiBand => TariffRates.getEeiBand(cumulativeKwh);
 
-  String tierLabel(TariffType tariffType) {
-    if (tariffType == TariffType.domestic) {
-      return TariffRates.getEeiBand(cumulativeKwh).label;
-    }
-    return TariffRates.getTierPriceKwhLabel(
-      TariffRates.getTier(cumulativeKwh, TariffType.commercial),
-      TariffType.commercial,
-    );
-  }
+  String get tierLabel => currentEeiBand.label;
 
   bool get hasUsage => usageKwh > 0;
 

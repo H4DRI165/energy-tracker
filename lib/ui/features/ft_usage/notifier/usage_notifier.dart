@@ -1,8 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/constants/tariff_rates.dart';
-import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 import 'package:energy_tracker/models/bill_record.dart';
+import 'package:energy_tracker/models/reading_record.dart';
 import 'package:energy_tracker/services/auth/providers/current_uid_provider.dart';
+import 'package:energy_tracker/services/billing/usage_allocation_service.dart';
 import 'package:energy_tracker/services/notifier/user_profile_notifier.dart';
 import 'package:energy_tracker/ui/components/logging/notifier/loggable_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_usage/notifier/usage_state.dart';
@@ -26,9 +27,14 @@ class UsageNotifier extends AsyncNotifier<UsageState>
     final uid = ref.watch(currentUidProvider).value;
     if (uid == null) return const UsageState();
 
+    final monthlyBudget =
+        ref.watch(userProfileProvider).profile?.monthlyBudget ?? 0;
     final selectedFilter = state.value?.filter ?? UsageFilter.monthly;
     final fresh = await _fetchUsageData(uid);
-    return fresh.copyWith(filter: selectedFilter);
+    return fresh.copyWith(
+      filter: selectedFilter,
+      monthlyBudget: monthlyBudget,
+    );
   }
 
   Future<void> refresh() async {
@@ -39,18 +45,11 @@ class UsageNotifier extends AsyncNotifier<UsageState>
   Future<UsageState> _fetchUsageData(String uid) async {
     final now = DateTime.now();
 
-    // Fetch readings for the past 12 months
-    final startOf12MonthsAgo = DateTime(now.year - 1, now.month);
-
     final results = await Future.wait([
       _firestore
           .collection('users')
           .doc(uid)
           .collection('readings')
-          .where(
-            'date',
-            isGreaterThanOrEqualTo: Timestamp.fromDate(startOf12MonthsAgo),
-          )
           .orderBy('date', descending: false)
           .get(),
       _firestore
@@ -65,29 +64,35 @@ class UsageNotifier extends AsyncNotifier<UsageState>
     final billsSnap = results[1];
 
     final billHistory = _buildBillHistory(billsSnap.docs);
-    // Current month data
-    final currentMonthReadings = readingsSnap.docs.where((doc) {
-      final date = (doc.data()['date'] as Timestamp).toDate();
-      return date.year == now.year && date.month == now.month;
+    final readings = readingsSnap.docs
+        .map((doc) => ReadingRecord.fromDoc(doc.id, doc.data()))
+        .toList();
+    final lastReading = readings.isEmpty ? null : readings.last;
+    final allocations = UsageAllocationService.monthly(
+      readings: readings,
+      from: DateTime(now.year, now.month - 11),
+      to: now,
+    );
+
+    final monthlyData = allocations.map((allocation) {
+      final month = DateTime(allocation.year, allocation.month);
+      return MonthlyUsage(
+        month: DateFormat('MMM').format(month),
+        year: allocation.year,
+        kwh: allocation.kwh,
+        bill: TariffRates.calculate(
+          allocation.kwh,
+          billingMonth: month,
+        ),
+        isEstimated: allocation.isEstimated,
+      );
     }).toList();
-
-    final currentKwh = currentMonthReadings.fold<double>(0, (total, doc) {
-      return total + ((doc.data()['kwh'] as num?)?.toDouble() ?? 0);
-    });
-
-    // Derive this month's tariff from its actual readings, same rule as
-    // the dashboard: most-recent-reading wins, fall back to live tariff
-    // only when there's no data yet.
-    final liveTariffType = ref.read(tariffTypeProvider);
-    final currentTariffType = currentMonthReadings.isEmpty
-        ? liveTariffType
-        : TariffTypeX.fromValue(
-            currentMonthReadings.last.data()['tariffType'] as String? ??
-                TariffType.domestic.value,
-          );
-
-    final monthlyData = _buildMonthlyData(readingsSnap.docs, now);
-    final currentBill = TariffRates.calculate(currentKwh, currentTariffType);
+    final current = allocations.last;
+    final currentKwh = current.kwh;
+    final currentBill = TariffRates.calculate(
+      currentKwh,
+      billingMonth: now,
+    );
     final currentMonthLabel = DateFormat('MMMM yyyy').format(now);
 
     return UsageState(
@@ -95,56 +100,15 @@ class UsageNotifier extends AsyncNotifier<UsageState>
       billHistory: billHistory,
       currentKwh: currentKwh,
       currentBill: currentBill,
-      currentTariffType: currentTariffType,
       currentMonthLabel: currentMonthLabel,
+      readingCount: readings.length,
+      lastReadingDate: lastReading?.date,
+      lastReadingKwh: lastReading?.kwh ?? 0,
     );
   }
 
   void setFilter(UsageFilter filter) {
     state = state.whenData((s) => s.copyWith(filter: filter));
-  }
-
-  List<MonthlyUsage> _buildMonthlyData(
-    List<QueryDocumentSnapshot> docs,
-    DateTime now,
-  ) {
-    final monthlyKwh = <String, double>{};
-    final monthlyTariff = <String, TariffType>{};
-    final formatter = DateFormat('MMM-yyyy');
-
-    for (final doc in docs) {
-      final data = doc.data()! as Map<String, dynamic>;
-      final date = (data['date'] as Timestamp).toDate();
-
-      final key = formatter.format(date);
-      final kwh = (data['kwh'] as num?)?.toDouble() ?? 0;
-      monthlyKwh[key] = (monthlyKwh[key] ?? 0) + kwh;
-
-      // Most recent reading per month wins, consistent with other places
-      // in the app that resolve a month's tariff from its readings.
-      monthlyTariff[key] = TariffTypeX.fromValue(
-        data['tariffType'] as String? ?? TariffType.domestic.value,
-      );
-    }
-
-    final result = <MonthlyUsage>[];
-    for (var i = 11; i >= 0; i--) {
-      final month = DateTime(now.year, now.month - i);
-      final key = formatter.format(month);
-      final kwh = monthlyKwh[key] ?? 0;
-      final tariffType = monthlyTariff[key] ?? TariffType.domestic;
-
-      result.add(
-        MonthlyUsage(
-          month: DateFormat('MMM').format(month),
-          year: month.year,
-          kwh: kwh,
-          bill: TariffRates.calculate(kwh, tariffType),
-          isPaid: i > 0,
-        ),
-      );
-    }
-    return result;
   }
 
   List<BillRecord> _buildBillHistory(
@@ -161,11 +125,8 @@ class UsageNotifier extends AsyncNotifier<UsageState>
         monthYear: formatter.format(date),
         kwh: (data['kwh'] as num?)?.toDouble() ?? 0,
         amount: (data['amount'] as num?)?.toDouble() ?? 0,
-        isPaid: data['isPaid'] as bool? ?? false,
         date: date,
-        tariffType: TariffTypeX.fromValue(
-          data['tariffType'] as String? ?? TariffType.domestic.value,
-        ),
+        isEstimated: data['isEstimated'] as bool? ?? false,
       );
     }).toList();
   }
@@ -178,7 +139,6 @@ class UsageNotifier extends AsyncNotifier<UsageState>
     final endOfMonth = DateTime(bill.date.year, bill.date.month + 1);
 
     try {
-      // Fetch all readings and bills for this month
       final results = await Future.wait([
         _firestore
             .collection('users')
@@ -213,7 +173,6 @@ class UsageNotifier extends AsyncNotifier<UsageState>
       }
       await batch.commit();
 
-      // Remove from local state without re-fetching
       state = state.whenData(
         (s) => s.copyWith(
           billHistory: s.billHistory.where((b) => b.id != bill.id).toList(),
@@ -225,11 +184,14 @@ class UsageNotifier extends AsyncNotifier<UsageState>
                         year: m.year,
                         kwh: 0,
                         bill: 0,
-                        isPaid: false,
                       )
                     : m,
               )
               .toList(),
+          readingCount: (s.readingCount - results[0].docs.length).clamp(
+            0,
+            s.readingCount,
+          ),
         ),
       );
     } on FirebaseException catch (e, st) {
@@ -239,7 +201,6 @@ class UsageNotifier extends AsyncNotifier<UsageState>
         st,
         context: {'bill_id': bill.id, 'month_year': bill.monthYear},
       );
-      // Re-fetch on error to ensure UI reflects actual server state
       state = const AsyncLoading();
       state = await AsyncValue.guard(() => _fetchUsageData(uid));
     } on Exception catch (e, st) {

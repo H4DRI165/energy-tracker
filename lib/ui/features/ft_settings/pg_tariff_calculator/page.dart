@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:energy_tracker/app.dart';
 import 'package:energy_tracker/ui/features/ft_settings/pg_tariff_calculator/notifier/notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:intl/intl.dart';
 
 class TariffCalculatorPage extends ConsumerStatefulWidget {
   const TariffCalculatorPage({super.key});
@@ -36,26 +39,15 @@ class _TariffCalculatorPageState extends ConsumerState<TariffCalculatorPage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(tariffCalculatorProvider);
-    final tariffType = state.tariffType;
     final kwh = state.kwh;
 
-    final total = TariffRates.calculate(kwh, tariffType);
+    final total = TariffRates.calculate(kwh);
 
-    final isDomestic = tariffType == TariffType.domestic;
-    final eeiBand = isDomestic ? TariffRates.getEeiBand(kwh) : null;
-    final commercialTier = !isDomestic
-        ? TariffRates.getTier(kwh, TariffType.commercial)
-        : 0;
-
-    final isNoUsage = isDomestic && eeiBand!.number == 0;
-
-    final badgeLabel = isDomestic
-        ? (isNoUsage ? 'No usage' : eeiBand?.label)
-        : TariffRates.tierBadgeLabel(commercialTier, TariffType.commercial);
-
-    final badgeColor = isDomestic
-        ? (isNoUsage ? AppColors.text3 : eeiBand?.color)
-        : TariffRates.getTierColor(commercialTier, TariffType.commercial);
+    final eeiBand = TariffRates.getEeiBand(kwh);
+    // Band number 0 means "above 1,000 kWh / no rebate", not "no usage".
+    final isNoUsage = kwh <= 0;
+    final badgeLabel = isNoUsage ? 'No usage' : eeiBand.label;
+    final badgeColor = isNoUsage ? AppColors.text3 : eeiBand.color;
 
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
@@ -76,33 +68,27 @@ class _TariffCalculatorPageState extends ConsumerState<TariffCalculatorPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _TariffTypeSwitch(selected: tariffType),
-                      SizedBox(height: 16.h),
                       _KwhInputCard(controller: _controller, kwh: kwh),
-                      SizedBox(height: 20.h),
-                      Text(
-                        'Bill Breakdown (${tariffType.shortLabel})',
-                        style: AppTextStyles.bodyMd.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      SizedBox(height: 10.h),
-                      _BreakdownSection(
-                        items: TariffRates.breakdownFor(kwh, tariffType),
-                        kwh: kwh,
-                        tariffType: tariffType,
-                      ),
-                      SizedBox(height: 8.h),
+                      SizedBox(height: 14.h),
                       _TotalCard(
                         total: total,
-                        minCharge: tariffType == TariffType.commercial
-                            ? TariffRates.minChargeFor(TariffType.commercial)
-                            : 0,
-                        badgeLabel: badgeLabel!,
-                        badgeColor: badgeColor!,
+                        kwh: kwh,
+                        minCharge: TariffRates.minCharge,
+                        badgeLabel: badgeLabel,
+                        badgeColor: badgeColor,
                       ),
                       SizedBox(height: 16.h),
-                      _InfoCard(tariffType: tariffType),
+                      BillBreakdownCard(
+                        items: TariffRates.breakdownFor(kwh),
+                        emptyLabel: 'Enter usage above 0 kWh to see charges.',
+                        title: 'Why this amount?',
+                        subtitle: 'Tap any charge to learn what it means.',
+                        collapsible: false,
+                        initiallyExpanded: true,
+                        padding: EdgeInsets.all(16.r),
+                      ),
+                      SizedBox(height: 16.h),
+                      const _InfoCard(),
                       SizedBox(height: 24.h),
                     ],
                   ),
@@ -154,67 +140,6 @@ class _Header extends StatelessWidget {
   }
 }
 
-class _TariffTypeSwitch extends ConsumerWidget {
-  const _TariffTypeSwitch({required this.selected});
-
-  final TariffType selected;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Row(
-      children: TariffType.values.map((type) {
-        final isSelected = type == selected;
-        return Expanded(
-          child: Padding(
-            padding: EdgeInsets.only(
-              right: type == TariffType.values.first ? 8.w : 0,
-            ),
-            child: GestureDetector(
-              onTap: () => ref
-                  .read(tariffCalculatorProvider.notifier)
-                  .setTariffType(type),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 10.w),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? AppColors.accent.withValues(alpha: 0.08)
-                      : AppColors.surface2,
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-                  border: Border.all(
-                    color: isSelected ? AppColors.accent : AppColors.border,
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(type.icon, style: TextStyle(fontSize: 16.sp)),
-                    SizedBox(width: 6.w),
-                    Expanded(
-                      child: Text(
-                        type.shortLabel,
-                        textAlign: TextAlign.center,
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                        style: AppTextStyles.bodySm.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: isSelected
-                              ? AppColors.accent
-                              : AppColors.text2,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-}
-
 class _KwhInputCard extends StatelessWidget {
   const _KwhInputCard({
     required this.controller,
@@ -229,24 +154,41 @@ class _KwhInputCard extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(16.r),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0x2600D4AA), Color(0x140099FF)],
-        ),
+        color: AppColors.surface2,
         borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
         border: Border.all(color: AppColors.borderAccent),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'ENTER KWH',
-            style: AppTextStyles.caption.copyWith(letterSpacing: 1),
+          Row(
+            children: [
+              Icon(
+                Icons.edit_outlined,
+                size: 16.r,
+                color: AppColors.accent,
+              ),
+              SizedBox(width: 6.w),
+              Text(
+                'Monthly usage',
+                style: AppTextStyles.bodySm.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                'Tap to edit',
+                style: AppTextStyles.caption.copyWith(
+                  color: AppColors.accent,
+                ),
+              ),
+            ],
           ),
-          SizedBox(height: 8.h),
+          SizedBox(height: 10.h),
           TextField(
             controller: controller,
             keyboardType: TextInputType.number,
+            textInputAction: TextInputAction.done,
             inputFormatters: [
               FilteringTextInputFormatter.digitsOnly,
               LengthLimitingTextInputFormatter(5),
@@ -254,79 +196,46 @@ class _KwhInputCard extends StatelessWidget {
             textAlign: TextAlign.center,
             style: AppTextStyles.displayLg.copyWith(
               color: AppColors.accent,
+              fontSize: 34.sp,
             ),
-            decoration: const InputDecoration(
-              border: InputBorder.none,
-              enabledBorder: InputBorder.none,
-              focusedBorder: InputBorder.none,
-              filled: false,
-              isDense: true,
-              contentPadding: EdgeInsets.zero,
+            decoration: InputDecoration(
+              hintText: '0',
+              hintStyle: AppTextStyles.displayLg.copyWith(
+                color: AppColors.text3,
+                fontSize: 34.sp,
+              ),
+              suffixText: 'kWh',
+              suffixStyle: AppTextStyles.bodyMd.copyWith(
+                color: AppColors.text2,
+              ),
+              filled: true,
+              fillColor: AppColors.surface,
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 14.w,
+                vertical: 14.h,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+                borderSide: BorderSide(color: AppColors.border),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+                borderSide: BorderSide(color: AppColors.border),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+                borderSide: BorderSide(
+                  color: AppColors.accent,
+                  width: 1.5,
+                ),
+              ),
             ),
           ),
+          SizedBox(height: 8.h),
           Text(
-            'kWh this month',
-            style: AppTextStyles.bodyMd.copyWith(color: AppColors.text2),
+            'Enter the kWh from your TNB bill. This is not your meter reading.',
+            style: AppTextStyles.caption.copyWith(color: AppColors.text3),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _BreakdownSection extends StatelessWidget {
-  const _BreakdownSection({
-    required this.items,
-    required this.kwh,
-    required this.tariffType,
-  });
-
-  final List<ChargeLineItem> items;
-  final double kwh;
-  final TariffType tariffType;
-
-  bool get _showAfaDisclaimer => TariffRates.afaApplies(tariffType, kwh);
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface2,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-        border: Border.all(color: AppColors.border),
-      ),
-      padding: EdgeInsets.all(12.r),
-      child: Column(
-        children: [
-          ...items.map((item) => ChargeLineItemRow(item: item)),
-          if (_showAfaDisclaimer) ...[
-            Divider(height: 12.h, color: AppColors.border),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  Icons.info_outline_rounded,
-                  size: 11.r,
-                  color: AppColors.warn,
-                ),
-                SizedBox(width: 4.w),
-                Expanded(
-                  child: Text(
-                    tariffType == TariffType.commercial
-                        ? 'Excludes AFA — a monthly fuel adjustment '
-                              'published by TNB. Applies to all commercial '
-                              'usage.'
-                        : 'Excludes AFA — a monthly fuel adjustment '
-                              'published by TNB. Applies only above 600 kWh '
-                              'for domestic.',
-                    style: AppTextStyles.caption.copyWith(
-                      color: AppColors.warn,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
         ],
       ),
     );
@@ -336,12 +245,14 @@ class _BreakdownSection extends StatelessWidget {
 class _TotalCard extends StatelessWidget {
   const _TotalCard({
     required this.total,
+    required this.kwh,
     required this.minCharge,
     required this.badgeLabel,
     required this.badgeColor,
   });
 
   final double total;
+  final double kwh;
   final double minCharge;
   final String badgeLabel;
   final Color badgeColor;
@@ -371,6 +282,11 @@ class _TotalCard extends StatelessWidget {
             'RM ${total.toStringAsFixed(2)}',
             style: AppTextStyles.displayLg.copyWith(color: AppColors.accent),
           ),
+          SizedBox(height: 4.h),
+          Text(
+            'Calculated from ${kwh.toStringAsFixed(0)} kWh ? read-only',
+            style: AppTextStyles.caption.copyWith(color: AppColors.text3),
+          ),
           if (minCharge > 0) ...[
             SizedBox(height: 4.h),
             Text(
@@ -397,44 +313,119 @@ class _TotalCard extends StatelessWidget {
 }
 
 class _InfoCard extends StatelessWidget {
-  const _InfoCard({required this.tariffType});
-
-  final TariffType tariffType;
+  const _InfoCard();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.all(14.r),
-      decoration: BoxDecoration(
-        color: AppColors.surface2,
+    return Material(
+      color: AppColors.surface2,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-        border: Border.all(color: AppColors.border),
+        side: BorderSide(color: AppColors.border),
       ),
-      child: tariffType == TariffType.domestic
-          ? _DomesticInfo()
-          : _CommercialInfo(),
+      child: InkWell(
+        onTap: () => _showTariffReference(context),
+        child: Padding(
+          padding: EdgeInsets.all(14.r),
+          child: Row(
+            children: [
+              Icon(
+                Icons.menu_book_outlined,
+                size: 18.r,
+                color: AppColors.accent,
+              ),
+              SizedBox(width: 10.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Tariff reference',
+                      style: AppTextStyles.bodySm.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    SizedBox(height: 2.h),
+                    Text(
+                      'Rates, EEI bands, levies and AFA',
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.text3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 18.r,
+                color: AppColors.text3,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
+}
+
+void _showTariffReference(BuildContext context) {
+  unawaited(
+    showAppBottomSheet<void>(
+      context: context,
+      builder: (_) => AppBottomSheet(
+        maxHeightFactor: 0.92,
+        header: Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Tariff reference',
+                style: AppTextStyles.titleMd,
+              ),
+            ),
+            IconButton(
+              onPressed: () => Navigator.pop(context),
+              tooltip: 'Close',
+              icon: Icon(
+                Icons.close_rounded,
+                size: 20.r,
+                color: AppColors.text2,
+              ),
+            ),
+          ],
+        ),
+        child: _DomesticInfo(),
+      ),
+    ),
+  );
 }
 
 class _DomesticInfo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final afaSen = TariffRates.afaSenPerKwhFor(now);
+    final monthLabel = DateFormat('MMM yyyy').format(now);
+    final effectiveLabel = DateFormat(
+      'd MMM yyyy',
+    ).format(TariffRates.tariff.effectiveFrom);
+    final afaNote = afaSen == null
+        ? 'AFA for $monthLabel has not been published yet, so it is excluded '
+              'from the estimate.'
+        : 'AFA of ${afaSen.toStringAsFixed(2)} sen/kWh applies only to usage '
+              'above ${TariffRates.protectionThresholdLabel} in $monthLabel.';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Text(
-              '💡 TNB Domestic Tariff',
-              style: AppTextStyles.bodySm.copyWith(fontWeight: FontWeight.w700),
-            ),
-            SizedBox(width: 6.w),
-            Text(
-              'post-Jul 2025',
-              style: AppTextStyles.caption.copyWith(color: AppColors.text3),
-            ),
-          ],
+        Text(
+          'TNB Domestic Tariff',
+          style: AppTextStyles.bodySm.copyWith(fontWeight: FontWeight.w700),
+        ),
+        SizedBox(height: 3.h),
+        Text(
+          'Effective $effectiveLabel \u00b7 AFA $monthLabel',
+          style: AppTextStyles.caption.copyWith(color: AppColors.text3),
         ),
         SizedBox(height: 12.h),
         GridView.count(
@@ -450,7 +441,7 @@ class _DomesticInfo extends StatelessWidget {
               value: TariffRates.generationLowLabel,
             ),
             _ComponentCard(
-              label: 'Energy (>1500 kWh)',
+              label: 'Energy (above 1,500 kWh)',
               value: TariffRates.generationHighLabel,
             ),
             _ComponentCard(
@@ -480,7 +471,8 @@ class _DomesticInfo extends StatelessWidget {
                   Text('Retail charge', style: AppTextStyles.caption),
                   SizedBox(height: 2.h),
                   Text(
-                    'Applies only above 600 kWh',
+                    'Applies only above '
+                    '${TariffRates.protectionThresholdLabel}',
                     style: AppTextStyles.caption.copyWith(
                       color: AppColors.text3,
                     ),
@@ -526,7 +518,7 @@ class _DomesticInfo extends StatelessWidget {
                   ],
                 ),
               ),
-              const Divider(height: 1, color: AppColors.border),
+              Divider(height: 1, color: AppColors.border),
               for (final group in TariffRates.eeiBandGroups)
                 _EeiBandRow(
                   group.range,
@@ -546,7 +538,8 @@ class _DomesticInfo extends StatelessWidget {
                 title: 'KWTBB',
                 rate: TariffRates.kwtbbLabel,
                 description:
-                    'On Energy + Cap + Net − EEI.\nApplies above 300 kWh.',
+                    'On energy, capacity and network charges, minus EEI.\n'
+                    'Not charged at or below 300 kWh.',
               ),
             ),
             SizedBox(width: 8.w),
@@ -555,7 +548,8 @@ class _DomesticInfo extends StatelessWidget {
                 title: 'SST',
                 rate: TariffRates.sstLabel,
                 description:
-                    'On net charge for the portion above 600 kWh only.',
+                    'On the taxable portion only, above '
+                    '${TariffRates.protectionThresholdLabel}.',
               ),
             ),
           ],
@@ -567,14 +561,15 @@ class _DomesticInfo extends StatelessWidget {
             Icon(
               Icons.info_outline_rounded,
               size: 12.r,
-              color: AppColors.warn,
+              color: afaSen == null ? AppColors.warn : AppColors.text3,
             ),
             SizedBox(width: 4.w),
             Expanded(
               child: Text(
-                'AFA excluded — a monthly fuel adjustment published '
-                'by TNB. Applies only above 600 kWh.',
-                style: AppTextStyles.caption.copyWith(color: AppColors.warn),
+                afaNote,
+                style: AppTextStyles.caption.copyWith(
+                  color: afaSen == null ? AppColors.warn : AppColors.text3,
+                ),
               ),
             ),
           ],
@@ -640,7 +635,7 @@ class _EeiBandRow extends StatelessWidget {
       decoration: BoxDecoration(
         border: isLast
             ? null
-            : const Border(bottom: BorderSide(color: AppColors.border)),
+            : Border(bottom: BorderSide(color: AppColors.border)),
       ),
       child: Row(
         children: [
@@ -713,131 +708,6 @@ class _LevyCard extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _CommercialInfo extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              '💡 TNB Non-Domestic LV Tariff',
-              style: AppTextStyles.bodySm.copyWith(fontWeight: FontWeight.w700),
-            ),
-            SizedBox(width: 6.w),
-            Text(
-              'post-Jul 2025',
-              style: AppTextStyles.caption.copyWith(color: AppColors.text3),
-            ),
-          ],
-        ),
-        SizedBox(height: 12.h),
-        GridView.count(
-          crossAxisCount: 2,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisSpacing: 8.w,
-          mainAxisSpacing: 8.h,
-          childAspectRatio: 2.4,
-          children: [
-            _ComponentCard(
-              label: 'Energy (flat rate)',
-              value: TariffRates.generationLowLabel,
-            ),
-            _ComponentCard(
-              label: 'Capacity',
-              value: TariffRates.commercialCapacityLabel,
-            ),
-            _ComponentCard(
-              label: 'Network',
-              value: TariffRates.commercialNetworkLabel,
-            ),
-            _ComponentCard(
-              label: 'Retail',
-              value: TariffRates.commercialRetailLabel,
-            ),
-          ],
-        ),
-        SizedBox(height: 8.h),
-        Container(
-          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
-          decoration: BoxDecoration(
-            color: AppColors.surface2,
-            borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('EEI Rebate', style: AppTextStyles.caption),
-                  SizedBox(height: 2.h),
-                  Text(
-                    'Applies only for ≤200 kWh',
-                    style: AppTextStyles.caption.copyWith(
-                      color: AppColors.text3,
-                    ),
-                  ),
-                ],
-              ),
-              Text(
-                TariffRates.commercialEeiRateLabel,
-                style: AppTextStyles.bodyMd.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-        SizedBox(height: 12.h),
-        Row(
-          children: [
-            Expanded(
-              child: _LevyCard(
-                title: 'KWTBB',
-                rate: TariffRates.kwtbbLabel,
-                description:
-                    'On Energy + Cap + Net − EEI.\nNo exemption threshold.',
-              ),
-            ),
-            SizedBox(width: 8.w),
-            const Expanded(
-              child: _LevyCard(
-                title: 'SST',
-                rate: 'N/A',
-                description: 'Not applicable for Non-Domestic LV General.',
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: 10.h),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(
-              Icons.info_outline_rounded,
-              size: 12.r,
-              color: AppColors.warn,
-            ),
-            SizedBox(width: 4.w),
-            Expanded(
-              child: Text(
-                'AFA excluded — published monthly by TNB. '
-                'No generation rate crossover at 1500 kWh '
-                '(unlike domestic).',
-                style: AppTextStyles.caption.copyWith(color: AppColors.warn),
-              ),
-            ),
-          ],
-        ),
-      ],
     );
   }
 }

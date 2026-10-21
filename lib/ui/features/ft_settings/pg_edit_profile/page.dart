@@ -39,7 +39,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
               ),
               Expanded(
                 child: state.when(
-                  loading: () => const Center(
+                  loading: () => Center(
                     child: CircularProgressIndicator(color: AppColors.accent),
                   ),
                   error: (_, _) => ErrorView(
@@ -166,14 +166,18 @@ class _Header extends StatelessWidget {
                       height: 16.r,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: hasChanges ? Colors.black : AppColors.text3,
+                        color: hasChanges
+                            ? AppColors.onAccent
+                            : AppColors.text3,
                       ),
                     )
                   : Text(
                       'Save',
                       style: AppTextStyles.bodyMd.copyWith(
                         fontWeight: FontWeight.w700,
-                        color: hasChanges ? Colors.black : AppColors.text3,
+                        color: hasChanges
+                            ? AppColors.onAccent
+                            : AppColors.text3,
                       ),
                     ),
             ),
@@ -496,7 +500,7 @@ class _InitialsFallback extends StatelessWidget {
       child: Text(
         initials,
         style: AppTextStyles.titleLg.copyWith(
-          color: Colors.black,
+          color: AppColors.onAccent,
           fontSize: 28.sp,
         ),
       ),

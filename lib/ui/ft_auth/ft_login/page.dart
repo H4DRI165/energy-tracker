@@ -14,93 +14,13 @@ class LoginPage extends ConsumerStatefulWidget {
   ConsumerState<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends ConsumerState<LoginPage>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<double> _fadeIn;
-  late final Animation<Offset> _slideIn;
-
-  @override
-  void initState() {
-    super.initState();
-
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 500),
-    );
-
-    unawaited(_controller.forward());
-
-    _fadeIn = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOut,
-    );
-
-    _slideIn =
-        Tween<Offset>(
-          begin: const Offset(0, 0.04),
-          end: Offset.zero,
-        ).animate(
-          CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-        );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
+class _LoginPageState extends ConsumerState<LoginPage> {
   @override
   Widget build(BuildContext context) {
-    final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
-
-    return GestureDetector(
-      onTap: () => FocusScope.of(context).unfocus(),
-      behavior: HitTestBehavior.opaque,
-      child: Scaffold(
-        backgroundColor: AppColors.bg,
-        resizeToAvoidBottomInset: true,
-        body: SafeArea(
-          child: FadeTransition(
-            opacity: _fadeIn,
-            child: SlideTransition(
-              position: _slideIn,
-              child: Column(
-                children: [
-                  Expanded(
-                    child: SingleChildScrollView(
-                      keyboardDismissBehavior:
-                          ScrollViewKeyboardDismissBehavior.onDrag,
-                      padding: EdgeInsets.symmetric(
-                        horizontal: AppDimensions.screenPaddingH,
-                        vertical: AppDimensions.screenPaddingV,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SizedBox(height: 8.h),
-                          const _Header(),
-                          SizedBox(height: 32.h),
-                          const _BodyContent(),
-                        ],
-                      ),
-                    ),
-                  ),
-                  if (!keyboardOpen)
-                    Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: AppDimensions.screenPaddingH,
-                        vertical: 16.h,
-                      ),
-                      child: const _RegisterAccountRow(),
-                    ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
+    return const AuthPageScaffold(
+      header: _Header(),
+      footer: _RegisterAccountRow(),
+      child: _BodyContent(),
     );
   }
 }
@@ -157,6 +77,11 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
     super.dispose();
   }
 
+  void _submit() {
+    FocusScope.of(context).unfocus();
+    unawaited(ref.read(loginProvider.notifier).login());
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(loginProvider);
@@ -167,6 +92,11 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
         AppTextFloatingLabelField(
           controller: _emailController,
           keyboardType: TextInputType.emailAddress,
+          textInputAction: TextInputAction.next,
+          onSubmitted: (_) => FocusScope.of(context).nextFocus(),
+          autofillHints: const [AutofillHints.email],
+          enableSuggestions: false,
+          autocorrect: false,
           labelText: 'Email',
           hintText: 'name@example.com',
           border: AppFormFieldBorder.roundedOutlined,
@@ -181,6 +111,11 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
         SizedBox(height: 16.h),
         AppTextFloatingLabelField(
           controller: _passwordController,
+          textInputAction: TextInputAction.done,
+          onSubmitted: (_) => _submit(),
+          autofillHints: const [AutofillHints.password],
+          enableSuggestions: false,
+          autocorrect: false,
           labelText: 'Password',
           border: AppFormFieldBorder.roundedOutlined,
           prefixIcon: Icon(
@@ -191,6 +126,7 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
           errorText: state.passwordError,
           obscureText: state.obscurePassword,
           suffixIcon: IconButton(
+            tooltip: state.obscurePassword ? 'Show password' : 'Hide password',
             onPressed: ref.read(loginProvider.notifier).toggleObscure,
             icon: Icon(
               state.obscurePassword
@@ -201,15 +137,14 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
             ),
           ),
         ),
-        SizedBox(height: 12.h),
+        SizedBox(height: 8.h),
         Align(
           alignment: Alignment.centerRight,
           child: TextButton(
-            onPressed: () => context.go(AppRoutes.forgotPassword),
+            onPressed: () => context.push(AppRoutes.forgotPassword),
             style: TextButton.styleFrom(
-              padding: EdgeInsets.zero,
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              padding: EdgeInsets.symmetric(horizontal: 8.w),
+              minimumSize: const Size(48, 44),
             ),
             child: Text(
               'Forgot password?',
@@ -219,45 +154,16 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
             ),
           ),
         ),
-        SizedBox(height: 24.h),
+        SizedBox(height: 12.h),
         if (state.authError != null) ...[
-          Container(
-            padding: EdgeInsets.all(12.r),
-            decoration: BoxDecoration(
-              color: AppColors.danger.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: AppColors.danger.withValues(alpha: 0.3),
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.error_outline,
-                  color: AppColors.danger,
-                  size: 16.r,
-                ),
-                SizedBox(width: 8.w),
-                Expanded(
-                  child: Text(
-                    state.authError!,
-                    style: AppTextStyles.bodySm.copyWith(
-                      color: AppColors.danger,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          AuthErrorBanner(message: state.authError!),
           SizedBox(height: 16.h),
         ],
         GradientButton(
           label: 'Sign In',
-          isLoading: state.isLoading,
-          onTap: () async {
-            FocusScope.of(context).unfocus();
-            unawaited(ref.read(loginProvider.notifier).login());
-          },
+          isLoading: state.isLoading && !state.isGoogleLoading,
+          isEnabled: !state.isLoading,
+          onTap: _submit,
         ),
         SizedBox(height: 20.h),
         const AppDivider(middleText: 'or continue with'),
@@ -269,11 +175,11 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
           style: OutlinedButton.styleFrom(
             minimumSize: const Size(double.infinity, 52),
           ),
-          child: state.isLoading
+          child: state.isGoogleLoading
               ? SizedBox(
                   width: 20.r,
                   height: 20.r,
-                  child: const CircularProgressIndicator(
+                  child: CircularProgressIndicator(
                     strokeWidth: 2,
                     valueColor: AlwaysStoppedAnimation<Color>(AppColors.text),
                   ),
@@ -281,18 +187,34 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
               : Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      'G',
-                      style: AppTextStyles.bodyLg.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.text,
+                    Container(
+                      width: 24.r,
+                      height: 24.r,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Text(
+                        'G',
+                        style: TextStyle(
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF4285F4),
+                        ),
                       ),
                     ),
                     SizedBox(width: 10.w),
-                    Text(
-                      'Continue with Google',
-                      style: AppTextStyles.bodyLg.copyWith(
-                        color: AppColors.text,
+                    Flexible(
+                      child: Text(
+                        'Continue with Google',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: AppTextStyles.bodyLg.copyWith(
+                          color: AppColors.text,
+                        ),
                       ),
                     ),
                   ],
@@ -308,8 +230,9 @@ class _RegisterAccountRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Wrap(
+      alignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         Text(
           "Don't have an account? ",
@@ -317,8 +240,12 @@ class _RegisterAccountRow extends StatelessWidget {
             color: AppColors.text2,
           ),
         ),
-        GestureDetector(
-          onTap: () => context.go(AppRoutes.register),
+        TextButton(
+          onPressed: () => context.push(AppRoutes.register),
+          style: TextButton.styleFrom(
+            padding: EdgeInsets.symmetric(horizontal: 4.w),
+            minimumSize: const Size(48, 44),
+          ),
           child: Text(
             'Register',
             style: AppTextStyles.bodyMd.copyWith(

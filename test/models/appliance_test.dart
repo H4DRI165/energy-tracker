@@ -1,4 +1,3 @@
-import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 import 'package:energy_tracker/models/appliance.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -19,11 +18,11 @@ void main() {
 
   test('calculates estimated cost using the selected tariff', () {
     expect(
-      appliance.dailyCost(TariffType.commercial),
-      closeTo(0.243264, 0.000001),
+      appliance.dailyCost(),
+      closeTo(0.213264, 0.000001),
     );
     expect(
-      appliance.monthlyCost(TariffType.domestic),
+      appliance.monthlyCost(),
       closeTo(6.39792, 0.000001),
     );
   });

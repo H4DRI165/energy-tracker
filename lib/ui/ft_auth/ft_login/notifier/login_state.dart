@@ -4,6 +4,7 @@ class LoginPageState {
     this.password = '',
     this.obscurePassword = true,
     this.isLoading = false,
+    this.isGoogleLoading = false,
     this.emailError,
     this.passwordError,
     this.authError,
@@ -13,6 +14,7 @@ class LoginPageState {
   final String password;
   final bool obscurePassword;
   final bool isLoading;
+  final bool isGoogleLoading;
   final String? emailError;
   final String? passwordError;
   final String? authError;
@@ -23,6 +25,7 @@ class LoginPageState {
     String? password,
     bool? obscurePassword,
     bool? isLoading,
+    bool? isGoogleLoading,
     Object? emailError = _unset,
     Object? passwordError = _unset,
     Object? authError = _unset,
@@ -32,6 +35,7 @@ class LoginPageState {
       password: password ?? this.password,
       obscurePassword: obscurePassword ?? this.obscurePassword,
       isLoading: isLoading ?? this.isLoading,
+      isGoogleLoading: isGoogleLoading ?? this.isGoogleLoading,
       emailError: identical(emailError, _unset)
           ? this.emailError
           : emailError as String?,

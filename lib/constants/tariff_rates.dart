@@ -1,4 +1,4 @@
-import 'package:energy_tracker/extensions/tariff_type_extension.dart';
+import 'package:energy_tracker/models/domestic_tariff.dart';
 import 'package:energy_tracker/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 
@@ -21,10 +21,8 @@ class ChargeLineItem {
   final bool isLevy; // true for KWTBB/SST — render muted
 }
 
-/// Metadata for an EEI rebate band — the new "tier" concept for Direction C
-/// (badge/summary displays). Replaces getTierColor/getTierKwhRange/
-/// tierBadgeLabel for domestic. Commercial still uses the old int-based
-/// helpers.
+/// Metadata for an EEI rebate band — the "tier" concept for badge/summary
+/// displays.
 class EeiBand {
   const EeiBand({
     required this.number,
@@ -35,14 +33,7 @@ class EeiBand {
     required this.description,
   });
 
-  final int number; // 1–17; 0 means above 1000kWh (no rebate)
-  final String kwhRange; // e.g. "451–500 kWh"
-  final double rebateSenPerKwh;
-  final Color color; // green → amber → red as rebate shrinks
-  final String label; // e.g. "Band 5 · 12.0 sen rebate"
-  final String description; // e.g. "Moderate usage — good rebate"
-
-  static const none = EeiBand(
+  factory EeiBand.none() => EeiBand(
     number: 0,
     kwhRange: '0 kWh',
     rebateSenPerKwh: 0,
@@ -50,50 +41,67 @@ class EeiBand {
     label: 'No usage',
     description: 'No usage recorded',
   );
+
+  final int number; // 1–17; 0 means above 1000kWh (no rebate)
+  final String kwhRange; // e.g. "451–500 kWh"
+  final double rebateSenPerKwh;
+  final Color color; // green → amber → red as rebate shrinks
+  final String label; // e.g. "Band 5 · 12.0 sen rebate"
+  final String description; // e.g. "Moderate usage — good rebate"
 }
 
 class TariffRates {
+  static DomesticTariff _tariff = DomesticTariff.fallback;
+
+  static DomesticTariff get tariff => _tariff;
+
+  static void configure(DomesticTariff tariff) {
+    if (tariff.isValid) _tariff = tariff;
+  }
+
+  @visibleForTesting
+  static void resetToFallback() => _tariff = DomesticTariff.fallback;
+
   /// Marginal cost rate per kWh — the flat components only.
   /// Used for per-appliance cost estimates, where EEI/KWTBB/SST
   /// depend on total household consumption and can't be attributed
   /// to a single appliance in isolation.
-  static double marginalRatePerKwh(TariffType tariffType) {
-    return switch (tariffType) {
-      TariffType.domestic =>
-        domesticGenerationLow + domesticCapacityRate + domesticNetworkRate,
-      TariffType.commercial =>
-        commercialGenerationRate +
-            commercialCapacityRate +
-            commercialNetworkRate,
-    };
-  }
+  static double marginalRatePerKwh() =>
+      domesticGenerationLow + domesticCapacityRate + domesticNetworkRate;
 
-  static double marginalCost(double kwh, TariffType tariffType) =>
-      kwh * marginalRatePerKwh(tariffType);
+  static double marginalCost(double kwh) => kwh * marginalRatePerKwh();
 
-  /// Reference kWh used to scale the appliance summary ring chart.
-  /// Domestic: 1000 kWh — the point where EEI rebate disappears,
-  /// a meaningful "high usage" threshold for residential users.
-  /// Commercial: 500 kWh — a practical midpoint for small business
-  /// LV usage; no equivalent EEI threshold exists for commercial.
-  static const double domesticRingReferenceKwh = 1000;
-  static const double commercialRingReferenceKwh = 500;
+  /// Reference kWh used to scale the appliance summary ring chart: the point
+  /// where the EEI rebate disappears.
+  static const double ringReferenceKwh = 1000;
 
-  static double ringReferenceKwh(TariffType tariffType) =>
-      tariffType == TariffType.domestic
-      ? domesticRingReferenceKwh
-      : commercialRingReferenceKwh;
+  /// Whether AFA is chargeable for [kwh] in the billing month. Domestic
+  /// customers are exempt at or below the protection threshold (600 kWh, or
+  /// 800 kWh for Sep–Dec 2026).
+  static bool afaChargeable(double kwh, {DateTime? billingMonth}) =>
+      kwh > protectionThresholdKwh(billingMonth ?? DateTime.now());
 
-  /// Whether AFA applies for a given tariff type and monthly kWh.
-  /// Commercial: always applies regardless of usage.
-  /// Domestic: exempt at or below 600 kWh.
-  static bool afaApplies(TariffType tariffType, double kwh) =>
-      tariffType == TariffType.commercial || kwh > 600;
+  /// Domestic bill-protection threshold for [billingMonth].
+  ///
+  /// TNB raised the domestic threshold from 600 kWh to 800 kWh for
+  /// consumption from 1 Sep to 31 Dec 2026 (AFA, Retail and SST exemptions).
+  /// It returns to 600 kWh from 1 Jan 2027.
+  ///
+  /// A billing period is treated as a whole calendar month here. TNB's own
+  /// calculator prorates by days when a cycle spans the changeover dates.
+  static double protectionThresholdKwh(DateTime billingMonth) =>
+      _tariff.protectionThresholdKwh(billingMonth);
+
+  static String get protectionThresholdLabel =>
+      '${protectionThresholdKwh(DateTime.now()).toStringAsFixed(0)} kWh';
+
+  /// Round to sen, matching TNB's half-away-from-zero rounding.
+  static double _round2(double value) => (value * 100).roundToDouble() / 100;
 
   static double estimateKwhFromBudget(
-    double budget,
-    TariffType tariffType, {
-    double afaSenPerKwh = 0,
+    double budget, {
+    double? afaSenPerKwh,
+    DateTime? billingMonth,
   }) {
     if (budget <= 0) return 0;
 
@@ -105,8 +113,8 @@ class TariffRates {
 
       final bill = calculate(
         mid,
-        tariffType,
         afaSenPerKwh: afaSenPerKwh,
+        billingMonth: billingMonth,
       );
 
       if (bill < budget) {
@@ -123,13 +131,13 @@ class TariffRates {
   // Domestic — post-1 July 2025 TNB restructuring
   // =========================================================================
   //
-  // Formula verified against 5 real TNB e-bills at 300/600/900/1100/1600 kWh.
-  // Every charge line and final total reproduced exactly.
+  // Golden tests cover 200/601/700/800/900/1600 kWh against TNB's public
+  // bill calculator, including the 800 kWh Sep–Dec 2026 protection window.
   //
-  // Charges split into two columns on TNB's bill (≤600 kWh "non-SST" slice
-  // and >600 kWh "SST-applicable" slice), but underlying per-kWh rates are
-  // flat across the whole month — the split is a display/SST-computation
-  // device only.
+  // Charges split into two columns on TNB's bill (≤ protection threshold
+  // "non-SST" slice and above-threshold "SST-applicable" slice), but
+  // underlying per-kWh rates are flat across the whole month — the split is
+  // a display/SST-computation device only.
 
   static String get generationLowLabel =>
       '${(domesticGenerationLow * 100).toStringAsFixed(2)} sen/kWh';
@@ -158,35 +166,35 @@ class TariffRates {
   get eeiBandGroups => [
     (
       range: '1–200 kWh',
-      rebateRange: _senLabel(_eeiBands[0].rebateSen),
+      rebateRange: _senLabel(_eeiBands[0].senPerKwh),
       isHighUsage: false,
     ),
     (
       range: '201–300 kWh',
       rebateRange:
-          '${_senLabel(_eeiBands[2].rebateSen)}–'
-          '${_senLabel(_eeiBands[1].rebateSen)}',
+          '${_senLabel(_eeiBands[2].senPerKwh)}–'
+          '${_senLabel(_eeiBands[1].senPerKwh)}',
       isHighUsage: false,
     ),
     (
       range: '301–500 kWh',
       rebateRange:
-          '${_senLabel(_eeiBands[6].rebateSen)}–'
-          '${_senLabel(_eeiBands[3].rebateSen)}',
+          '${_senLabel(_eeiBands[6].senPerKwh)}–'
+          '${_senLabel(_eeiBands[3].senPerKwh)}',
       isHighUsage: false,
     ),
     (
       range: '501–700 kWh',
       rebateRange:
-          '${_senLabel(_eeiBands[10].rebateSen)}–'
-          '${_senLabel(_eeiBands[7].rebateSen)}',
+          '${_senLabel(_eeiBands[10].senPerKwh)}–'
+          '${_senLabel(_eeiBands[7].senPerKwh)}',
       isHighUsage: true,
     ),
     (
       range: '701–1000 kWh',
       rebateRange:
-          '${_senLabel(_eeiBands[16].rebateSen)}–'
-          '${_senLabel(_eeiBands[11].rebateSen)}',
+          '${_senLabel(_eeiBands[16].senPerKwh)}–'
+          '${_senLabel(_eeiBands[11].senPerKwh)}',
       isHighUsage: true,
     ),
     (range: '1001+ kWh', rebateRange: 'No rebate', isHighUsage: true),
@@ -195,78 +203,45 @@ class TariffRates {
   static String _senLabel(double sen) =>
       '${sen.toStringAsFixed(sen.truncateToDouble() == sen ? 0 : 1)} sen';
 
-  // --- Generation (Energy) -------------------------------------------------
-  /// Applied to ALL kWh when total ≤1500 kWh. CONFIRMED.
-  static const double domesticGenerationLow = 0.2703;
+  /// Applied to ALL kWh when total ≤1500 kWh.
+  static double get domesticGenerationLow => _tariff.energySenPerKwh / 100;
 
-  /// Applied to ALL kWh (not just excess) when total >1500 kWh. CONFIRMED.
-  static const double domesticGenerationHigh = 0.3703;
+  /// Applied to ALL kWh (not just excess) when total >1500 kWh.
+  static double get domesticGenerationHigh => _tariff.energyHighSenPerKwh / 100;
 
-  // --- Other flat components -----------------------------------------------
-  static const double domesticCapacityRate = 0.0455; // CONFIRMED
-  static const double domesticNetworkRate = 0.1285; // CONFIRMED
-  static const double domesticRetailCharge = 10; // RM flat; CONFIRMED
+  static double get domesticCapacityRate => _tariff.capacitySenPerKwh / 100;
+  static double get domesticNetworkRate => _tariff.networkSenPerKwh / 100;
+  static double get domesticRetailCharge => _tariff.retailRmPerMonth;
 
-  // --- AFA -----------------------------------------------------------------
-  /// AFA (Automatic Fuel Adjustment) is published by TNB monthly and is NOT
-  /// a fixed tariff constant. Exempt when total ≤600 kWh.
-  /// Bill-confirmed June 2026 values: 0 sen (≤600 kWh), 2.59 sen (>600 kWh).
-  /// Default is 0 — callers should pass the current published rate when
-  /// available. The app displays a disclaimer wherever AFA is excluded.
-  static const double domesticAfaDefault = 0;
+  /// AFA is published by TNB monthly. The schedule carries the published
+  /// rates; returns null when the billing month has not been published yet.
+  static double? afaSenPerKwhFor(DateTime billingMonth) =>
+      _tariff.afaSenPerKwh(billingMonth);
 
-  // --- Levies --------------------------------------------------------------
+  static AfaRate? afaRateFor(DateTime billingMonth) =>
+      _tariff.afaRate(billingMonth);
+
   /// KWTBB: 1.6% of (Energy + Capacity + Network − EEI).
-  /// Excludes AFA and Retail from its base. CONFIRMED.
+  /// Excludes AFA and Retail from its base.
   /// Exempt when total ≤300 kWh.
-  static const double domesticKwtbbRate = 0.016;
+  static double get domesticKwtbbRate => _tariff.kwtbbRate;
 
-  /// SST: 8% of the net subtotal attributable to kWh above 600.
-  /// Computed proportionally: (kWh_above_600 / total_kWh) × net_subtotal.
-  /// CONFIRMED.
-  static const double domesticSstRate = 0.08;
+  /// SST: 8% of the value of the kWh above the protection threshold.
+  /// TNB puts the full RM10 retail charge into the taxable slice even though
+  /// it is a fixed charge.
+  static double get domesticSstRate => _tariff.sstRate;
 
-  // --- EEI lookup table ----------------------------------------------------
-  // ignore: comment_references
-  /// Each band covers usage up to [maxKwh] (inclusive). The rebate rate is
-  /// applied to the ENTIRE month's kWh, not just the incremental portion —
-  /// confirmed from real bill cross-checks.
+  /// Each band covers usage up to `maxKwh` (inclusive). The rebate rate is
+  /// applied to the ENTIRE month's kWh, not just the incremental portion.
+  static List<EeiBandRate> get _eeiBands => _tariff.eeiBands;
+
+  static double _eeiSenPerKwh(double kwh) => _tariff.eeiSenPerKwh(kwh);
+
+  /// Full domestic bill total. [afaSenPerKwh] defaults to 0 (excluded from
+  /// estimates; pass the current published rate for accuracy).
   ///
-  /// Bands marked CONFIRMED were reverse-engineered from real TNB e-bills.
-  /// Bands marked SOURCED come from a secondary source (malaysia4u.com) and
-  /// have not been independently verified. Spot-check against a real bill
-  /// at that usage level if billing precision is critical.
-  /// source: https://www.mytnb.com.my/tariff/index.html?v=1.1.60#calculator
-  static const List<({int maxKwh, double rebateSen})> _eeiBands = [
-    (maxKwh: 200, rebateSen: 25.0), // CONFIRMED
-    (maxKwh: 250, rebateSen: 24.5), // CONFIRMED
-    (maxKwh: 300, rebateSen: 22.5), // CONFIRMED
-    (maxKwh: 350, rebateSen: 21.0), // CONFIRMED
-    (maxKwh: 400, rebateSen: 17.0), // CONFIRMED
-    (maxKwh: 450, rebateSen: 14.5), // CONFIRMED
-    (maxKwh: 500, rebateSen: 12.0), // CONFIRMED
-    (maxKwh: 550, rebateSen: 10.5), // CONFIRMED
-    (maxKwh: 600, rebateSen: 9.0), // CONFIRMED
-    (maxKwh: 650, rebateSen: 7.5), // CONFIRMED
-    (maxKwh: 700, rebateSen: 5.5), // CONFIRMED
-    (maxKwh: 750, rebateSen: 4.5), // CONFIRMED
-    (maxKwh: 800, rebateSen: 4.0), // CONFIRMED
-    (maxKwh: 850, rebateSen: 2.5), // CONFIRMED
-    (maxKwh: 900, rebateSen: 1.0), // CONFIRMED
-    (maxKwh: 950, rebateSen: 0.5), // CONFIRMED
-    (maxKwh: 1000, rebateSen: 0.5), // CONFIRMED
-  ];
-
-  static double _eeiSenPerKwh(double kwh) {
-    if (kwh > 1000) return 0;
-    for (final band in _eeiBands) {
-      if (kwh <= band.maxKwh) return band.rebateSen;
-    }
-    return 0;
-  }
-
-  /// Full domestic bill total. [afaSenPerKwh] defaults to 0 (exempt ≤600
-  /// kWh; pass the current published rate for >600 kWh for accuracy).
+  /// [billingMonth] selects the protection threshold (600 kWh normally,
+  /// 800 kWh for Sep–Dec 2026) and defaults to the current month.
   /// Displays a disclaimer wherever this is called without a real AFA rate.
   // Private record holding all intermediate domestic charge values.
   // Single source of truth — calculateDomestic and domesticBreakdown
@@ -284,20 +259,73 @@ class TariffRates {
     double kwtbb,
     double sst,
     double total,
+    double threshold,
+    double taxableKwh,
+    double afaSen,
+    bool chargeable,
   })
-  _domesticCharges(double kwh, {double afaSenPerKwh = domesticAfaDefault}) {
+  _domesticCharges(
+    double kwh, {
+    double? afaSenPerKwh,
+    DateTime? billingMonth,
+  }) {
+    final month = billingMonth ?? DateTime.now();
+    final threshold = protectionThresholdKwh(month);
+    final chargeable = kwh > threshold;
+    final taxableKwh = chargeable ? kwh - threshold : 0.0;
+    final nonStKwh = chargeable ? threshold : kwh;
+
     final gen = kwh > 1500 ? domesticGenerationHigh : domesticGenerationLow;
-    final energy = kwh * gen;
-    final afa = kwh > 600 ? kwh * (afaSenPerKwh / 100) : 0.0;
-    final capacity = kwh * domesticCapacityRate;
-    final network = kwh * domesticNetworkRate;
-    final retail = kwh > 600 ? domesticRetailCharge : 0.0;
-    final eei = kwh * (_eeiSenPerKwh(kwh) / 100);
-    final net = energy + afa + capacity + network + retail - eei;
-    final kwtbb = kwh > 300
-        ? (energy + capacity + network - eei) * domesticKwtbbRate
+    final afaSen = afaSenPerKwh ?? afaSenPerKwhFor(month) ?? 0;
+    final afaRate = afaSen / 100;
+    final eeiRate = _eeiSenPerKwh(kwh) / 100;
+
+    // TNB splits the bill at the protection threshold and rounds each slice
+    // to sen before totalling. Mirror that so the estimate matches TNB's
+    // calculator to the sen.
+    final energy = _round2(
+      _round2(nonStKwh * gen) + _round2(taxableKwh * gen),
+    );
+    final afa = chargeable
+        ? _round2(
+            _round2(nonStKwh * afaRate) + _round2(taxableKwh * afaRate),
+          )
         : 0.0;
-    final sst = kwh > 600 ? (net * ((kwh - 600) / kwh)) * domesticSstRate : 0.0;
+    final capacity = _round2(
+      _round2(nonStKwh * domesticCapacityRate) +
+          _round2(taxableKwh * domesticCapacityRate),
+    );
+    final network = _round2(
+      _round2(nonStKwh * domesticNetworkRate) +
+          _round2(taxableKwh * domesticNetworkRate),
+    );
+    final retail = chargeable ? domesticRetailCharge : 0.0;
+    final eei = _round2(kwh * eeiRate);
+
+    final netNonSt = _round2(
+      _round2(nonStKwh * gen) +
+          _round2(nonStKwh * domesticCapacityRate) +
+          _round2(nonStKwh * domesticNetworkRate) +
+          (chargeable ? _round2(nonStKwh * afaRate) : 0.0) -
+          (kwh > 0 ? eei * nonStKwh / kwh : 0.0),
+    );
+    final netSt = _round2(
+      _round2(taxableKwh * gen) +
+          _round2(taxableKwh * domesticCapacityRate) +
+          _round2(taxableKwh * domesticNetworkRate) +
+          _round2(taxableKwh * afaRate) +
+          retail -
+          (kwh > 0 ? eei * taxableKwh / kwh : 0.0),
+    );
+    final net = _round2(netNonSt + netSt);
+
+    final kwtbb = kwh > 300
+        ? _round2((energy + capacity + network - eei) * domesticKwtbbRate)
+        : 0.0;
+    // SST applies to the taxable slice's value, including the full RM10
+    // retail charge (TNB's rule), not a proportional share of the whole bill.
+    final sst = chargeable ? _round2(netSt * domesticSstRate) : 0.0;
+
     return (
       gen: gen,
       energy: energy,
@@ -309,24 +337,45 @@ class TariffRates {
       net: net,
       kwtbb: kwtbb,
       sst: sst,
-      total: net + kwtbb + sst,
+      total: _round2(net + kwtbb + sst),
+      threshold: threshold,
+      taxableKwh: taxableKwh,
+      afaSen: afaSen,
+      chargeable: chargeable,
     );
   }
 
   static double calculateDomestic(
     double kwh, {
-    double afaSenPerKwh = domesticAfaDefault,
+    double? afaSenPerKwh,
+    DateTime? billingMonth,
   }) {
     if (kwh <= 0) return 0;
-    return _domesticCharges(kwh, afaSenPerKwh: afaSenPerKwh).total;
+    return _domesticCharges(
+      kwh,
+      afaSenPerKwh: afaSenPerKwh,
+      billingMonth: billingMonth,
+    ).total;
   }
 
   static List<ChargeLineItem> domesticBreakdown(
     double kwh, {
-    double afaSenPerKwh = domesticAfaDefault,
+    double? afaSenPerKwh,
+    DateTime? billingMonth,
   }) {
     if (kwh <= 0) return [];
-    final c = _domesticCharges(kwh, afaSenPerKwh: afaSenPerKwh);
+    final c = _domesticCharges(
+      kwh,
+      afaSenPerKwh: afaSenPerKwh,
+      billingMonth: billingMonth,
+    );
+    final month = billingMonth ?? DateTime.now();
+    final nextMonth = DateTime(month.year, month.month + 1);
+    final currentAfaSen = c.chargeable ? c.afaSen : 0.0;
+    // TNB's calculator also shows the next month's AFA forecast. It is a
+    // reference row only for a calendar-month bill, so it never counts toward
+    // this month's total.
+    final nextAfaSen = c.chargeable ? afaSenPerKwhFor(nextMonth) ?? 0 : 0.0;
 
     return [
       ChargeLineItem(
@@ -334,14 +383,20 @@ class TariffRates {
         rateLabel: '${(c.gen * 100).toStringAsFixed(2)} sen/kWh',
         amount: c.energy,
       ),
-      if (kwh > 600)
-        ChargeLineItem(
-          label: 'AFA',
-          rateLabel: afaSenPerKwh == 0
-              ? '0 sen/kWh (Jun 2026)'
-              : '${afaSenPerKwh.toStringAsFixed(2)} sen/kWh',
-          amount: c.afa,
-        ),
+      ChargeLineItem(
+        label:
+            'Forecast Automatic Fuel Adjustment (AFA) - '
+            '${_monthAbbreviation(month)}',
+        rateLabel: '${currentAfaSen.toStringAsFixed(2)} sen/kWh',
+        amount: c.afa,
+      ),
+      ChargeLineItem(
+        label:
+            'Forecast Automatic Fuel Adjustment (AFA) - '
+            '${_monthAbbreviation(nextMonth)}',
+        rateLabel: '${nextAfaSen.toStringAsFixed(2)} sen/kWh · forecast',
+        amount: 0,
+      ),
       ChargeLineItem(
         label: 'Capacity',
         rateLabel: '${(domesticCapacityRate * 100).toStringAsFixed(2)} sen/kWh',
@@ -352,45 +407,61 @@ class TariffRates {
         rateLabel: '${(domesticNetworkRate * 100).toStringAsFixed(2)} sen/kWh',
         amount: c.network,
       ),
-      if (kwh > 600)
-        ChargeLineItem(
-          label: 'Retail',
-          rateLabel: 'RM${domesticRetailCharge.toStringAsFixed(0)}/month',
-          amount: c.retail,
-        ),
-      if (c.eei > 0)
-        ChargeLineItem(
-          label: 'Energy Efficiency Incentive',
-          rateLabel: '-${_eeiSenPerKwh(kwh).toStringAsFixed(2)} sen/kWh',
-          amount: -c.eei,
-          isRebate: true,
-        ),
-      if (c.kwtbb > 0)
-        ChargeLineItem(
-          label: 'KWTBB',
-          rateLabel: kwtbbLabel,
-          amount: c.kwtbb,
-          isLevy: true,
-        ),
-      if (c.sst > 0)
-        ChargeLineItem(
-          label: 'Service Tax (SST)',
-          rateLabel: '8% on usage above 600 kWh',
-          amount: c.sst,
-          isLevy: true,
-        ),
+      ChargeLineItem(
+        label: 'Retail',
+        rateLabel: 'RM${domesticRetailCharge.toStringAsFixed(0)}/month',
+        amount: c.retail,
+      ),
+      ChargeLineItem(
+        label: 'Energy Efficiency Incentive',
+        rateLabel: c.eei > 0
+            ? '-${_eeiSenPerKwh(kwh).toStringAsFixed(2)} sen/kWh'
+            : '0.00 sen/kWh',
+        amount: -c.eei,
+        isRebate: true,
+      ),
+      ChargeLineItem(
+        label: 'Service Tax (ST) (8%)',
+        rateLabel: '8% on usage above ${c.threshold.toStringAsFixed(0)} kWh',
+        amount: c.sst,
+        isLevy: true,
+      ),
+      ChargeLineItem(
+        label: 'KWTBB (1.6%)',
+        rateLabel: '1.6% of eligible charges',
+        amount: c.kwtbb,
+        isLevy: true,
+      ),
     ];
   }
+
+  static const _monthAbbreviations = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+
+  static String _monthAbbreviation(DateTime month) =>
+      _monthAbbreviations[month.month - 1];
 
   /// EEI band for the given kWh — the new "tier" equivalent for domestic,
   /// used by badge/summary displays (Direction C).
   static EeiBand getEeiBand(double kwh) {
     if (kwh <= 0) {
-      return EeiBand.none;
+      return EeiBand.none();
     }
 
     if (kwh > 1000) {
-      return const EeiBand(
+      return EeiBand(
         number: 0,
         kwhRange: '1001+ kWh',
         rebateSenPerKwh: 0,
@@ -462,7 +533,7 @@ class TariffRates {
 
     for (var i = 0; i < _eeiBands.length; i++) {
       if (kwh <= _eeiBands[i].maxKwh) {
-        final sen = _eeiBands[i].rebateSen;
+        final sen = _eeiBands[i].senPerKwh;
         return EeiBand(
           number: i + 1,
           kwhRange: ranges[i],
@@ -475,7 +546,7 @@ class TariffRates {
     }
 
     // Should not reach here given the >1000 guard above
-    return const EeiBand(
+    return EeiBand(
       number: 0,
       kwhRange: '1001+ kWh',
       rebateSenPerKwh: 0,
@@ -486,245 +557,26 @@ class TariffRates {
   }
 
   static double calculate(
-    double kwh,
-    TariffType tariffType, {
-    double afaSenPerKwh = 0,
-  }) {
-    return switch (tariffType) {
-      TariffType.domestic => calculateDomestic(kwh, afaSenPerKwh: afaSenPerKwh),
-      TariffType.commercial => calculateCommercial(
-        kwh,
-        afaSenPerKwh: afaSenPerKwh,
-      ),
-    };
-  }
+    double kwh, {
+    double? afaSenPerKwh,
+    DateTime? billingMonth,
+  }) => calculateDomestic(
+    kwh,
+    afaSenPerKwh: afaSenPerKwh,
+    billingMonth: billingMonth,
+  );
 
   static List<ChargeLineItem> breakdownFor(
-    double kwh,
-    TariffType tariffType, {
-    double afaSenPerKwh = 0,
-  }) {
-    return switch (tariffType) {
-      TariffType.domestic => domesticBreakdown(kwh, afaSenPerKwh: afaSenPerKwh),
-      TariffType.commercial => commercialBreakdown(
-        kwh,
-        afaSenPerKwh: afaSenPerKwh,
-      ),
-    };
-  }
-
-  static double minChargeFor(TariffType tariffType) => switch (tariffType) {
-    TariffType.domestic => 0,
-    TariffType.commercial => 0,
-  };
-
-  // =========================================================================
-  // Commercial LV (Tariff B) — UNCHANGED, old 2-tier structure
-  // =========================================================================
-  // Single flat generation rate — no crossover at 1500 kWh unlike domestic.
-  // CONFIRMED: 27.03 sen applies at 100, 200, ..., 1200, 1600 kWh.
-  static const double commercialGenerationRate = 0.2703;
-
-  static const double commercialCapacityRate = 0.0883; // CONFIRMED
-  static const double commercialNetworkRate = 0.1482; // CONFIRMED
-  static const double commercialRetailCharge =
-      20; // CONFIRMED — always applied, no threshold
-  static const double commercialAfaDefault = 0; // monthly, excluded by default
-  static const double commercialKwtbbRate =
-      0.016; // CONFIRMED — no exemption threshold
-
-  static String get commercialCapacityLabel =>
-      '${(commercialCapacityRate * 100).toStringAsFixed(2)} sen/kWh';
-
-  static String get commercialNetworkLabel =>
-      '${(commercialNetworkRate * 100).toStringAsFixed(2)} sen/kWh';
-
-  static String get commercialRetailLabel =>
-      'RM${commercialRetailCharge.toStringAsFixed(0)}/month';
-
-  // EEI: 11.0 sen/kWh for ≤200 kWh, 0 above. CONFIRMED.
-  static const double commercialEeiRateSenPerKwh = 11;
-
-  static String get commercialEeiRateLabel =>
-      '$commercialEeiRateSenPerKwh sen/kWh';
-
-  static double _commercialEeiSenPerKwh(double kwh) =>
-      kwh <= 200 ? commercialEeiRateSenPerKwh : 0.0;
-
-  // SST: not applicable for Non-Domestic LV General.
-  // CONFIRMED absent across full 100–1600 kWh range (all consumption
-  // in Non-Applicable column with zero in Applicable column at all levels).
-  static ({
-    double energy,
-    double afa,
-    double capacity,
-    double network,
-    double eei,
-    double net,
-    double kwtbb,
-    double total,
-  })
-  _commercialCharges(
     double kwh, {
-    double afaSenPerKwh = commercialAfaDefault,
-  }) {
-    final energy = kwh * commercialGenerationRate;
-    final afa = kwh * (afaSenPerKwh / 100);
-    final capacity = kwh * commercialCapacityRate;
-    final network = kwh * commercialNetworkRate;
-    final eei = kwh * (_commercialEeiSenPerKwh(kwh) / 100);
-    final net =
-        energy + afa + capacity + network + commercialRetailCharge - eei;
-    final kwtbb = (energy + capacity + network - eei) * commercialKwtbbRate;
-    return (
-      energy: energy,
-      afa: afa,
-      capacity: capacity,
-      network: network,
-      eei: eei,
-      net: net,
-      kwtbb: kwtbb,
-      total: net + kwtbb,
-    );
-  }
+    double? afaSenPerKwh,
+    DateTime? billingMonth,
+  }) => domesticBreakdown(
+    kwh,
+    afaSenPerKwh: afaSenPerKwh,
+    billingMonth: billingMonth,
+  );
 
-  static double calculateCommercial(
-    double kwh, {
-    double afaSenPerKwh = commercialAfaDefault,
-  }) {
-    if (kwh <= 0) return 0;
-    return _commercialCharges(kwh, afaSenPerKwh: afaSenPerKwh).total;
-  }
+  static double get minCharge => 0;
 
-  static List<ChargeLineItem> commercialBreakdown(
-    double kwh, {
-    double afaSenPerKwh = commercialAfaDefault,
-  }) {
-    if (kwh <= 0) return [];
-    final c = _commercialCharges(kwh, afaSenPerKwh: afaSenPerKwh);
-
-    return [
-      ChargeLineItem(
-        label: 'Energy',
-        rateLabel:
-            '${(commercialGenerationRate * 100).toStringAsFixed(2)} sen/kWh',
-        amount: c.energy,
-      ),
-      if (afaSenPerKwh > 0)
-        ChargeLineItem(
-          label: 'AFA',
-          rateLabel: '${afaSenPerKwh.toStringAsFixed(2)} sen/kWh',
-          amount: c.afa,
-        ),
-      ChargeLineItem(
-        label: 'Capacity',
-        rateLabel:
-            '${(commercialCapacityRate * 100).toStringAsFixed(2)} sen/kWh',
-        amount: c.capacity,
-      ),
-      ChargeLineItem(
-        label: 'Network',
-        rateLabel:
-            '${(commercialNetworkRate * 100).toStringAsFixed(2)} sen/kWh',
-        amount: c.network,
-      ),
-      ChargeLineItem(
-        label: 'Retail',
-        rateLabel: commercialRetailLabel,
-        amount: commercialRetailCharge,
-      ),
-      if (c.eei > 0)
-        ChargeLineItem(
-          label: 'Energy Efficiency Incentive',
-          rateLabel:
-              '-${_commercialEeiSenPerKwh(kwh).toStringAsFixed(1)} sen/kWh',
-          amount: -c.eei,
-          isRebate: true,
-        ),
-      ChargeLineItem(
-        label: 'KWTBB',
-        rateLabel: kwtbbLabel,
-        amount: c.kwtbb,
-        isLevy: true,
-      ),
-    ];
-  }
-
-  // Commercial still uses the old tier helpers since that tariff is unchanged.
-  static int getTier(double kwh, TariffType tariffType) {
-    if (tariffType == TariffType.commercial) {
-      return kwh <= 200 ? 1 : 2;
-    }
-    // For domestic, return EEI band number as the "tier" proxy.
-    return getEeiBand(kwh).number;
-  }
-
-  static Color getTierColor(int tier, TariffType tariffType) {
-    if (tariffType == TariffType.commercial) {
-      return tier == 1 ? AppColors.accent : AppColors.danger;
-    }
-    // Domestic: color comes from EeiBand, not an int tier.
-    // This overload is kept for backwards-compat during migration —
-    // prefer getEeiBand(kwh).color directly in new code.
-    switch (tier) {
-      case 0:
-        return AppColors.danger;
-      case 1:
-      case 2:
-      case 3:
-        return AppColors.accent;
-      case 4:
-      case 5:
-      case 6:
-        return AppColors.accent2;
-      case 7:
-      case 8:
-      case 9:
-      case 10:
-        return AppColors.warn;
-      case 11:
-      case 12:
-        return AppColors.accent3;
-      default:
-        return AppColors.danger;
-    }
-  }
-
-  static String getTierKwhRange(int tier, TariffType tariffType) {
-    if (tariffType == TariffType.commercial) {
-      return tier == 1 ? '1–200 kWh' : '201+ kWh';
-    }
-    // Domestic: prefer getEeiBand(kwh).kwhRange in new code.
-    if (tier == 0) return '1001+ kWh';
-    if (tier < 1 || tier > _eeiBands.length) return '';
-    final maxKwh = _eeiBands[tier - 1].maxKwh;
-    final minKwh = tier == 1 ? 1 : _eeiBands[tier - 2].maxKwh + 1;
-    return '$minKwh–$maxKwh kWh';
-  }
-
-  static String getTierPrice(int tier, TariffType tariffType) {
-    if (tariffType == TariffType.commercial) {
-      return tier == 1 ? '11.0 sen EEI rebate' : 'No rebate';
-    }
-    if (tier == 0 || tier > _eeiBands.length) return '0 sen';
-    return '${_eeiBands[tier - 1].rebateSen.toStringAsFixed(1)} sen rebate';
-  }
-
-  static String tierBadgeLabel(int tier, TariffType tariffType) {
-    if (tariffType == TariffType.commercial) {
-      return tier == 1 ? 'EEI applies · ≤200 kWh' : 'No EEI rebate · >200 kWh';
-    }
-    if (tier == 0) return 'No rebate — very high usage';
-    if (tier <= 3) return 'Band $tier — Low usage ✓';
-    if (tier <= 6) return 'Band $tier — Moderate usage';
-    if (tier <= 10) return 'Band $tier — High usage';
-    return 'Band $tier — Very high usage';
-  }
-
-  static String getTierRangePriceLabel(int tier, TariffType tariffType) =>
-      'Band $tier · ${getTierKwhRange(tier, tariffType)} · '
-      '${getTierPrice(tier, tariffType)}';
-
-  static String getTierPriceKwhLabel(int tier, TariffType tariffType) =>
-      'Band $tier — ${getTierPrice(tier, tariffType)}/kWh';
+  static int getTier(double kwh) => getEeiBand(kwh).number;
 }

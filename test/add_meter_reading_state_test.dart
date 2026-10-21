@@ -1,4 +1,3 @@
-import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 import 'package:energy_tracker/ui/features/ft_add_meter_reading/notifier/add_meter_reading_state.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -20,16 +19,14 @@ void main() {
       isLoadingLastReading: false,
       lastReading: 500,
       lastReadingDate: DateTime(2026, 6),
+      selectedDate: DateTime(2026, 6, 20),
       currentReading: 700,
     );
 
     expect(state.usageKwh, 200);
     expect(state.hasUsage, isTrue);
-    expect(state.currentTier(TariffType.commercial), 1);
-    expect(
-      state.incrementalCost(TariffType.commercial),
-      closeTo(100.62976, 0.000001),
-    );
+    expect(state.currentTier, 1);
+    expect(state.incrementalCost(), closeTo(38.86, 0.000001));
   });
 
   test(
@@ -48,15 +45,31 @@ void main() {
     },
   );
 
+  test('only previews the current month share of a long gap', () {
+    final state = AddReadingPageState(
+      isLoadingLastReading: false,
+      lastReading: 1000,
+      lastReadingDate: DateTime(2026),
+      selectedDate: DateTime(2026, 7, 15),
+      currentReading: 2200,
+    );
+
+    expect(state.usageKwh, 1200);
+    expect(state.currentMonthUsageShare, greaterThan(0));
+    expect(state.currentMonthUsageShare, lessThan(state.usageKwh));
+    expect(state.cumulativeKwh, lessThan(state.usageKwh));
+  });
+
   test('uses domestic EEI bands for the current tier', () {
     final state = AddReadingPageState(
       isLoadingLastReading: false,
       lastReading: 100,
       lastReadingDate: DateTime(2026, 6),
+      selectedDate: DateTime(2026, 6, 30),
       currentReading: 1100,
     );
 
-    expect(state.currentTier(TariffType.domestic), 17);
+    expect(state.currentTier, 17);
     expect(state.currentEeiBand.number, 17);
   });
 }

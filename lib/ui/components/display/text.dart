@@ -12,7 +12,6 @@ enum AppFormFieldBorder {
 }
 
 class AppTextFloatingLabelField extends StatelessWidget {
-  // ------------------------------- CONSTRUCTORS ------------------------------
   const AppTextFloatingLabelField({
     super.key,
     this.controller,
@@ -44,14 +43,17 @@ class AppTextFloatingLabelField extends StatelessWidget {
     this.obscureText = false,
     this.onChanged,
     this.onSubmitted,
+    this.autofillHints,
+    this.enableSuggestions = true,
+    this.autocorrect = true,
     this.inputFormatters,
     this.enabled = true,
     this.clearable = false,
     this.readonly = false,
     this.padding,
+    this.scrollPadding = const EdgeInsets.all(20),
   });
 
-  // ---------------------------------- FIELDS ---------------------------------
   final TextEditingController? controller;
   final FocusNode? focusNode;
   final String? labelText;
@@ -81,13 +83,16 @@ class AppTextFloatingLabelField extends StatelessWidget {
   final bool obscureText;
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
+  final Iterable<String>? autofillHints;
+  final bool enableSuggestions;
+  final bool autocorrect;
   final List<TextInputFormatter>? inputFormatters;
   final bool enabled;
   final bool clearable;
   final bool readonly;
   final EdgeInsets? padding;
+  final EdgeInsets scrollPadding;
 
-  // --------------------------------- METHODS ---------------------------------
   @override
   Widget build(BuildContext context) {
     InputBorder createBorder(Color borderColor, {required bool isFocused}) {
@@ -221,6 +226,12 @@ class AppTextFloatingLabelField extends StatelessWidget {
                 obscureText: obscureText,
                 onChanged: onChanged,
                 onSubmitted: onSubmitted,
+                autofillHints: autofillHints,
+                enableSuggestions: enableSuggestions,
+                autocorrect: autocorrect,
+                onTapOutside: (_) =>
+                    FocusManager.instance.primaryFocus?.unfocus(),
+                scrollPadding: scrollPadding,
                 inputFormatters: inputFormatters,
                 enabled: enabled,
                 readOnly: readonly,

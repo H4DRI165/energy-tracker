@@ -1,9 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:energy_tracker/extensions/tariff_type_extension.dart';
-import 'package:energy_tracker/services/auth/providers/current_uid_provider.dart';
+import 'package:energy_tracker/services/notification/service/provider/notification_service_provider.dart';
 import 'package:energy_tracker/ui/components/logging/app_logger.dart';
 import 'package:energy_tracker/ui/components/logging/notifier/loggable_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_onboarding/notifier/onboarding_state.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final NotifierProvider<OnboardingNotifier, OnboardingPageState>
@@ -22,20 +22,12 @@ class OnboardingNotifier extends Notifier<OnboardingPageState>
   @override
   OnboardingPageState build() => const OnboardingPageState();
 
-  void selectTariff(TariffType tariff) {
-    state = state.copyWith(selectedTariff: tariff);
-  }
-
-  void nextFromTariff() {
-    state = state.copyWith(currentStep: 1);
-  }
-
   void setBudget(double budget) {
     state = state.copyWith(monthlyBudget: budget);
   }
 
   void nextFromBudget() {
-    state = state.copyWith(currentStep: 2);
+    state = state.copyWith(currentStep: 1);
   }
 
   void goBack() {
@@ -45,7 +37,8 @@ class OnboardingNotifier extends Notifier<OnboardingPageState>
   }
 
   Future<bool> completeOnboarding() async {
-    final uid = ref.read(currentUidProvider).value;
+    final authUser = FirebaseAuth.instance.currentUser;
+    final uid = authUser?.uid;
 
     if (uid == null) {
       state = state.copyWith(
@@ -55,21 +48,56 @@ class OnboardingNotifier extends Notifier<OnboardingPageState>
       return false;
     }
 
+    final signedInUser = authUser!;
+    // Read this before any async gap. Completing onboarding changes the auth
+    // route and can dispose this auto-dispose provider immediately.
+    final notificationService = ref.read(notificationServiceProvider);
+
     state = state.copyWith(
       isLoading: true,
       errorMessage: null,
     );
 
     try {
-      await _firestore.collection('users').doc(uid).set(
+      final userRef = _firestore.collection('users').doc(uid);
+      final existing = await userRef.get();
+      final existingData = existing.data() ?? const <String, dynamic>{};
+
+      final existingName = existingData['fullName'];
+      final existingEmail = existingData['email'];
+      final existingTnbAccount = existingData['tnbAccountNo'];
+
+      final fullName = existingName is String && existingName.trim().isNotEmpty
+          ? existingName
+          : signedInUser.displayName ??
+                signedInUser.email?.split('@').first ??
+                'User';
+      final email = existingEmail is String && existingEmail.isNotEmpty
+          ? existingEmail
+          : signedInUser.email ?? '';
+      final tnbAccountNo = existingTnbAccount is String
+          ? existingTnbAccount
+          : '';
+
+      // Google sign-in does not create a Firestore profile. A merge write with
+      // the identity fields works for both create and update, so onboarding
+      // can bootstrap either type of account.
+      await userRef.set(
         {
-          'tariffType': state.selectedTariff.value,
+          'uid': uid,
+          'fullName': fullName,
+          'email': email,
+          'tnbAccountNo': tnbAccountNo,
           'monthlyBudget': state.monthlyBudget,
           'onboardingCompleted': true,
+          if (!existing.exists) 'createdAt': FieldValue.serverTimestamp(),
           'updatedAt': FieldValue.serverTimestamp(),
         },
         SetOptions(merge: true),
       );
+
+      // The profile now exists, so the FCM token can be attached safely.
+      await notificationService.syncToken();
       return true;
     } on FirebaseException catch (e, st) {
       logError(
@@ -77,7 +105,6 @@ class OnboardingNotifier extends Notifier<OnboardingPageState>
         e,
         st,
         context: {
-          'tariff_type': state.selectedTariff.value,
           'monthly_budget': state.monthlyBudget,
         },
       );
@@ -91,7 +118,6 @@ class OnboardingNotifier extends Notifier<OnboardingPageState>
         e,
         st,
         context: {
-          'tariff_type': state.selectedTariff.value,
           'monthly_budget': state.monthlyBudget,
         },
       );

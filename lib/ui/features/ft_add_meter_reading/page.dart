@@ -1,5 +1,4 @@
 import 'package:energy_tracker/app.dart';
-import 'package:energy_tracker/services/notifier/user_profile_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_add_meter_reading/notifier/notifier.dart';
 import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_usage/notifier/usage_notifier.dart';
@@ -147,15 +146,8 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
     super.dispose();
   }
 
-  TariffType get _effectiveTariffType {
-    if (_isEdit) return widget.reading!.tariffType;
-    return ref.watch(tariffTypeProvider);
-  }
-
   @override
   Widget build(BuildContext context) {
-    final tariffType = _effectiveTariffType;
-
     return Expanded(
       child: SingleChildScrollView(
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
@@ -181,11 +173,7 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
               controller: _readingController,
             ),
             SizedBox(height: 10.h),
-            _TariffTypeNote(tariffType: tariffType, isEdit: _isEdit),
-            SizedBox(height: 16.h),
-            _AutoCalcCard(
-              tariffType: tariffType,
-            ),
+            _AutoCalcCard(isEdit: _isEdit),
             Text('Notes (optional)', style: AppTextStyles.label),
             SizedBox(height: 6.h),
             _NotesField(controller: _notesController),
@@ -218,13 +206,13 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
           data: Theme.of(context).copyWith(
             colorScheme: Theme.of(context).colorScheme.copyWith(
               primary: AppColors.accent,
-              onPrimary: Colors.black,
+              onPrimary: AppColors.onAccent,
               surface: AppColors.surface,
               onSurface: AppColors.text,
             ),
-            dialogTheme: const DialogThemeData(
+            dialogTheme: DialogThemeData(
               backgroundColor: AppColors.surface,
-              shape: RoundedRectangleBorder(
+              shape: const RoundedRectangleBorder(
                 borderRadius: BorderRadius.all(Radius.circular(20)),
               ),
             ),
@@ -240,25 +228,65 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
   }
 
   Future<void> _handleSave() async {
+    final readingState = ref.read(addReadingProvider);
+
+    if (_isEdit) {
+      final confirmed = await ConfirmDialog.show(
+        context,
+        title: 'Save Changes?',
+        message: 'Update this meter reading?',
+        confirmLabel: 'Save Changes',
+        warning:
+            "The kWh used, this month's bill and the next reading's usage "
+            'will be recalculated.',
+      );
+
+      if (!confirmed || !mounted) return;
+    } else if (readingState.isLongGap) {
+      final days = readingState.intervalDays ?? 0;
+      final confirmed = await ConfirmDialog.show(
+        context,
+        title: 'Long gap between readings',
+        message:
+            'This reading covers $days days. Usage will be split across '
+            'the months it covers.',
+        confirmLabel: 'Split & Save',
+        warning:
+            'Months without a reading will be marked as estimated. '
+            'Add the missing monthly readings later for an exact bill.',
+      );
+
+      if (!confirmed || !mounted) return;
+    }
+
     final notifier = ref.read(addReadingProvider.notifier);
+    final isFirstReading = !_isEdit && readingState.lastReadingDate == null;
     final success = _isEdit
         ? await notifier.updateReading(widget.reading!)
         : await notifier.saveReading();
 
     if (success && mounted) {
+      final successMessage = _isEdit
+          ? 'Reading updated'
+          : isFirstReading
+          ? 'Baseline saved — add your next reading to see usage'
+          : 'Reading saved successfully';
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.check_circle_outline_rounded,
                 color: AppColors.accent,
                 size: 18,
               ),
               SizedBox(width: 10.w),
-              Text(
-                _isEdit ? 'Reading updated' : 'Reading saved successfully',
-                style: AppTextStyles.bodyMd,
+              Expanded(
+                child: Text(
+                  successMessage,
+                  style: AppTextStyles.bodyMd,
+                ),
               ),
             ],
           ),
@@ -280,20 +308,34 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
           context.pop();
         }
       }
+    } else if (mounted) {
+      final message =
+          ref.read(addReadingProvider).errorMessage ??
+          'Could not save the reading. Please try again.';
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            message,
+            style: TextStyle(color: AppColors.onAccent),
+          ),
+          backgroundColor: AppColors.danger,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+          ),
+        ),
+      );
     }
   }
 }
 
 final _cardDecoration = BoxDecoration(
-  gradient: const LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [Color(0xFF0D2D24), Color(0xFF0A1E2E)],
-  ),
+  gradient: AppColors.heroGradient,
   borderRadius: BorderRadius.all(
     Radius.circular(AppDimensions.radiusLg),
   ),
-  border: const Border.fromBorderSide(
+  border: Border.fromBorderSide(
     BorderSide(color: AppColors.borderAccent),
   ),
 );
@@ -315,7 +357,7 @@ class _LastReadingCard extends ConsumerWidget {
         child: Center(
           child: SizedBox(
             height: 60.h,
-            child: const CircularProgressIndicator(
+            child: CircularProgressIndicator(
               color: AppColors.accent,
               strokeWidth: 2,
             ),
@@ -541,50 +583,38 @@ class _MeterReadingField extends ConsumerWidget {
   }
 }
 
-class _TariffTypeNote extends StatelessWidget {
-  const _TariffTypeNote({
-    required this.tariffType,
-    required this.isEdit,
-  });
+class _AutoCalcCard extends ConsumerWidget {
+  const _AutoCalcCard({required this.isEdit});
 
-  final TariffType tariffType;
   final bool isEdit;
 
   @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(Icons.receipt_long_rounded, size: 13.r, color: AppColors.text3),
-        SizedBox(width: 6.w),
-        Text(
-          isEdit
-              ? 'Billed under ${tariffType.label}'
-              : 'Calculating under ${tariffType.label} rates',
-          style: AppTextStyles.caption.copyWith(color: AppColors.text3),
-        ),
-      ],
-    );
-  }
-}
-
-class _AutoCalcCard extends ConsumerWidget {
-  const _AutoCalcCard({
-    required this.tariffType,
-  });
-
-  final TariffType tariffType;
-
-  @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final hasUsage = ref.watch(addReadingProvider.select((s) => s.hasUsage));
-    if (!hasUsage) return const SizedBox.shrink();
+    final data = ref.watch(
+      addReadingProvider.select(
+        (s) => (
+          hasUsage: s.hasUsage,
+          lastReadingDate: s.lastReadingDate,
+          isLoading: s.isLoadingLastReading,
+        ),
+      ),
+    );
+
+    if (data.isLoading) return const SizedBox.shrink();
+
+    if (!data.hasUsage) {
+      if (!isEdit && data.lastReadingDate == null) {
+        return const _BaselineHintCard();
+      }
+      return const SizedBox.shrink();
+    }
 
     final usageKwh = ref.watch(addReadingProvider.select((s) => s.usageKwh));
     final cumulativeKwh = ref.watch(
       addReadingProvider.select((s) => s.cumulativeKwh),
     );
     final incrementalCost = ref.watch(
-      addReadingProvider.select((s) => s.incrementalCost(tariffType)),
+      addReadingProvider.select((s) => s.incrementalCost()),
     );
     final eeiBand = TariffRates.getEeiBand(cumulativeKwh);
 
@@ -626,24 +656,16 @@ class _AutoCalcCard extends ConsumerWidget {
                 valueColor: AppColors.text,
               ),
               SizedBox(height: 10.h),
-              const Divider(color: AppColors.border, height: 1),
+              Divider(color: AppColors.border, height: 1),
               SizedBox(height: 10.h),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    tariffType == TariffType.domestic
-                        ? 'EEI band'
-                        : 'EEI rebate',
-                    style: AppTextStyles.caption,
-                  ),
-                  _BandBadge(
-                    tariffType: tariffType,
-                    cumulativeKwh: cumulativeKwh,
-                  ),
+                  Text('EEI band', style: AppTextStyles.caption),
+                  _BandBadge(cumulativeKwh: cumulativeKwh),
                 ],
               ),
-              if (tariffType == TariffType.domestic && cumulativeKwh > 0) ...[
+              if (cumulativeKwh > 0) ...[
                 Text(
                   eeiBand.description,
                   style: AppTextStyles.caption.copyWith(color: AppColors.text3),
@@ -658,43 +680,81 @@ class _AutoCalcCard extends ConsumerWidget {
   }
 }
 
-class _BandBadge extends StatelessWidget {
-  const _BandBadge({
-    required this.tariffType,
-    required this.cumulativeKwh,
-  });
+class _BaselineHintCard extends StatelessWidget {
+  const _BaselineHintCard();
 
-  final TariffType tariffType;
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Container(
+          padding: EdgeInsets.all(14.r),
+          decoration: BoxDecoration(
+            color: AppColors.accent.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+            border: Border.all(color: AppColors.borderAccent),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                Icons.flag_outlined,
+                size: 18.r,
+                color: AppColors.accent,
+              ),
+              SizedBox(width: 10.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'This is your starting point',
+                      style: AppTextStyles.bodySm.copyWith(
+                        color: AppColors.accent,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    SizedBox(height: 4.h),
+                    Text(
+                      'Your first reading will be saved as the baseline. Add a '
+                      'second reading later to calculate usage and your '
+                      'estimated bill.',
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.text2,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(
+          height: 10.h,
+        ),
+      ],
+    );
+  }
+}
+
+class _BandBadge extends StatelessWidget {
+  const _BandBadge({required this.cumulativeKwh});
+
   final double cumulativeKwh;
 
   @override
   Widget build(BuildContext context) {
-    if (tariffType == TariffType.domestic) {
-      final band = TariffRates.getEeiBand(cumulativeKwh);
-      return Container(
-        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
-        decoration: BoxDecoration(
-          color: band.color.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(20.r),
-        ),
-        child: Text(
-          band.label,
-          style: AppTextStyles.tag.copyWith(color: band.color),
-        ),
-      );
-    }
-
-    final tier = TariffRates.getTier(cumulativeKwh, TariffType.commercial);
-    final color = TariffRates.getTierColor(tier, TariffType.commercial);
+    final band = TariffRates.getEeiBand(cumulativeKwh);
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
+        color: band.color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20.r),
       ),
       child: Text(
-        TariffRates.tierBadgeLabel(tier, TariffType.commercial),
-        style: AppTextStyles.tag.copyWith(color: color),
+        band.label,
+        style: AppTextStyles.tag.copyWith(color: band.color),
       ),
     );
   }
@@ -749,15 +809,15 @@ class _NotesField extends StatelessWidget {
         fillColor: AppColors.surface2,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderSide: BorderSide(color: AppColors.border),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderSide: BorderSide(color: AppColors.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-          borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
+          borderSide: BorderSide(color: AppColors.accent, width: 1.5),
         ),
         contentPadding: EdgeInsets.all(14.r),
       ),

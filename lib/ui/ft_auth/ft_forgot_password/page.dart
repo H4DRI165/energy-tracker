@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:energy_tracker/app.dart';
 import 'package:energy_tracker/ui/ft_auth/ft_forgot_password/notifier/notifier.dart';
 import 'package:flutter/material.dart';
@@ -14,90 +12,14 @@ class ForgotPasswordPage extends ConsumerStatefulWidget {
   ConsumerState<ForgotPasswordPage> createState() => _ForgotPasswordPageState();
 }
 
-class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _animationController;
-  late final Animation<double> _fadeIn;
-  late final Animation<Offset> _slideIn;
-
-  @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 500),
-    );
-
-    unawaited(_animationController.forward());
-
-    _fadeIn = CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOut,
-    );
-    _slideIn =
-        Tween<Offset>(
-          begin: const Offset(0, 0.04),
-          end: Offset.zero,
-        ).animate(
-          CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
-        );
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
-
+class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
   @override
   Widget build(BuildContext context) {
-    final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
-
-    return GestureDetector(
-      onTap: () => FocusScope.of(context).unfocus(),
-      behavior: HitTestBehavior.opaque,
-      child: Scaffold(
-        backgroundColor: AppColors.bg,
-        resizeToAvoidBottomInset: true,
-        body: SafeArea(
-          child: FadeTransition(
-            opacity: _fadeIn,
-            child: SlideTransition(
-              position: _slideIn,
-              child: Column(
-                children: [
-                  Expanded(
-                    child: SingleChildScrollView(
-                      keyboardDismissBehavior:
-                          ScrollViewKeyboardDismissBehavior.onDrag,
-                      padding: EdgeInsets.symmetric(
-                        horizontal: AppDimensions.screenPaddingH,
-                        vertical: AppDimensions.screenPaddingV,
-                      ),
-                      child: const Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _Header(),
-                          SizedBox(height: 32),
-                          _BodyContent(),
-                        ],
-                      ),
-                    ),
-                  ),
-                  if (!keyboardOpen)
-                    Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: AppDimensions.screenPaddingH,
-                        vertical: 24,
-                      ),
-                      child: _BackToLoginRow(),
-                    ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
+    return const AuthPageScaffold(
+      topSpacing: 0,
+      header: _Header(),
+      footer: _BackToLoginRow(),
+      child: _BodyContent(),
     );
   }
 }
@@ -110,9 +32,14 @@ class _Header extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const StringIcon(
+        AuthBackButton(
+          onTap: () =>
+              context.canPop() ? context.pop() : context.go(AppRoutes.login),
+        ),
+        SizedBox(height: 4.h),
+        StringIcon(
           icon: '🔑',
-          gradient: LinearGradient(
+          gradient: const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [Color(0x2600D4AA), Color(0x1A0099FF)],
@@ -184,11 +111,17 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
             color: AppColors.text3,
           ),
           errorText: state.emailError,
+          autofillHints: const [AutofillHints.email],
+          enableSuggestions: false,
+          autocorrect: false,
           clearable: true,
+          textInputAction: TextInputAction.done,
+          onSubmitted: (_) =>
+              ref.read(forgotPasswordProvider.notifier).sendResetEmail(),
         ),
         if (state.errorMessage != null) ...[
           SizedBox(height: 16.h),
-          _ErrorBanner(message: state.errorMessage!),
+          AuthErrorBanner(message: state.errorMessage!),
         ],
         SizedBox(height: 28.h),
         GradientButton(
@@ -204,39 +137,6 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
               'see the email within a few minutes.',
         ),
       ],
-    );
-  }
-}
-
-class _ErrorBanner extends StatelessWidget {
-  const _ErrorBanner({required this.message});
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
-      decoration: BoxDecoration(
-        color: AppColors.danger.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-        border: Border.all(color: AppColors.danger.withValues(alpha: 0.25)),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.error_outline_rounded,
-            color: AppColors.danger,
-            size: 18.r,
-          ),
-          SizedBox(width: 10.w),
-          Expanded(
-            child: Text(
-              message,
-              style: AppTextStyles.bodySm.copyWith(color: AppColors.danger),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -271,7 +171,7 @@ class _InfoCard extends StatelessWidget {
   }
 }
 
-class ForgotPasswordSuccess extends StatelessWidget {
+class ForgotPasswordSuccess extends ConsumerWidget {
   const ForgotPasswordSuccess({
     required this.email,
     super.key,
@@ -280,26 +180,29 @@ class ForgotPasswordSuccess extends StatelessWidget {
   final String email;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(forgotPasswordProvider);
+    final notifier = ref.read(forgotPasswordProvider.notifier);
+
     return Column(
       children: [
-        SizedBox(height: 40.h),
+        SizedBox(height: 24.h),
         Container(
           width: 96.r,
           height: 96.r,
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: LinearGradient(
               colors: [
-                Color(0xFF00C853),
                 AppColors.accent,
+                AppColors.accent2,
               ],
             ),
           ),
           child: Icon(
             Icons.check_rounded,
             size: 52.r,
-            color: Colors.black,
+            color: AppColors.onAccent,
           ),
         ),
         SizedBox(height: 32.h),
@@ -323,10 +226,29 @@ class ForgotPasswordSuccess extends StatelessWidget {
           ),
           textAlign: TextAlign.center,
         ),
-        SizedBox(height: 40.h),
+        if (state.errorMessage != null) ...[
+          SizedBox(height: 20.h),
+          AuthErrorBanner(message: state.errorMessage!),
+        ],
+        SizedBox(height: 28.h),
+        GradientButton(
+          label: 'Resend email',
+          isLoading: state.isLoading,
+          onTap: notifier.resendResetEmail,
+        ),
+        SizedBox(height: 8.h),
+        TextButton(
+          onPressed: notifier.editEmail,
+          style: TextButton.styleFrom(minimumSize: const Size(48, 44)),
+          child: Text(
+            'Use a different email',
+            style: AppTextStyles.bodySm.copyWith(color: AppColors.accent),
+          ),
+        ),
+        SizedBox(height: 8.h),
         const _InfoCard(
           icon: Icons.mark_email_read_outlined,
-          text: "Didn't receive the email? Check spam or try again.",
+          text: "Didn't receive the email? Check your spam folder first.",
         ),
       ],
     );
@@ -334,10 +256,13 @@ class ForgotPasswordSuccess extends StatelessWidget {
 }
 
 class _BackToLoginRow extends StatelessWidget {
+  const _BackToLoginRow();
+
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Wrap(
+      alignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         Text(
           'Remember your password? ',
@@ -345,8 +270,13 @@ class _BackToLoginRow extends StatelessWidget {
             color: AppColors.text2,
           ),
         ),
-        GestureDetector(
-          onTap: () => context.go(AppRoutes.login),
+        TextButton(
+          onPressed: () =>
+              context.canPop() ? context.pop() : context.go(AppRoutes.login),
+          style: TextButton.styleFrom(
+            padding: EdgeInsets.symmetric(horizontal: 4.w),
+            minimumSize: const Size(48, 44),
+          ),
           child: Text(
             'Sign In',
             style: AppTextStyles.bodyMd.copyWith(

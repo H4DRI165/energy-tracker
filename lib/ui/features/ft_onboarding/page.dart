@@ -63,9 +63,6 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                   controller: _pageController,
                   physics: const NeverScrollableScrollPhysics(),
                   children: [
-                    _StepTariff(
-                      notifier: notifier,
-                    ),
                     _StepBudget(
                       notifier: notifier,
                     ),
@@ -145,135 +142,12 @@ class _OnboardingHeader extends ConsumerWidget {
             child: LinearProgressIndicator(
               value: progressValue,
               backgroundColor: AppColors.surface3,
-              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.accent),
+              valueColor: AlwaysStoppedAnimation<Color>(AppColors.accent),
               minHeight: 3,
             ),
           ),
           SizedBox(height: 28.h),
         ],
-      ),
-    );
-  }
-}
-
-class _StepTariff extends ConsumerWidget {
-  const _StepTariff({
-    required this.notifier,
-  });
-
-  final OnboardingNotifier notifier;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return SingleChildScrollView(
-      padding: EdgeInsets.symmetric(horizontal: 20.w),
-      child: Column(
-        children: [
-          const StringIcon(
-            icon: '🏠',
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0x2600D4AA), Color(0x1A0099FF)],
-            ),
-            border: AppColors.borderAccent,
-          ),
-          SizedBox(height: 16.h),
-          Text('Select Tariff Type', style: AppTextStyles.titleLg),
-          SizedBox(height: 8.h),
-          Text(
-            'Choose your TNB account category',
-            style: AppTextStyles.bodyMd.copyWith(color: AppColors.text2),
-          ),
-          SizedBox(height: 24.h),
-          ...TariffType.values.map((tariff) {
-            return Padding(
-              padding: EdgeInsets.only(bottom: 10.h),
-              child: _TariffOption(tariff: tariff, notifier: notifier),
-            );
-          }),
-          SizedBox(height: 28.h),
-          GradientButton(
-            label: 'Continue',
-            isLoading: false,
-            onTap: notifier.nextFromTariff,
-          ),
-          SizedBox(height: 24.h),
-        ],
-      ),
-    );
-  }
-}
-
-class _TariffOption extends ConsumerWidget {
-  const _TariffOption({
-    required this.tariff,
-    required this.notifier,
-  });
-
-  final TariffType tariff;
-  final OnboardingNotifier notifier;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final isSelected = ref.watch(
-      onboardingProvider.select((state) => state.selectedTariff == tariff),
-    );
-
-    return GestureDetector(
-      onTap: () => notifier.selectTariff(tariff),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: EdgeInsets.all(16.r),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.accent.withValues(alpha: 0.06)
-              : AppColors.surface2,
-          borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
-          border: Border.all(
-            color: isSelected ? AppColors.accent : AppColors.border,
-            width: isSelected ? 1.5 : 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '${tariff.icon} ${tariff.label}',
-                    style: AppTextStyles.bodyLg.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  SizedBox(height: 2.h),
-                  Text(
-                    tariff.subtitle,
-                    style: AppTextStyles.bodySm,
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(width: 12.w),
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: 20.r,
-              height: 20.r,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isSelected ? AppColors.accent : Colors.transparent,
-                border: Border.all(
-                  color: isSelected ? AppColors.accent : AppColors.border,
-                  width: 1.5,
-                ),
-              ),
-              child: isSelected
-                  ? Icon(Icons.check_rounded, size: 13.r, color: Colors.black)
-                  : null,
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -357,7 +231,7 @@ class _StepBudget extends ConsumerWidget {
               trackHeight: 4,
               activeTrackColor: AppColors.accent,
               inactiveTrackColor: AppColors.surface3,
-              thumbColor: Colors.white,
+              thumbColor: AppColors.onAccent,
               thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
               overlayColor: AppColors.accent.withValues(alpha: 0.15),
               overlayShape: const RoundSliderOverlayShape(overlayRadius: 18),
@@ -366,7 +240,7 @@ class _StepBudget extends ConsumerWidget {
               value: monthlyBudget,
               min: OnboardingPageState.minBudget,
               max: OnboardingPageState.maxBudget,
-              divisions: 50, // RM 5 increments
+              divisions: 90, // RM 5 increments
               onChanged: notifier.setBudget,
             ),
           ),
@@ -380,19 +254,27 @@ class _StepBudget extends ConsumerWidget {
                   style: AppTextStyles.caption.copyWith(color: AppColors.text3),
                 ),
                 Text(
-                  'RM 300',
+                  'RM 500',
                   style: AppTextStyles.caption.copyWith(color: AppColors.text3),
                 ),
               ],
             ),
           ),
-          Text(
-            'Quick Select',
-            style: AppTextStyles.caption.copyWith(fontWeight: FontWeight.w600),
+          SizedBox(height: 20.h),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Quick Select',
+              style: AppTextStyles.caption.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
           SizedBox(height: 8.h),
           Wrap(
             spacing: 8.w,
+            runSpacing: 8.h,
+            alignment: WrapAlignment.center,
             children: _presets.map((preset) {
               final isSelected = monthlyBudget == preset;
               return FilterChip(
@@ -435,8 +317,10 @@ class _StepBudget extends ConsumerWidget {
                   child: RichText(
                     text: TextSpan(
                       style: AppTextStyles.bodySm,
-                      children: const [
-                        TextSpan(text: 'Average Malaysian household spends '),
+                      children: [
+                        const TextSpan(
+                          text: 'Average Malaysian household spends ',
+                        ),
                         TextSpan(
                           text: 'RM 120–180',
                           style: TextStyle(
@@ -444,7 +328,7 @@ class _StepBudget extends ConsumerWidget {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        TextSpan(text: '/month on electricity'),
+                        const TextSpan(text: '/month on electricity'),
                       ],
                     ),
                   ),
@@ -476,9 +360,6 @@ class _StepComplete extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final selectedTariff = ref.watch(
-      onboardingProvider.select((state) => state.selectedTariff),
-    );
     final monthlyBudget = ref.watch(
       onboardingProvider.select((state) => state.monthlyBudget),
     );
@@ -506,20 +387,20 @@ class _StepComplete extends ConsumerWidget {
           SizedBox(height: 24.h),
           _SummaryItem(
             icon: '✅',
-            title: 'Tariff configured',
-            subtitle: selectedTariff.label,
-          ),
-          SizedBox(height: 10.h),
-          _SummaryItem(
-            icon: '✅',
             title: 'Budget set',
             subtitle: 'RM ${monthlyBudget.toStringAsFixed(0)} / month',
           ),
           SizedBox(height: 10.h),
           const _SummaryItem(
             icon: '🔔',
-            title: 'Alerts enabled',
-            subtitle: '80% & 100% notifications',
+            title: 'Budget alerts',
+            subtitle: 'Manage them in Settings',
+          ),
+          SizedBox(height: 10.h),
+          const _SummaryItem(
+            icon: '📈',
+            title: 'Next: add a meter reading',
+            subtitle: 'Needed before usage can be calculated',
           ),
           const _CompleteErrorBanner(),
           SizedBox(height: 28.h),
@@ -568,18 +449,20 @@ class _SummaryItem extends StatelessWidget {
             ),
           ),
           SizedBox(width: 12.w),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: AppTextStyles.bodyMd.copyWith(
-                  fontWeight: FontWeight.w600,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: AppTextStyles.bodyMd.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-              SizedBox(height: 2.h),
-              Text(subtitle, style: AppTextStyles.bodySm),
-            ],
+                SizedBox(height: 2.h),
+                Text(subtitle, style: AppTextStyles.bodySm),
+              ],
+            ),
           ),
         ],
       ),
@@ -636,7 +519,7 @@ class _CompleteButton extends ConsumerWidget {
     );
 
     return GradientButton(
-      label: 'Start Tracking ⚡',
+      label: 'Start Tracking',
       isLoading: isLoading,
       onTap: onStartTracking,
     );

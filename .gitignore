@@ -105,6 +105,29 @@ test/**/coverage
 *.swp
 *.swo
 
+# Secrets & credentials
+*.jks
+*.p8
+*.p12
+*.pem
+*.key
+*.mobileprovision
+*.cer
+*.crt
+**/key.properties
+serviceAccountKey.json
+*firebase-adminsdk*.json
+*-service-account.json
+functions/.env
+functions/.env.*
+functions/.runtimeconfig.json
+.secret.local
+*.secret
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+node_modules/
+
 # Exceptions (do NOT ignore these)
 !**/ios/**/default.mode1v3
 !**/ios/**/default.mode2v3

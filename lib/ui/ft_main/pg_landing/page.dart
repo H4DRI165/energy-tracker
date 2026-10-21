@@ -14,16 +14,13 @@ class LandingPage extends StatefulWidget {
 
 class _LandingPageState extends State<LandingPage>
     with SingleTickerProviderStateMixin {
-  Timer? _redirectTimer;
   late final AnimationController _controller;
 
-  // Staggered reveal animations
   late final Animation<double> _bgFade;
   late final Animation<Offset> _heroSlide;
   late final Animation<double> _heroFade;
-  late final Animation<double> _pill1Fade;
-  late final Animation<double> _pill2Fade;
-  late final Animation<double> _pill3Fade;
+  late final Animation<double> _featureTopFade;
+  late final Animation<double> _featureBottomFade;
   late final Animation<double> _bottomFade;
 
   @override
@@ -56,19 +53,14 @@ class _LandingPageState extends State<LandingPage>
       curve: const Interval(0.1, 0.55, curve: Curves.easeOut),
     );
 
-    _pill1Fade = CurvedAnimation(
+    _featureTopFade = CurvedAnimation(
       parent: _controller,
       curve: const Interval(0.35, 0.65, curve: Curves.easeOut),
     );
 
-    _pill2Fade = CurvedAnimation(
+    _featureBottomFade = CurvedAnimation(
       parent: _controller,
       curve: const Interval(0.45, 0.75, curve: Curves.easeOut),
-    );
-
-    _pill3Fade = CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(0.55, 0.85, curve: Curves.easeOut),
     );
 
     _bottomFade = CurvedAnimation(
@@ -76,35 +68,12 @@ class _LandingPageState extends State<LandingPage>
       curve: const Interval(0.65, 1, curve: Curves.easeOut),
     );
 
-    unawaited(_controller.forward().then((_) => _scheduleRedirect()));
-  }
-
-  void _scheduleRedirect() {
-    // Skip timer if user has accessibility needs (reduced motion / slow animations)
-    final accessibilityFeatures = WidgetsBinding.instance.accessibilityFeatures;
-    final mediaQuery = MediaQueryData.fromView(
-      WidgetsBinding.instance.platformDispatcher.views.first,
-    );
-    final prefersReducedMotion =
-        mediaQuery.disableAnimations || accessibilityFeatures.reduceMotion;
-
-    if (prefersReducedMotion) {
-      // Go immediately — don't force a timed wait on accessibility users
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) context.go(AppRoutes.login);
-      });
-      return;
-    }
-
-    _redirectTimer = Timer(const Duration(milliseconds: 2500), () {
-      if (mounted) context.go(AppRoutes.login);
-    });
+    unawaited(_controller.forward());
   }
 
   @override
   void dispose() {
     _controller.dispose();
-    _redirectTimer?.cancel();
     super.dispose();
   }
 
@@ -117,12 +86,8 @@ class _LandingPageState extends State<LandingPage>
           FadeTransition(
             opacity: _bgFade,
             child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFF060912), Color(0xFF0D1A2E)],
-                ),
+              decoration: BoxDecoration(
+                gradient: AppColors.splashGradient,
               ),
             ),
           ),
@@ -146,131 +111,150 @@ class _LandingPageState extends State<LandingPage>
             ),
           ),
           SafeArea(
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: AppDimensions.screenPaddingH,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(height: 48.h),
-                  FadeTransition(
-                    opacity: _heroFade,
-                    child: SlideTransition(
-                      position: _heroSlide,
-                      child: Text(
-                        '⚡ ENERGY TRACKER',
-                        style: AppTextStyles.overline,
-                      ),
-                    ),
+            child: LayoutBuilder(
+              builder: (context, constraints) => SingleChildScrollView(
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppDimensions.screenPaddingH,
+                ),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: constraints.maxHeight,
                   ),
-                  SizedBox(height: 16.h),
-                  FadeTransition(
-                    opacity: _heroFade,
-                    child: SlideTransition(
-                      position: _heroSlide,
-                      child: RichText(
-                        text: TextSpan(
-                          style: AppTextStyles.displayLg.copyWith(height: 1.15),
-                          children: const [
-                            TextSpan(text: 'Track your\n'),
-                            TextSpan(
-                              text: 'TNB energy',
-                              style: TextStyle(color: AppColors.accent),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 16.h),
-                  FadeTransition(
-                    opacity: _heroFade,
-                    child: SlideTransition(
-                      position: _heroSlide,
-                      child: Text(
-                        'Monitor usage, set budgets, and\n'
-                        'never get surprised by your bill again.',
-                        style: AppTextStyles.bodyMd.copyWith(
-                          color: AppColors.text2,
-                          height: 1.6,
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 40.h),
-                  FadeTransition(
-                    opacity: _pill1Fade,
-                    child: const _FeaturePill(
-                      icon: '📊',
-                      label: 'Real-time usage tracking',
-                      color: AppColors.accent,
-                    ),
-                  ),
-                  SizedBox(height: 10.h),
-                  FadeTransition(
-                    opacity: _pill2Fade,
-                    child: const _FeaturePill(
-                      icon: '🎯',
-                      label: 'Monthly budget alerts',
-                      color: AppColors.accent2,
-                    ),
-                  ),
-                  SizedBox(height: 10.h),
-                  FadeTransition(
-                    opacity: _pill3Fade,
-                    child: const _FeaturePill(
-                      icon: '📄',
-                      label: 'Scan TNB bills instantly',
-                      color: AppColors.accent3,
-                    ),
-                  ),
-                  const Spacer(),
-                  FadeTransition(
-                    opacity: _bottomFade,
+                  child: IntrinsicHeight(
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        GestureDetector(
-                          onTap: () {
-                            _redirectTimer?.cancel();
-                            if (mounted) context.go(AppRoutes.login);
-                          },
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              SizedBox(
-                                width: 14.r,
-                                height: 14.r,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 1.5,
-                                  color: AppColors.accent.withValues(
-                                    alpha: 0.6,
+                        SizedBox(height: 48.h),
+                        FadeTransition(
+                          opacity: _heroFade,
+                          child: SlideTransition(
+                            position: _heroSlide,
+                            child: Text(
+                              '⚡ ENERGY TRACKER',
+                              style: AppTextStyles.overline,
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 16.h),
+                        FadeTransition(
+                          opacity: _heroFade,
+                          child: SlideTransition(
+                            position: _heroSlide,
+                            child: RichText(
+                              text: TextSpan(
+                                style: AppTextStyles.displayLg.copyWith(
+                                  height: 1.15,
+                                ),
+                                children: [
+                                  const TextSpan(text: 'Track your\n'),
+                                  TextSpan(
+                                    text: 'TNB energy',
+                                    style: TextStyle(color: AppColors.accent),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 16.h),
+                        FadeTransition(
+                          opacity: _heroFade,
+                          child: SlideTransition(
+                            position: _heroSlide,
+                            child: Text(
+                              'Monitor usage, set budgets, and\n'
+                              'never get surprised by your bill again.',
+                              style: AppTextStyles.bodyMd.copyWith(
+                                color: AppColors.text2,
+                                height: 1.6,
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 36.h),
+                        FadeTransition(
+                          opacity: _featureTopFade,
+                          child: IntrinsicHeight(
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Expanded(
+                                  child: _FeatureCard(
+                                    icon: Icons.query_stats_rounded,
+                                    title: 'Usage trends',
+                                    subtitle: 'Based on meter readings',
+                                    color: AppColors.accent,
                                   ),
                                 ),
+                                SizedBox(width: 10.w),
+                                Expanded(
+                                  child: _FeatureCard(
+                                    icon: Icons.notifications_active_rounded,
+                                    title: 'Budget alerts',
+                                    subtitle: '80% and 100% warnings',
+                                    color: AppColors.accent2,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 10.h),
+                        FadeTransition(
+                          opacity: _featureBottomFade,
+                          child: IntrinsicHeight(
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Expanded(
+                                  child: _FeatureCard(
+                                    icon: Icons.receipt_long_rounded,
+                                    title: 'Bill estimate',
+                                    subtitle: 'Every charge explained',
+                                    color: AppColors.accent3,
+                                  ),
+                                ),
+                                SizedBox(width: 10.w),
+                                Expanded(
+                                  child: _FeatureCard(
+                                    icon: Icons.electrical_services_rounded,
+                                    title: 'Appliance costs',
+                                    subtitle: 'Running-cost estimates',
+                                    color: AppColors.warn,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const Spacer(),
+                        FadeTransition(
+                          opacity: _bottomFade,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              GradientButton(
+                                label: 'Get started',
+                                isLoading: false,
+                                onTap: () => context.go(AppRoutes.login),
                               ),
-                              SizedBox(width: 10.w),
+                              SizedBox(height: 8.h),
                               Text(
-                                'Taking you to sign in...',
+                                'Sign in or create an account to start '
+                                'tracking.',
+                                textAlign: TextAlign.center,
                                 style: AppTextStyles.caption.copyWith(
                                   color: AppColors.text3,
                                 ),
                               ),
-                              SizedBox(width: 6.w),
-                              Text(
-                                'Tap to skip',
-                                style: AppTextStyles.caption.copyWith(
-                                  color: AppColors.accent,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
+                              SizedBox(height: 24.h),
                             ],
                           ),
                         ),
-                        SizedBox(height: 32.h),
                       ],
                     ),
                   ),
-                ],
+                ),
               ),
             ),
           ),
@@ -280,53 +264,54 @@ class _LandingPageState extends State<LandingPage>
   }
 }
 
-class _FeaturePill extends StatelessWidget {
-  const _FeaturePill({
+class _FeatureCard extends StatelessWidget {
+  const _FeatureCard({
     required this.icon,
-    required this.label,
+    required this.title,
+    required this.subtitle,
     required this.color,
   });
-  final String icon;
-  final String label;
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
   final Color color;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+      padding: EdgeInsets.all(12.r),
       decoration: BoxDecoration(
         color: AppColors.surface2,
         borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
         border: Border.all(color: AppColors.border),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 36.r,
-            height: 36.r,
+            width: 32.r,
+            height: 32.r,
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(9),
             ),
-            child: Center(
-              child: Text(icon, style: TextStyle(fontSize: 16.sp)),
+            child: Icon(icon, size: 17.r, color: color),
+          ),
+          SizedBox(height: 10.h),
+          Text(
+            title,
+            style: AppTextStyles.bodySm.copyWith(
+              fontWeight: FontWeight.w700,
             ),
           ),
-          SizedBox(width: 12.w),
-          Expanded(
-            child: Text(
-              label,
-              style: AppTextStyles.bodyMd.copyWith(
-                fontWeight: FontWeight.w500,
-              ),
-              overflow: TextOverflow.ellipsis,
+          SizedBox(height: 3.h),
+          Text(
+            subtitle,
+            style: AppTextStyles.caption.copyWith(
+              color: AppColors.text3,
+              fontSize: 10.sp,
             ),
-          ),
-          SizedBox(width: 12.w),
-          Icon(
-            Icons.arrow_forward_ios_rounded,
-            size: 12.r,
-            color: AppColors.text3,
           ),
         ],
       ),

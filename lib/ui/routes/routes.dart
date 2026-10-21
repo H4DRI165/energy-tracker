@@ -19,10 +19,8 @@ abstract class AppRoutes {
   static const String billDetail = '/usage/bill-detail';
   static const String devices = '/devices';
   static const String addAppliance = '/devices/add';
+  static const String applianceDetail = '/devices/detail';
   static const String editAppliance = '/devices/edit';
-
-  // WIP
-  static const String scanBill = '/scan_bill';
 
   // error
   static const String error = '/error';

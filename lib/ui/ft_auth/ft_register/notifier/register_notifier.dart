@@ -147,9 +147,16 @@ class RegisterNotifier extends Notifier<RegisterPageState>
       );
       hasError = true;
     }
-    if (state.password.isEmpty || state.password.length < 8) {
+    final hasUppercase = RegExp('[A-Z]').hasMatch(state.password);
+    final hasNumber = RegExp('[0-9]').hasMatch(state.password);
+    final hasSymbol = RegExp(r'[!@#\$&*~%^()]').hasMatch(state.password);
+    if (state.password.length < 8 ||
+        !hasUppercase ||
+        !hasNumber ||
+        !hasSymbol) {
       state = state.copyWith(
-        passwordError: 'Password must be at least 8 characters',
+        passwordError:
+            'Use 8+ characters with an uppercase letter, number and symbol',
       );
       hasError = true;
     }
@@ -191,18 +198,12 @@ class RegisterNotifier extends Notifier<RegisterPageState>
         'fullName': fullName,
         'email': email,
         'tnbAccountNo': tnbAccount,
-        'tariffType': 'domestic',
         'monthlyBudget': 150.0,
         'onboardingCompleted': false,
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
-        'photoURL': null,
-        'isGuest': false,
       });
       userDocWritten = true;
-
-      // TODO(dev): enable when want to test email verification flow
-      // await user.sendEmailVerification();
 
       shouldRollback = false;
     } on FirebaseAuthException catch (e, st) {

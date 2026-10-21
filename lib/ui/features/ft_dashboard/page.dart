@@ -36,7 +36,7 @@ class DashboardPage extends ConsumerWidget {
                 ),
               ),
               state.when(
-                loading: () => const SliverFillRemaining(
+                loading: () => SliverFillRemaining(
                   child: Center(
                     child: CircularProgressIndicator(color: AppColors.accent),
                   ),
@@ -101,8 +101,6 @@ class _Header extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    final isAlert = state.isNearBudget || state.isOverBudget;
-
     return Padding(
       padding: EdgeInsets.fromLTRB(
         AppDimensions.screenPaddingH,
@@ -128,52 +126,6 @@ class _Header extends ConsumerWidget {
               ],
             ),
           ),
-          SizedBox(width: 12.w),
-          GestureDetector(
-            onTap: () => showModalBottomSheet<void>(
-              context: context,
-              backgroundColor: Colors.transparent,
-              builder: (_) => const NotificationPrefsSheet(),
-            ),
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Container(
-                  width: AppDimensions.iconBtnSize,
-                  height: AppDimensions.iconBtnSize,
-                  decoration: BoxDecoration(
-                    color: isAlert
-                        ? AppColors.danger.withValues(alpha: 0.10)
-                        : AppColors.surface2,
-                    borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-                    border: isAlert
-                        ? Border.all(
-                            color: AppColors.danger.withValues(alpha: 0.20),
-                          )
-                        : Border.all(color: AppColors.border),
-                  ),
-                  child: Icon(
-                    Icons.notifications_outlined,
-                    size: 20.r,
-                    color: AppColors.text2,
-                  ),
-                ),
-                if (state.hasUnreadNotifications)
-                  Positioned(
-                    top: -2,
-                    right: -2,
-                    child: Container(
-                      width: 8.r,
-                      height: 8.r,
-                      decoration: const BoxDecoration(
-                        color: AppColors.danger,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
         ],
       ),
     );
@@ -192,7 +144,15 @@ class _BodyContent extends ConsumerWidget {
       return const SliverToBoxAdapter(child: SizedBox.shrink());
     }
 
+    if (state.readingCount == 0) {
+      return const SliverFillRemaining(
+        hasScrollBody: false,
+        child: _DashboardEmptyState(),
+      );
+    }
+
     final isAlert = state.isNearBudget || state.isOverBudget;
+    final showAlertBanner = state.isOverBudget;
 
     return SliverMainAxisGroup(
       slivers: [
@@ -210,7 +170,11 @@ class _BodyContent extends ConsumerWidget {
           sliver: SliverList(
             delegate: SliverChildListDelegate(
               [
-                if (isAlert) ...[
+                if (state.readingCount == 1) ...[
+                  const _BaselineReadingBanner(),
+                  SizedBox(height: 14.h),
+                ],
+                if (showAlertBanner) ...[
                   const BudgetAlertBanner(),
                   SizedBox(height: 14.h),
                 ],
@@ -224,16 +188,110 @@ class _BodyContent extends ConsumerWidget {
                   const SavingTipsCard(),
                   SizedBox(height: 14.h),
                 ],
-                QuickActions(
-                  onAddReading: () => context.push(AppRoutes.addReading),
-                  onScanBill: () => context.push(AppRoutes.scanBill),
-                ),
-                SizedBox(height: 24.h),
               ],
             ),
           ),
         ),
       ],
+    );
+  }
+}
+
+class _DashboardEmptyState extends StatelessWidget {
+  const _DashboardEmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(AppDimensions.screenPaddingH),
+        child: SizedBox(
+          width: 300.w,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 72.r,
+                height: 72.r,
+                decoration: BoxDecoration(
+                  color: AppColors.accent.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(24.r),
+                  border: Border.all(color: AppColors.borderAccent),
+                ),
+                child: Icon(
+                  Icons.speed_rounded,
+                  size: 34.r,
+                  color: AppColors.accent,
+                ),
+              ),
+              SizedBox(height: 18.h),
+              Text(
+                'Start tracking your usage',
+                textAlign: TextAlign.center,
+                style: AppTextStyles.titleMd,
+              ),
+              SizedBox(height: 8.h),
+              Text(
+                'Add a baseline reading, then your next reading to see '
+                'usage, budget progress and an estimated bill.',
+                textAlign: TextAlign.center,
+                style: AppTextStyles.bodyMd.copyWith(color: AppColors.text2),
+              ),
+              SizedBox(height: 24.h),
+              GradientButton(
+                label: 'Add first reading',
+                isLoading: false,
+                onTap: () => context.push(AppRoutes.addReading),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BaselineReadingBanner extends StatelessWidget {
+  const _BaselineReadingBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(12.r),
+      decoration: BoxDecoration(
+        color: AppColors.accent.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+        border: Border.all(color: AppColors.borderAccent),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.check_circle_outline_rounded,
+            size: 18.r,
+            color: AppColors.accent,
+          ),
+          SizedBox(width: 8.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Baseline reading saved',
+                  style: AppTextStyles.bodySm.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                SizedBox(height: 2.h),
+                Text(
+                  'Add your next reading to calculate usage and your bill.',
+                  style: AppTextStyles.caption.copyWith(color: AppColors.text2),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

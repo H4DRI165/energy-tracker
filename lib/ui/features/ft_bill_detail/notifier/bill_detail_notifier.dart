@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/constants/tariff_rates.dart';
-import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 import 'package:energy_tracker/models/bill_record.dart';
 import 'package:energy_tracker/models/reading_record.dart';
 import 'package:energy_tracker/services/auth/providers/current_uid_provider.dart';
@@ -21,7 +20,6 @@ billDetailProvider =
     );
 
 extension ReadingRecordListX on List<ReadingRecord> {
-  // sum of all kwh to get tier
   Map<String, String> cumulativeTierLabels() {
     final sorted = [...this]..sort((a, b) => a.date.compareTo(b.date));
     var runningKwh = 0.0;
@@ -29,13 +27,8 @@ extension ReadingRecordListX on List<ReadingRecord> {
 
     for (final r in sorted) {
       runningKwh += r.kwh;
-      if (r.tariffType == TariffType.domestic) {
-        final band = TariffRates.getEeiBand(runningKwh);
-        labels[r.id] = band.number == 0 ? 'No rebate' : band.label;
-      } else {
-        final tier = TariffRates.getTier(runningKwh, r.tariffType);
-        labels[r.id] = TariffRates.getTierPriceKwhLabel(tier, r.tariffType);
-      }
+      final band = TariffRates.getEeiBand(runningKwh);
+      labels[r.id] = band.number == 0 ? 'No rebate' : band.label;
     }
     return labels;
   }
@@ -43,6 +36,10 @@ extension ReadingRecordListX on List<ReadingRecord> {
 
 class BillDetailNotifier extends Notifier<BillDetailPageState>
     with LoggableNotifier<BillDetailPageState> {
+  /// A strict user taking four readings a day needs at most 124 per month.
+  /// 150 leaves headroom while keeping the monthly query bounded.
+  static const int maxReadingsPerMonth = 150;
+
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;
   late final ReadingChainService _chainService = ReadingChainService(
     _firestore,
@@ -70,10 +67,7 @@ class BillDetailNotifier extends Notifier<BillDetailPageState>
       return;
     }
 
-    state = state.copyWith(
-      bill: freshBill,
-      isPaid: freshBill.isPaid,
-    );
+    state = state.copyWith(bill: freshBill);
 
     await _loadReadings(freshBill);
   }
@@ -102,12 +96,18 @@ class BillDetailNotifier extends Notifier<BillDetailPageState>
           )
           .where('date', isLessThan: Timestamp.fromDate(endOfMonth))
           .orderBy('date', descending: true)
+          .limit(maxReadingsPerMonth + 1)
           .get();
 
-      final readings = snap.docs.map((doc) {
+      final hasMoreReadings = snap.docs.length > maxReadingsPerMonth;
+      final readingDocs = hasMoreReadings
+          ? snap.docs.take(maxReadingsPerMonth)
+          : snap.docs;
+
+      final readings = readingDocs.map((doc) {
         final data = doc.data();
         final date = (data['date'] as Timestamp).toDate();
-        final rawTariffType = data['tariffType'] as String?;
+        final rawPeriodStart = data['periodStart'];
         return ReadingRecord(
           id: doc.id,
           reading: (data['reading'] as num?)?.toDouble() ?? 0,
@@ -116,13 +116,19 @@ class BillDetailNotifier extends Notifier<BillDetailPageState>
           notes: data['notes'] as String? ?? '',
           estimatedBill: (data['estimatedBill'] as num?)?.toDouble() ?? 0,
           tier: (data['tier'] as num?)?.toInt() ?? 1,
-          tariffType: rawTariffType == null
-              ? bill.tariffType
-              : TariffTypeX.fromValue(rawTariffType),
+          periodStart: rawPeriodStart is Timestamp
+              ? rawPeriodStart.toDate()
+              : rawPeriodStart is String
+              ? DateTime.tryParse(rawPeriodStart)
+              : null,
         );
       }).toList();
 
-      state = state.copyWith(isLoading: false, readings: readings);
+      state = state.copyWith(
+        isLoading: false,
+        readings: readings,
+        hasMoreReadings: hasMoreReadings,
+      );
     } on FirebaseException catch (e, st) {
       logError(
         'Failed to load readings (Firebase)',
@@ -171,11 +177,8 @@ class BillDetailNotifier extends Notifier<BillDetailPageState>
         ).format((data['date'] as Timestamp).toDate()),
         kwh: (data['kwh'] as num).toDouble(),
         amount: (data['amount'] as num).toDouble(),
-        isPaid: data['isPaid'] as bool? ?? false,
-        tariffType: TariffTypeX.fromValue(
-          data['tariffType'] as String? ?? TariffType.domestic.value,
-        ),
         date: (data['date'] as Timestamp).toDate(),
+        isEstimated: data['isEstimated'] as bool? ?? false,
       );
     } on FirebaseException catch (e, st) {
       logError(
@@ -196,67 +199,12 @@ class BillDetailNotifier extends Notifier<BillDetailPageState>
     }
   }
 
-  Future<void> togglePaid(BillRecord bill) async {
-    final uid = ref.read(currentUidProvider).value;
-    if (uid == null) return;
-
-    state = state.copyWith(isUpdatingPaid: true, errorMessage: null);
-    final newIsPaid = !state.isPaid;
-
-    try {
-      final startOfMonth = DateTime(bill.date.year, bill.date.month);
-      final endOfMonth = DateTime(bill.date.year, bill.date.month + 1);
-
-      final snap = await _firestore
-          .collection('users')
-          .doc(uid)
-          .collection('bills')
-          .where(
-            'date',
-            isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth),
-          )
-          .where('date', isLessThan: Timestamp.fromDate(endOfMonth))
-          .get();
-
-      final batch = _firestore.batch();
-      for (final doc in snap.docs) {
-        batch.update(doc.reference, {'isPaid': newIsPaid});
-      }
-      await batch.commit();
-
-      state = state.copyWith(isUpdatingPaid: false, isPaid: newIsPaid);
-    } on FirebaseException catch (e, st) {
-      logError(
-        'Failed to toggle paid status (Firebase)',
-        e,
-        st,
-        context: {'bill_id': bill.id, 'new_is_paid': newIsPaid},
-      );
-      state = state.copyWith(
-        isUpdatingPaid: false,
-        errorMessage: mapFirebaseError(e.code),
-      );
-    } on Exception catch (e, st) {
-      logError(
-        'Failed to toggle paid status',
-        e,
-        st,
-        context: {'bill_id': bill.id, 'new_is_paid': newIsPaid},
-      );
-      state = state.copyWith(
-        isUpdatingPaid: false,
-        errorMessage: 'Failed to update payment status. Please try again.',
-      );
-    }
-  }
-
   Future<bool> deleteReading(ReadingRecord reading, BillRecord bill) async {
     final uid = ref.read(currentUidProvider).value;
     if (uid == null) return false;
 
     final previousState = state;
 
-    // update widget tree update on Dismissible's
     state = state.copyWith(
       readings: state.readings.where((r) => r.id != reading.id).toList(),
       errorMessage: null,
@@ -285,27 +233,26 @@ class BillDetailNotifier extends Notifier<BillDetailPageState>
         // If there's no previous reading, the deleted reading WAS the
         // baseline — next becomes the new baseline (kwh: 0).
         fix = _chainService.computeFix(next, previous?.reading);
-        _chainService.applyFix(batch, uid, fix);
+        _chainService.applyFix(
+          batch,
+          uid,
+          fix,
+          periodStart: previous?.date,
+        );
       }
 
       await batch.commit();
       committed = true;
 
-      await _billService.recalculateMonth(uid, reading.date, bill.tariffType);
-
-      final fixInDifferentMonth =
-          fix != null &&
-          (fix.date.year != reading.date.year ||
-              fix.date.month != reading.date.month);
-      if (fixInDifferentMonth) {
-        await _billService.recalculateMonth(uid, fix.date, fix.tariffType);
-      }
+      final from = previous?.date ?? reading.date;
+      final to = next?.date ?? reading.date;
+      await _billService.recalculateRange(uid, from, to);
 
       // Local state can no longer be cheaply patched given possible
       // cross-month effects — reload from source of truth.
       final freshBill = await _loadBill(bill.id);
       if (freshBill != null) {
-        state = state.copyWith(bill: freshBill, isPaid: freshBill.isPaid);
+        state = state.copyWith(bill: freshBill);
         await _loadReadings(freshBill);
       } else {
         state = state.copyWith(

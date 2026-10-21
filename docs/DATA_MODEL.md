@@ -1,123 +1,129 @@
-# Data Model (Cloud Firestore)
+# Data Model
 
 - **Status:** Current
-- **Last updated:** 2026-10-02
+- **Database:** Cloud Firestore
 - **Root collection:** `users`
-
-> Note: Firestore field names are **case-sensitive**. Inconsistencies below are real and can cause features to silently fail. They are listed in [Known issues](#known-issues).
 
 ## 1. Tree
 
-```
+```text
 users/{uid}
-├── (profile fields, see §2)
-├── readings/{autoId}      # one per meter reading
-├── bills/{YYYY-MM}        # one per month, e.g. 2026-07
-└── appliances/{autoId}    # one per appliance
+  readings/{autoId}
+  bills/{YYYY-MM}
+  appliances/{autoId}
+
+tariffs/domestic_general
 ```
 
-Storage:
-
-```
-users/{uid}/profile_<millis>.jpg   # avatar (Firebase Storage)
-```
+Avatars are stored in Firebase Storage under `users/{uid}/`.
 
 ## 2. `users/{uid}`
 
-| Field | Type | Default / notes | Written by |
-|---|---|---|---|
-| `uid` | string | Same as doc id | register |
-| `fullName` | string | — | register, edit profile |
-| `email` | string | From FirebaseAuth | register |
-| `tnbAccountNo` | string | 12 digits | register, edit profile |
-| `tariffType` | `"domestic"` \| `"commercial"` | `"domestic"` | register, onboarding, settings |
-| `monthlyBudget` | number | `150` | register, onboarding, settings |
-| `onboardingCompleted` | bool | `false` | register, onboarding |
-| `createdAt` | timestamp | server | register |
-| `updatedAt` | timestamp | server | register, onboarding, settings, edit profile |
-| `isGuest` | bool | `false` | register (no flow yet) |
-| `fcmToken` | string | — | notification service; deleted on logout/account switch |
-| `alert80Enabled` | bool | `true` | dashboard notification sheet |
-| `alert100Enabled` | bool | `true` | dashboard notification sheet |
-| `photoUrl` | string | — | edit profile |
-| `photoUpdatedAt` | timestamp | — | edit profile |
-| `photoURL` | null | — | register (legacy/inconsistent — see §5) |
-| `budgetAlertsEnabled` | bool | read as `true` | **settings model only — no writer** |
-| `billRemindersEnabled` | bool | read as `true` | **settings model only — no writer** |
-| `monthlySummaryEnabled` | bool | read as `true` (profile) / `false` (settings) | **no writer** |
+| Field | Type | Notes |
+|---|---|---|
+| `uid` | string | Same as the document ID |
+| `fullName` | string | Google display name or registration name |
+| `email` | string | Firebase Auth email |
+| `tnbAccountNo` | string | 12 digits for email registration; may be empty for Google users until edited |
+| `monthlyBudget` | number | Defaults to 150; editable in onboarding/settings |
+| `onboardingCompleted` | bool | Router gate |
+| `createdAt` | timestamp | Server timestamp |
+| `updatedAt` | timestamp | Server timestamp |
+| `fcmToken` | string | Present after the profile exists |
+| `alert80Enabled` | bool | Budget alert preference, default true |
+| `alert100Enabled` | bool | Budget alert preference, default true |
+| `photoUrl` | string | Optional profile image |
+| `photoUpdatedAt` | timestamp | Optional profile image version |
 
-## 3. `users/{uid}/readings/{autoId}`
+### Profile creation paths
+
+- **Email registration:** creates the full profile immediately, then onboarding
+  updates the budget and completion flag.
+- **Google sign-in:** Firebase Auth creates the account first. Onboarding
+  creates the required profile fields and then syncs the FCM token.
+
+The create rule requires `uid`, `fullName`, `email`, `tnbAccountNo`,
+`monthlyBudget` and `onboardingCompleted`.
+
+## 3. Readings
+
+`users/{uid}/readings/{autoId}`
 
 | Field | Type | Notes |
 |---|---|---|
-| `reading` | number | Raw meter value (not a delta) |
-| `kwh` | number | Delta vs previous reading for that date |
+| `reading` | number | Raw cumulative meter value |
+| `kwh` | number | Delta since the previous reading |
 | `date` | timestamp | Reading date |
-| `notes` | string | Optional user note |
-| `tier` | number | EEI band number (domestic) or tier (commercial) at time of reading |
-| `tariffType` | string | Tariff at creation; preserved for history |
-| `createdAt` | timestamp | Set on create only (preserved on edit) |
+| `periodStart` | timestamp | Previous reading date; absent/null for a baseline |
+| `tier` | number | EEI band snapshot for display |
+| `notes` | string | Optional |
+| `createdAt` | timestamp | Creation only |
 
-> `ReadingRecord.estimatedBill` and `ReadingRecord.tierLabel` exist in the model, but the add/update path does not persist `estimatedBill`. Treat it as effectively unused; no writer exists.
+`ReadingRecord.estimatedBill` exists in the model but is not written by the
+current add/edit flow.
 
-## 4. `users/{uid}/bills/{YYYY-MM}`
+## 4. Bills
 
-Doc id is the month key, e.g. `2026-07`.
-
-| Field | Type | Notes |
-|---|---|---|
-| `kwh` | number | Sum of that month's reading kWh |
-| `amount` | number | `TariffRates.calculate(kwh, tariffType)` |
-| `tier` | number | Tier/band for the month total |
-| `tariffType` | string | Resolved from the latest reading that month |
-| `date` | timestamp | Start of the month |
-| `isPaid` | bool | Toggled from bill detail (updates all docs for the month) |
-| `alertTierSent` | number | `0` \| `80` \| `100`; alert reservation (Cloud Function only) |
-
-Bills are **derived, not authored**: `BillRecalculationService.recalculateMonth` upserts the doc from current readings, and deletes it if the month has no readings.
-
-## 5. `users/{uid}/appliances/{autoId}`
+`users/{uid}/bills/{YYYY-MM}`
 
 | Field | Type | Notes |
 |---|---|---|
-| `name` | string | |
-| `category` | string | One of Cooling, Lighting, Kitchen, Entertainment, Washing, Heating, Other |
-| `wattage` | number | Watts |
-| `dailyHours` | number | Hours/day (0.5 steps) |
-| `createdAt` | timestamp | Preserved on edit |
+| `kwh` | number | Monthly allocated usage |
+| `amount` | number | Tariff estimate for that month |
+| `tier` | number | Monthly EEI band |
+| `isEstimated` | bool | True when a long interval contributed |
+| `date` | timestamp | First day of the month |
+| `alertTierSent` | number | `0`, `80` or `100`; Cloud Function reservation |
 
-## 6. Derived values (not stored)
+Bills are denormalized and can be rebuilt from readings.
 
-Computed on read from readings + profile:
-- Current-month `kwhUsed`, `estimatedBill`, `dailyAvg`, projected bill.
-- Budget status (`normal` / `warning`≥80% / `exceeded`≥100%).
-- EEI band / commercial tier for a running kWh total.
-- 7-day and 12-month usage series.
+## 5. Appliances
 
-## 7. Known issues
+`users/{uid}/appliances/{autoId}`
 
-| # | Issue | Impact | Suggested fix |
-|---|---|---|---|
-| 1 | `photoURL` (register) vs `photoUrl` (edit/settings) | Avatar reads/writes use different keys; register's null is harmless today but confusing | Standardize on `photoUrl` everywhere |
-| 2 | Notification toggles: functions + sheet use `alert80Enabled`/`alert100Enabled`; settings model reads `budgetAlertsEnabled`/`billRemindersEnabled` | Re-enabling the settings notification section would write fields nothing reads, so toggles would do nothing | Use `alert80Enabled`/`alert100Enabled` in settings, or add a migration |
-| 3 | `monthlySummaryEnabled` default differs (`true` in `UserProfile`, `false` in settings) and has no writer | Dead/contradictory config | Pick one default or remove |
-| 4 | No `schemaVersion` field | Hard to migrate safely later | Add `schemaVersion` on the user doc |
-| 5 | Firestore security rules are not in the repo (`firebase.json` lists only Functions) | Rules live only in the console; unreviewable and unreproducible | Add `firestore.rules` + reference it in `firebase.json` and CI |
-| 6 | `estimatedBill` on readings is modeled but never written | Possible source of confusion | Remove from model or start writing it |
-| 7 | Bills stored per reading-total; deleting all readings deletes the bill | Historical "paid" state is lost with the month | If history matters, soft-delete instead |
+| Field | Type | Notes |
+|---|---|---|
+| `name` | string | Display name |
+| `category` | string | Appliance category |
+| `wattage` | number | Rated watts |
+| `dailyHours` | number | Typical use per day, 0–24 |
+| `createdAt` / `updatedAt` | timestamp | Server timestamps |
 
-## 8. Indexing notes
+Appliance costs are estimates only and never the TNB bill.
 
-Queries filter on `date` with `orderBy('date')` (range + order on the same field) — served by the default single-field index. The monthly reminder queries bills by document id, so no composite index is required. Multi-field filters (e.g. `tariffType` + `date`) require a composite index.
+## 6. Tariff schedule
 
-## 9. Retention & deletion (planned)
+`tariffs/domestic_general` is read-only to clients. It contains base rates,
+protection periods, EEI bands, monthly AFA values and an updated timestamp.
+Writes are restricted to Admin SDK/seed tooling.
 
-Policy ([PRD.md](PRD.md) §15): **raw readings are retained for 12 months, then deleted**, along with their derived monthly bill docs.
+## 7. Security rules
 
-Recommended implementation:
-- A monthly scheduled Cloud Function (mirrors `sendMonthlyReadingReminder`) that deletes `readings` with `date < now - 12 months` in batches and clears the matching `bills/{YYYY-MM}`.
-- Alternatively, write an `expireAt` field per reading and enable a Firestore TTL policy (eventual deletion; does not cover bills).
-- Add a user-facing **Delete account** action that removes all subcollections, the user doc, and the FirebaseAuth user.
-- Commit `firestore.rules` restricting `users/{uid}/**` to the authenticated owner.
+Rules live in `firestore.rules` and are deployed with:
 
-When this ships, update the field tables above to include any new `expireAt` field.
+```bash
+firebase deploy --only firestore:rules
+```
+
+Summary:
+
+- All user data requires `request.auth.uid == uid`.
+- User profile create requires the full identity fields listed above.
+- User profile update requires `uid` equal to the path UID and a numeric
+  non-negative budget.
+- Readings require numeric reading, kWh and timestamp.
+- Bills require numeric kWh/amount; clients cannot write `alertTierSent`.
+- Appliances require valid name/category/wattage/daily-hours values.
+- Tariff reads are public; writes are denied.
+
+## 8. App Check
+
+Firebase App Check is initialized in `main.dart` with the debug provider in
+debug builds and Play Integrity in release. Firestore enforcement is currently
+**unenforced**.
+
+Before enabling enforcement:
+
+1. Register the debug token / verify Play Integrity.
+2. Test release and debug builds.
+3. Enable Firestore enforcement in Firebase Console.

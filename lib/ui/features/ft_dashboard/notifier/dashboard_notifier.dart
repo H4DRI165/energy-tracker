@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/constants/tariff_rates.dart';
-import 'package:energy_tracker/extensions/tariff_type_extension.dart';
+import 'package:energy_tracker/models/reading_record.dart';
 import 'package:energy_tracker/services/auth/providers/current_uid_provider.dart';
-import 'package:energy_tracker/services/notifier/user_profile_notifier.dart';
+import 'package:energy_tracker/services/billing/usage_allocation_service.dart';
 import 'package:energy_tracker/ui/components/logging/app_logger.dart';
 import 'package:energy_tracker/ui/components/logging/notifier/loggable_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_state.dart';
@@ -27,14 +27,12 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState>
   @override
   Future<DashboardPageState> build() async {
     final uid = ref.watch(currentUidProvider).value;
-    if (uid == null) return const DashboardPageState();
+    if (uid == null) return DashboardPageState();
 
     final authName = _auth.currentUser?.displayName ?? '';
-    final tariffType = ref.watch(tariffTypeProvider);
-
     final results = await Future.wait([
       _loadUserProfile(uid, authName),
-      _loadUsageData(uid, tariffType),
+      _loadUsageData(uid),
     ]);
 
     return results[0].merge(results[1]);
@@ -76,14 +74,11 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState>
       return DashboardPageState(errorMessage: mapFirebaseError(e.code));
     } on Object catch (e, st) {
       logError('Failed to load user profile', e, st);
-      return const DashboardPageState(errorMessage: 'Failed to load profile.');
+      return DashboardPageState(errorMessage: 'Failed to load profile.');
     }
   }
 
-  Future<DashboardPageState> _loadUsageData(
-    String uid,
-    TariffType liveTariffType,
-  ) async {
+  Future<DashboardPageState> _loadUsageData(String uid) async {
     try {
       final now = DateTime.now();
       final monthLabel = DateFormat('MMMM yyyy').format(now);
@@ -91,113 +86,84 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState>
 
       final startOfMonth = DateTime(now.year, now.month);
       final startOf7DayWindow = DateTime(now.year, now.month, now.day - 6);
-      final earliestNeeded = startOf7DayWindow.isBefore(startOfMonth)
-          ? startOf7DayWindow
-          : startOfMonth;
-
       final startOfLastMonth = DateTime(now.year, now.month - 1);
+      final lastMonthDays = DateUtils.getDaysInMonth(
+        startOfLastMonth.year,
+        startOfLastMonth.month,
+      );
+      final comparisonDay = now.day > lastMonthDays ? lastMonthDays : now.day;
 
-      final results = await Future.wait([
-        _firestore
-            .collection('users')
-            .doc(uid)
-            .collection('readings')
-            .where(
-              'date',
-              isGreaterThanOrEqualTo: Timestamp.fromDate(earliestNeeded),
-            )
-            .orderBy('date', descending: false)
-            .get(),
-        _firestore
-            .collection('users')
-            .doc(uid)
-            .collection('readings')
-            .where(
-              'date',
-              isGreaterThanOrEqualTo: Timestamp.fromDate(startOfLastMonth),
-            )
-            .where('date', isLessThan: Timestamp.fromDate(startOfMonth))
-            .orderBy('date', descending: false)
-            .get(),
-      ]);
+      final readingsSnap = await _firestore
+          .collection('users')
+          .doc(uid)
+          .collection('readings')
+          .orderBy('date', descending: false)
+          .get();
+      final readings = readingsSnap.docs
+          .map((doc) => ReadingRecord.fromDoc(doc.id, doc.data()))
+          .toList();
 
-      final combinedSnap = results[0];
-      final lastMonthSnap = results[1];
+      final currentAllocations = UsageAllocationService.monthly(
+        readings: readings,
+        from: startOfMonth,
+        to: now,
+      );
+      final kwhUsed = currentAllocations.first.kwh;
 
-      // Filter for current-month-only (kwhUsed & tariffType detection)
-      final currentMonthDocs = combinedSnap.docs.where((d) {
-        final date = (d.data()['date'] as Timestamp).toDate();
-        return !date.isBefore(startOfMonth);
-      }).toList();
+      // Compare like with like: the same calendar days from last month.
+      final lastMonthAllocations = UsageAllocationService.monthly(
+        readings: readings,
+        from: startOfLastMonth,
+        to: DateTime(
+          startOfLastMonth.year,
+          startOfLastMonth.month,
+          comparisonDay,
+        ),
+      );
+      final lastMonthKwh = lastMonthAllocations.first.kwh;
 
-      double kwhUsed = 0;
-      for (final doc in currentMonthDocs) {
-        kwhUsed += (doc.data()['kwh'] as num?)?.toDouble() ?? 0;
-      }
-
-      double lastMonthKwh = 0;
-      for (final doc in lastMonthSnap.docs) {
-        lastMonthKwh += (doc.data()['kwh'] as num?)?.toDouble() ?? 0;
-      }
+      final weeklyKwh = UsageAllocationService.dailyKwh(
+        readings: readings,
+        from: startOf7DayWindow,
+        to: now,
+      );
 
       final percentVsLast = lastMonthKwh > 0
           ? ((kwhUsed - lastMonthKwh) / lastMonthKwh) * 100
           : 0.0;
 
-      final tariffType = currentMonthDocs.isEmpty
-          ? liveTariffType
-          : TariffTypeX.fromValue(
-              currentMonthDocs.last.data()['tariffType'] as String? ??
-                  TariffType.domestic.value,
-            );
-
-      final bill = TariffRates.calculate(kwhUsed, tariffType);
-      final eeiBand = tariffType == TariffType.domestic
-          ? TariffRates.getEeiBand(kwhUsed)
-          : (() {
-              final tier = TariffRates.getTier(kwhUsed, TariffType.commercial);
-              return EeiBand(
-                number: tier,
-                kwhRange: TariffRates.getTierKwhRange(
-                  tier,
-                  TariffType.commercial,
-                ),
-                rebateSenPerKwh: 0,
-                color: TariffRates.getTierColor(tier, TariffType.commercial),
-                label: TariffRates.tierBadgeLabel(tier, TariffType.commercial),
-                description: TariffRates.tierBadgeLabel(
-                  tier,
-                  TariffType.commercial,
-                ),
-              );
-            })();
+      final bill = TariffRates.calculate(kwhUsed, billingMonth: now);
+      final eeiBand = TariffRates.getEeiBand(kwhUsed);
 
       final daysElapsed = now.day;
       final dailyAvg = daysElapsed > 0 ? kwhUsed / daysElapsed : 0.0;
 
       final projectedKwh =
           dailyAvg * DateUtils.getDaysInMonth(now.year, now.month);
-      final projectedBill = TariffRates.calculate(projectedKwh, tariffType);
-      final weeklyUsage = _buildWeeklyUsage(combinedSnap.docs, now);
+      final projectedBill = TariffRates.calculate(
+        projectedKwh,
+        billingMonth: now,
+      );
+      final weeklyUsage = _buildWeeklyUsage(weeklyKwh, now);
 
       return DashboardPageState(
         monthLabel: monthLabel,
         kwhUsed: kwhUsed,
         estimatedBill: bill,
         currentEeiBand: eeiBand,
-        tariffType: tariffType,
         dailyAvg: dailyAvg,
         daysLeft: daysLeft,
         percentageVsLastMonth: percentVsLast,
         projectedBill: projectedBill,
         weeklyUsage: weeklyUsage,
+        readingCount: readings.length,
       );
     } on FirebaseException catch (e, st) {
       logError('Failed to load usage data (Firebase)', e, st);
       return DashboardPageState(errorMessage: mapFirebaseError(e.code));
     } on Object catch (e, st) {
       logError('Failed to load usage data', e, st);
-      return const DashboardPageState(
+      return DashboardPageState(
         errorMessage: 'Failed to load usage data.',
       );
     }
@@ -211,26 +177,18 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState>
   }
 
   List<DailyUsage> _buildWeeklyUsage(
-    List<QueryDocumentSnapshot> docs,
+    Map<String, double> kwhByDate,
     DateTime now,
   ) {
     const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
-    // Index once: key = "yyyy-MM-dd", value = kwh
-    final kwhByDate = <String, double>{};
-    for (final doc in docs) {
-      final data = doc.data()! as Map<String, dynamic>;
-      final date = (data['date'] as Timestamp).toDate();
-      final key = '${date.year}-${date.month}-${date.day}';
-      final kwh = (data['kwh'] as num?)?.toDouble() ?? 0.0;
-      kwhByDate[key] = (kwhByDate[key] ?? 0) + kwh; // sum if > 1 reading/day
-    }
-
     final result = <DailyUsage>[];
+
     for (var i = 6; i >= 0; i--) {
       final day = now.subtract(Duration(days: i));
       final label = i == 0 ? 'Today' : dayLabels[day.weekday - 1];
-      final key = '${day.year}-${day.month}-${day.day}';
+      final key =
+          '${day.year}-${day.month.toString().padLeft(2, '0')}-'
+          '${day.day.toString().padLeft(2, '0')}';
       final kwh = kwhByDate[key] ?? 0.0;
 
       result.add(DailyUsage(label: label, kwh: kwh, isToday: i == 0));

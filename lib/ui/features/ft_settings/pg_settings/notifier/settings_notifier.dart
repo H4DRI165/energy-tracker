@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:energy_tracker/services/app_info.dart';
 import 'package:energy_tracker/services/auth/providers/current_uid_provider.dart';
+import 'package:energy_tracker/services/network/network_status.dart';
 import 'package:energy_tracker/ui/components/logging/notifier/loggable_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_settings/pg_settings/notifier/settings_state.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -60,7 +63,6 @@ class SettingsNotifier extends AsyncNotifier<SettingsPageState>
       fullName: data['fullName'] as String? ?? authName,
       email: authEmail,
       tnbAccountNo: data['tnbAccountNo'] as String? ?? '',
-      tariffType: data['tariffType'] as String? ?? 'domestic',
       monthlyBudget: (data['monthlyBudget'] as num?)?.toDouble() ?? 150.0,
       budgetAlertsEnabled: data['budgetAlertsEnabled'] as bool? ?? true,
       billRemindersEnabled: data['billRemindersEnabled'] as bool? ?? true,
@@ -68,23 +70,6 @@ class SettingsNotifier extends AsyncNotifier<SettingsPageState>
       photoUrl: data['photoUrl'] as String?,
       photoVersion: photoUpdatedAt?.millisecondsSinceEpoch,
     );
-  }
-
-  Future<bool> updateTariffType(String value) async {
-    final previous = state.value;
-    _updateState((s) => s.copyWith(tariffType: value, errorMessage: null));
-
-    final ok = await _updateFirestore({'tariffType': value});
-
-    if (!ok && previous != null) {
-      state = AsyncData(
-        previous.copyWith(
-          errorMessage: 'Failed to update tariff type. Please try again.',
-        ),
-      );
-    }
-
-    return ok;
   }
 
   Future<bool> updateMonthlyBudget(double value) async {
@@ -160,6 +145,18 @@ class SettingsNotifier extends AsyncNotifier<SettingsPageState>
 
   Future<bool> signOut() async {
     _updateState((s) => s.copyWith(isSigningOut: true, errorMessage: null));
+
+    if (!await NetworkStatus.hasInternet()) {
+      _updateState(
+        (s) => s.copyWith(
+          isSigningOut: false,
+          errorMessage:
+              'No internet connection. Connect to the internet to sign out.',
+        ),
+      );
+      return false;
+    }
+
     try {
       await _auth.signOut();
       return true;
@@ -180,15 +177,29 @@ class SettingsNotifier extends AsyncNotifier<SettingsPageState>
   }
 
   Future<bool> _updateFirestore(Map<String, dynamic> data) async {
+    if (!await NetworkStatus.hasInternet()) return false;
+
     try {
       final uid = ref.read(currentUidProvider).value;
       if (uid == null) return false;
 
-      await _firestore.collection('users').doc(uid).set(
-        {...data, 'updatedAt': FieldValue.serverTimestamp()},
-        SetOptions(merge: true),
-      );
+      await _firestore
+          .collection('users')
+          .doc(uid)
+          .set(
+            {...data, 'updatedAt': FieldValue.serverTimestamp()},
+            SetOptions(merge: true),
+          )
+          .timeout(const Duration(seconds: 15));
       return true;
+    } on TimeoutException catch (e, st) {
+      logError(
+        'Timed out updating settings',
+        e,
+        st,
+        context: {'fields': data.keys.join(',')},
+      );
+      return false;
     } on FirebaseException catch (e, st) {
       logError(
         'Failed to update settings (Firebase)',

@@ -1,5 +1,4 @@
 import 'package:energy_tracker/app.dart';
-import 'package:energy_tracker/services/notifier/user_profile_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_devices/pg_add_appliance/notifier/notifier.dart';
 import 'package:energy_tracker/ui/features/ft_devices/pg_devices/notifier/devices_notifier.dart';
 import 'package:flutter/material.dart';
@@ -144,7 +143,6 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
 
   @override
   Widget build(BuildContext context) {
-    final tariffType = ref.watch(tariffTypeProvider);
     final category = ref.watch(
       addApplianceProvider.select((state) => state.category),
     );
@@ -219,7 +217,7 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             ),
             SizedBox(height: 16.h),
-            Text('Daily Usage (hours)', style: AppTextStyles.label),
+            Text('Typical Daily Usage (hours)', style: AppTextStyles.label),
             SizedBox(height: 8.h),
             _HoursStepper(
               hours: dailyHours,
@@ -228,10 +226,19 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
               onDecrement: () =>
                   ref.read(addApplianceProvider.notifier).decrementHours(),
             ),
-            SizedBox(height: 16.h),
-            _MonthlyEstimateCard(
-              tariffType: tariffType,
+            SizedBox(height: 8.h),
+            _QuickHours(
+              hours: dailyHours,
+              onSelected: (value) =>
+                  ref.read(addApplianceProvider.notifier).setHours(value),
             ),
+            SizedBox(height: 6.h),
+            Text(
+              'Used only for the estimate. Actual daily use can differ.',
+              style: AppTextStyles.caption.copyWith(color: AppColors.text3),
+            ),
+            SizedBox(height: 16.h),
+            const _MonthlyEstimateCard(),
             SizedBox(height: 24.h),
             if (errorMessage != null) ...[
               Container(
@@ -282,7 +289,7 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
         SnackBar(
           content: Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.check_circle_outline_rounded,
                 color: AppColors.accent,
                 size: 18,
@@ -305,6 +312,48 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
       );
       if (context.mounted) context.pop();
     }
+  }
+}
+
+class _QuickHours extends StatelessWidget {
+  const _QuickHours({required this.hours, required this.onSelected});
+
+  final double hours;
+  final ValueChanged<double> onSelected;
+
+  static const _options = [1.0, 4.0, 8.0, 12.0, 24.0];
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 6.w,
+      runSpacing: 6.h,
+      children: _options.map((value) {
+        final selected = hours == value;
+        return GestureDetector(
+          onTap: () => onSelected(value),
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+            decoration: BoxDecoration(
+              color: selected
+                  ? AppColors.accent.withValues(alpha: 0.14)
+                  : AppColors.surface2,
+              borderRadius: BorderRadius.circular(20.r),
+              border: Border.all(
+                color: selected ? AppColors.accent : AppColors.border,
+              ),
+            ),
+            child: Text(
+              value == 24 ? '24h ? Always on' : '${value.toInt()}h',
+              style: AppTextStyles.caption.copyWith(
+                color: selected ? AppColors.accent : AppColors.text2,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
   }
 }
 
@@ -492,7 +541,11 @@ class _HoursStepper extends StatelessWidget {
                 color: AppColors.accent,
                 borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
               ),
-              child: Icon(Icons.add_rounded, size: 20.r, color: Colors.black),
+              child: Icon(
+                Icons.add_rounded,
+                size: 20.r,
+                color: AppColors.onAccent,
+              ),
             ),
           ),
         ),
@@ -502,11 +555,7 @@ class _HoursStepper extends StatelessWidget {
 }
 
 class _MonthlyEstimateCard extends ConsumerWidget {
-  const _MonthlyEstimateCard({
-    required this.tariffType,
-  });
-
-  final TariffType tariffType;
+  const _MonthlyEstimateCard();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -514,13 +563,28 @@ class _MonthlyEstimateCard extends ConsumerWidget {
       addApplianceProvider.select((state) => state.monthlyKwh),
     );
     final monthlyCost = ref.watch(
-      addApplianceProvider.select((state) => state.monthlyCost(tariffType)),
+      addApplianceProvider.select((state) => state.monthlyCost()),
     );
     final dailyKwh = ref.watch(
       addApplianceProvider.select((state) => state.dailyKwh),
     );
     final dailyCost = ref.watch(
-      addApplianceProvider.select((state) => state.dailyCost(tariffType)),
+      addApplianceProvider.select((state) => state.dailyCost()),
+    );
+    final lowCost = ref.watch(
+      addApplianceProvider.select((state) => state.estimatedLowMonthlyCost),
+    );
+    final highCost = ref.watch(
+      addApplianceProvider.select((state) => state.estimatedHighMonthlyCost),
+    );
+    final lowHours = ref.watch(
+      addApplianceProvider.select((state) => state.estimatedLowDailyHours),
+    );
+    final highHours = ref.watch(
+      addApplianceProvider.select((state) => state.estimatedHighDailyHours),
+    );
+    final dailyHours = ref.watch(
+      addApplianceProvider.select((state) => state.dailyHours),
     );
 
     return Container(
@@ -542,7 +606,7 @@ class _MonthlyEstimateCard extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'MONTHLY ESTIMATE',
+            'ESTIMATED MONTHLY COST',
             style: AppTextStyles.caption.copyWith(
               color: AppColors.accent2,
               letterSpacing: 1.5,
@@ -555,13 +619,13 @@ class _MonthlyEstimateCard extends ConsumerWidget {
               Expanded(
                 child: _EstimateStat(
                   label: 'Energy/month',
-                  value: '${monthlyKwh.toStringAsFixed(1)} kWh',
+                  value: '~${monthlyKwh.toStringAsFixed(0)} kWh',
                 ),
               ),
               Expanded(
                 child: _EstimateStat(
                   label: 'Cost/month',
-                  value: 'RM ${monthlyCost.toStringAsFixed(2)}',
+                  value: '~RM ${monthlyCost.toStringAsFixed(0)}',
                   valueColor: AppColors.accent,
                 ),
               ),
@@ -573,17 +637,48 @@ class _MonthlyEstimateCard extends ConsumerWidget {
               Expanded(
                 child: _EstimateStat(
                   label: 'Energy/day',
-                  value: '${dailyKwh.toStringAsFixed(3)} kWh',
+                  value: '~${dailyKwh.toStringAsFixed(1)} kWh',
                 ),
               ),
               Expanded(
                 child: _EstimateStat(
                   label: 'Cost/day',
-                  value: 'RM ${dailyCost.toStringAsFixed(3)}',
+                  value: '~RM ${dailyCost.toStringAsFixed(2)}',
                   valueColor: AppColors.accent,
                 ),
               ),
             ],
+          ),
+          SizedBox(height: 12.h),
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.all(10.r),
+            decoration: BoxDecoration(
+              color: AppColors.surface2.withValues(alpha: 0.55),
+              borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Range if daily use varies',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.text3,
+                  ),
+                ),
+                SizedBox(height: 2.h),
+                Text(
+                  '~RM ${lowCost.toStringAsFixed(0)}–'
+                  '${highCost.toStringAsFixed(0)} '
+                  '(${lowHours.toStringAsFixed(1)}–'
+                  '${highHours.toStringAsFixed(1)}h/day)',
+                  style: AppTextStyles.bodySm.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
           ),
           SizedBox(height: 10.h),
           Row(
@@ -597,11 +692,11 @@ class _MonthlyEstimateCard extends ConsumerWidget {
               SizedBox(width: 4.w),
               Expanded(
                 child: Text(
-                  'Based on flat energy, capacity & network rates '
-                  '(${(TariffRates.marginalRatePerKwh(tariffType) * 100).toStringAsFixed(2)} sen/kWh). '
-                  '${tariffType == TariffType.domestic ? 'Excludes EEI rebate, '
-                            'KWTBB & SST' : 'Excludes KWTBB & SST'} — these depend '
-                  'on your total ${tariffType == TariffType.domestic ? 'household' : 'business'} usage.',
+                  'Assumes 30 days at a typical ${dailyHours}h/day. '
+                  'Actual use varies and this is not your TNB bill. '
+                  'Uses flat energy, capacity & network rates '
+                  '(${(TariffRates.marginalRatePerKwh() * 100).toStringAsFixed(2)} sen/kWh); '
+                  'excludes EEI rebate, KWTBB & SST.',
                   style: AppTextStyles.caption.copyWith(color: AppColors.text3),
                 ),
               ),

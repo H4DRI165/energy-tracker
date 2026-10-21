@@ -27,6 +27,16 @@ class ForgotPasswordNotifier extends Notifier<ForgotPasswordPageState>
     state = state.copyWith(email: value, emailError: null, errorMessage: null);
   }
 
+  void editEmail() {
+    state = state.copyWith(
+      step: ForgotPasswordStep.enterEmail,
+      emailError: null,
+      errorMessage: null,
+    );
+  }
+
+  Future<void> resendResetEmail() => sendResetEmail();
+
   Future<void> sendResetEmail() async {
     if (state.isLoading) return;
 

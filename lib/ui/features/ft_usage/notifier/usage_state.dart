@@ -1,9 +1,10 @@
 import 'package:energy_tracker/constants/tariff_rates.dart';
-import 'package:energy_tracker/extensions/tariff_type_extension.dart';
 import 'package:energy_tracker/models/bill_record.dart';
 import 'package:flutter/foundation.dart';
 
 enum UsageFilter { monthly, yearly }
+
+const Object _unset = Object();
 
 @immutable
 class MonthlyUsage {
@@ -12,14 +13,14 @@ class MonthlyUsage {
     required this.year,
     required this.kwh,
     required this.bill,
-    required this.isPaid,
+    this.isEstimated = false,
   });
 
   final String month;
   final int year;
   final double kwh;
   final double bill;
-  final bool isPaid;
+  final bool isEstimated;
 
   String get monthYear => '$month $year';
 
@@ -31,11 +32,11 @@ class MonthlyUsage {
         other.year == year &&
         other.kwh == kwh &&
         other.bill == bill &&
-        other.isPaid == isPaid;
+        other.isEstimated == isEstimated;
   }
 
   @override
-  int get hashCode => Object.hash(month, year, kwh, bill, isPaid);
+  int get hashCode => Object.hash(month, year, kwh, bill, isEstimated);
 }
 
 @immutable
@@ -46,8 +47,11 @@ class UsageState {
     this.billHistory = const [],
     this.currentKwh = 0,
     this.currentBill = 0,
-    this.currentTariffType = TariffType.domestic,
     this.currentMonthLabel = '',
+    this.monthlyBudget = 0,
+    this.readingCount = 0,
+    this.lastReadingDate,
+    this.lastReadingKwh = 0,
   });
 
   final UsageFilter filter;
@@ -55,11 +59,21 @@ class UsageState {
   final List<BillRecord> billHistory;
   final double currentKwh;
   final double currentBill;
-  final TariffType currentTariffType;
   final String currentMonthLabel;
+  final double monthlyBudget;
+
+  final int readingCount;
+
+  final DateTime? lastReadingDate;
+
+  /// Usage measured by the latest reading, since the previous reading.
+  final double lastReadingKwh;
+
+  bool get hasUsage =>
+      monthlyData.any((month) => month.kwh > 0) || billHistory.isNotEmpty;
 
   List<ChargeLineItem> get chargeBreakdown =>
-      TariffRates.breakdownFor(currentKwh, currentTariffType);
+      TariffRates.breakdownFor(currentKwh, billingMonth: DateTime.now());
 
   List<MonthlyUsage> get chartData {
     if (filter == UsageFilter.yearly) {
@@ -82,8 +96,11 @@ class UsageState {
     List<BillRecord>? billHistory,
     double? currentKwh,
     double? currentBill,
-    TariffType? currentTariffType,
     String? currentMonthLabel,
+    double? monthlyBudget,
+    int? readingCount,
+    Object? lastReadingDate = _unset,
+    double? lastReadingKwh,
   }) {
     return UsageState(
       filter: filter ?? this.filter,
@@ -91,8 +108,13 @@ class UsageState {
       billHistory: billHistory ?? this.billHistory,
       currentKwh: currentKwh ?? this.currentKwh,
       currentBill: currentBill ?? this.currentBill,
-      currentTariffType: currentTariffType ?? this.currentTariffType,
       currentMonthLabel: currentMonthLabel ?? this.currentMonthLabel,
+      monthlyBudget: monthlyBudget ?? this.monthlyBudget,
+      readingCount: readingCount ?? this.readingCount,
+      lastReadingDate: identical(lastReadingDate, _unset)
+          ? this.lastReadingDate
+          : lastReadingDate as DateTime?,
+      lastReadingKwh: lastReadingKwh ?? this.lastReadingKwh,
     );
   }
 
@@ -105,8 +127,11 @@ class UsageState {
         listEquals(other.billHistory, billHistory) &&
         other.currentKwh == currentKwh &&
         other.currentBill == currentBill &&
-        other.currentTariffType == currentTariffType &&
-        other.currentMonthLabel == currentMonthLabel;
+        other.currentMonthLabel == currentMonthLabel &&
+        other.monthlyBudget == monthlyBudget &&
+        other.readingCount == readingCount &&
+        other.lastReadingDate == lastReadingDate &&
+        other.lastReadingKwh == lastReadingKwh;
   }
 
   @override
@@ -116,7 +141,10 @@ class UsageState {
     Object.hashAll(billHistory),
     currentKwh,
     currentBill,
-    currentTariffType,
     currentMonthLabel,
+    monthlyBudget,
+    readingCount,
+    lastReadingDate,
+    lastReadingKwh,
   );
 }

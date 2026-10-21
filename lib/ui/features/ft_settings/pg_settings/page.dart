@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:energy_tracker/app.dart';
-import 'package:energy_tracker/services/notifier/user_profile_notifier.dart';
+import 'package:energy_tracker/services/theme/theme_mode_provider.dart';
 import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_settings/pg_settings/notifier/notifier.dart';
 import 'package:energy_tracker/ui/features/ft_settings/pg_settings/widgets/widgets.dart';
@@ -34,7 +34,7 @@ class SettingsPage extends ConsumerWidget {
             const _Header(),
             Expanded(
               child: switch (status) {
-                _Status.loading => const Center(
+                _Status.loading => Center(
                   child: CircularProgressIndicator(color: AppColors.accent),
                 ),
                 _Status.error => ErrorView(
@@ -45,12 +45,6 @@ class SettingsPage extends ConsumerWidget {
                   onEditProfile: () async {
                     await context.push(AppRoutes.editProfile);
                   },
-                  onToggleBudgetAlerts: (v) =>
-                      notifier.toggleBudgetAlerts(value: v),
-                  onToggleBillReminders: (v) =>
-                      notifier.toggleBillReminders(value: v),
-                  onToggleMonthlySummary: (v) =>
-                      notifier.toggleMonthlySummary(value: v),
                   onSignOut: () async {
                     final confirmed = await ConfirmDialog.show(
                       context,
@@ -99,20 +93,16 @@ class _Header extends StatelessWidget {
 class _SettingsBody extends ConsumerWidget {
   const _SettingsBody({
     required this.onEditProfile,
-    required this.onToggleBudgetAlerts,
-    required this.onToggleBillReminders,
-    required this.onToggleMonthlySummary,
     required this.onSignOut,
   });
 
   final VoidCallback onEditProfile;
-  final ValueChanged<bool> onToggleBudgetAlerts;
-  final ValueChanged<bool> onToggleBillReminders;
-  final ValueChanged<bool> onToggleMonthlySummary;
   final VoidCallback onSignOut;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = ref.watch(themeModeProvider);
+
     return SingleChildScrollView(
       padding: EdgeInsets.symmetric(
         horizontal: AppDimensions.screenPaddingH,
@@ -125,16 +115,35 @@ class _SettingsBody extends ConsumerWidget {
             onTap: onEditProfile,
           ),
           SizedBox(height: 20.h),
-          const SettingsSection(label: 'ACCOUNT'),
+          const SettingsSection(label: 'PREFERENCES'),
           SizedBox(height: 8.h),
           _SettingsGroup(
             children: [
+              const _BudgetTile(),
               SettingsListTile(
-                icon: '👤',
-                label: 'Edit Profile',
-                onTap: onEditProfile,
+                icon: isDark ? '🌙' : '☀️',
+                label: 'Dark Mode',
+                trailingWidget: Switch(
+                  value: isDark,
+                  onChanged: (value) => ref
+                      .read(themeModeProvider.notifier)
+                      .setDark(value: value),
+                ),
+                onTap: () => ref.read(themeModeProvider.notifier).toggle(),
+                showChevron: false,
               ),
-              const _TariffAndBudgetTiles(),
+              SettingsListTile(
+                icon: '🔔',
+                label: 'Notifications',
+                trailing: 'Budget alerts',
+                onTap: () => showAppBottomSheet<void>(
+                  context: context,
+                  builder: (_) => const AppBottomSheet(
+                    child: NotificationPrefsSheet(),
+                  ),
+                ),
+                isLast: true,
+              ),
             ],
           ),
           SizedBox(height: 20.h),
@@ -151,34 +160,6 @@ class _SettingsBody extends ConsumerWidget {
             ],
           ),
           SizedBox(height: 20.h),
-
-          // TODO(dev): implement notifications settings in future
-          // const SettingsSection(label: 'NOTIFICATIONS'),
-          // SizedBox(height: 8.h),
-          // _SettingsGroup(
-          //   children: [
-          //     SettingsToggleTile(
-          //       icon: '⚠️',
-          //       label: 'Budget Alerts',
-          //       fieldSelector: (s) => s.budgetAlertsEnabled,
-          //       onChanged: onToggleBudgetAlerts,
-          //     ),
-          //     SettingsToggleTile(
-          //       icon: '📅',
-          //       label: 'Bill Reminders',
-          //       fieldSelector: (s) => s.billRemindersEnabled,
-          //       onChanged: onToggleBillReminders,
-          //     ),
-          //     SettingsToggleTile(
-          //       icon: '📊',
-          //       label: 'Monthly Summary',
-          //       fieldSelector: (s) => s.monthlySummaryEnabled,
-          //       onChanged: onToggleMonthlySummary,
-          //       isLast: true,
-          //     ),
-          //   ],
-          // ),
-          // SizedBox(height: 20.h),
           const SettingsSection(label: 'ABOUT'),
           SizedBox(height: 8.h),
           const _AboutGroup(),
@@ -191,67 +172,23 @@ class _SettingsBody extends ConsumerWidget {
   }
 }
 
-class _TariffAndBudgetTiles extends ConsumerWidget {
-  const _TariffAndBudgetTiles();
+class _BudgetTile extends ConsumerWidget {
+  const _BudgetTile();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final (tariffLabel, formattedBudget) = ref.watch(
+    final formattedBudget = ref.watch(
       settingsProvider.select((async) {
         final s = async.maybeWhen(data: (value) => value, orElse: () => null);
-        return (s?.tariffLabel ?? '', s?.formattedBudget ?? '');
+        return s?.formattedBudget ?? '';
       }),
     );
 
-    return Column(
-      children: [
-        SettingsListTile(
-          icon: '🏠',
-          label: 'Tariff Type',
-          trailing: tariffLabel,
-          onTap: () => _showTariffSheet(context, ref),
-        ),
-        SettingsListTile(
-          icon: '🎯',
-          label: 'Monthly Budget',
-          trailing: formattedBudget,
-          onTap: () => _showBudgetSheet(context, ref),
-          isLast: true,
-        ),
-      ],
-    );
-  }
-
-  void _showTariffSheet(BuildContext context, WidgetRef ref) {
-    final state = ref
-        .read(settingsProvider)
-        .maybeWhen(data: (value) => value, orElse: () => null);
-    if (state == null) return;
-
-    unawaited(
-      showModalBottomSheet(
-        context: context,
-        backgroundColor: Colors.transparent,
-        builder: (_) => TariffTypeSheet(
-          selected: state.tariffType,
-          onSelect: (value) async {
-            final saved = await ref
-                .read(settingsProvider.notifier)
-                .updateTariffType(value);
-
-            if (!context.mounted) return;
-
-            if (!saved) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Failed to update tariff type.')),
-              );
-              return;
-            }
-
-            Navigator.pop(context);
-          },
-        ),
-      ),
+    return SettingsListTile(
+      icon: '🎯',
+      label: 'Monthly Budget',
+      trailing: formattedBudget,
+      onTap: () => _showBudgetSheet(context, ref),
     );
   }
 
@@ -262,31 +199,22 @@ class _TariffAndBudgetTiles extends ConsumerWidget {
     if (state == null) return;
 
     unawaited(
-      showModalBottomSheet(
+      showAppBottomSheet<void>(
         context: context,
-        backgroundColor: Colors.transparent,
-        isScrollControlled: true,
-        builder: (_) => BudgetSheet(
-          tariffType: ref.read(tariffTypeProvider),
-          current: state.monthlyBudget,
-          onSave: (value) async {
-            final saved = await ref
-                .read(settingsProvider.notifier)
-                .updateMonthlyBudget(value);
+        builder: (_) => AppBottomSheet(
+          child: BudgetSheet(
+            current: state.monthlyBudget,
+            onSave: (value) async {
+              final saved = await ref
+                  .read(settingsProvider.notifier)
+                  .updateMonthlyBudget(value);
 
-            if (!context.mounted) return;
-
-            if (!saved) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Failed to save budget.')),
-              );
-              return;
-            }
-
-            Navigator.pop(context);
-
-            await ref.read(dashboardProvider.notifier).refresh();
-          },
+              if (saved) {
+                unawaited(ref.read(dashboardProvider.notifier).refresh());
+              }
+              return saved;
+            },
+          ),
         ),
       ),
     );
@@ -311,16 +239,8 @@ class _AboutGroup extends ConsumerWidget {
             error: (_, _) => 'unknown',
           ),
           showChevron: false,
+          isLast: true,
         ),
-
-        // TODO(dev): implement  in future
-        // SettingsListTile(icon: '📄', label: 'Terms of Service', onTap: () {}),
-        // SettingsListTile(
-        //   icon: '🔒',
-        //   label: 'Privacy Policy',
-        //   onTap: () {},
-        //   isLast: true,
-        // ),
       ],
     );
   }

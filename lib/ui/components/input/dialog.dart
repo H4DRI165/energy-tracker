@@ -8,7 +8,7 @@ class ConfirmDialog extends StatelessWidget {
     required this.message,
     this.confirmLabel = 'Confirm',
     this.cancelLabel = 'Cancel',
-    this.confirmColor = AppColors.accent,
+    this.confirmColor,
     this.warning,
     super.key,
   });
@@ -17,7 +17,7 @@ class ConfirmDialog extends StatelessWidget {
   final String message;
   final String confirmLabel;
   final String cancelLabel;
-  final Color confirmColor;
+  final Color? confirmColor;
   final String? warning;
 
   static Future<bool> show(
@@ -26,7 +26,7 @@ class ConfirmDialog extends StatelessWidget {
     required String message,
     String confirmLabel = 'Confirm',
     String cancelLabel = 'Cancel',
-    Color confirmColor = AppColors.accent,
+    Color? confirmColor,
     String? warning,
   }) async {
     final result = await showDialog<bool>(
@@ -36,7 +36,7 @@ class ConfirmDialog extends StatelessWidget {
         message: message,
         confirmLabel: confirmLabel,
         cancelLabel: cancelLabel,
-        confirmColor: confirmColor,
+        confirmColor: confirmColor ?? AppColors.accent,
         warning: warning,
       ),
     );

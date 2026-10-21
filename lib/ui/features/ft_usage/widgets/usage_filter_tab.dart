@@ -16,35 +16,45 @@ class UsageFilterTabs extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(4.r),
+      padding: EdgeInsets.all(2.r),
       decoration: BoxDecoration(
-        color: AppColors.surface2,
+        color: AppColors.surface3,
         borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
       ),
       child: Row(
         children: UsageFilter.values.map((filter) {
           final isSelected = filter == selected;
-          final label = filter == UsageFilter.monthly ? 'Monthly' : 'Yearly';
+          final label = filter == UsageFilter.monthly ? '6M' : '12M';
+          final semanticsLabel = filter == UsageFilter.monthly
+              ? 'Last 6 months'
+              : 'Last 12 months';
           return Expanded(
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(9.r),
-                onTap: () => onChanged(filter),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: EdgeInsets.symmetric(vertical: 8.h),
-                  decoration: BoxDecoration(
-                    color: isSelected ? AppColors.accent : Colors.transparent,
-                    borderRadius: BorderRadius.circular(9.r),
-                  ),
-                  child: Text(
-                    label,
-                    textAlign: TextAlign.center,
-                    style: AppTextStyles.bodySm.copyWith(
-                      fontSize: 12.sp,
-                      fontWeight: FontWeight.w700,
-                      color: isSelected ? Colors.black : AppColors.text2,
+            child: Semantics(
+              button: true,
+              selected: isSelected,
+              label: semanticsLabel,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(9.r),
+                  onTap: () => onChanged(filter),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: EdgeInsets.symmetric(vertical: 5.h),
+                    decoration: BoxDecoration(
+                      color: isSelected ? AppColors.accent : Colors.transparent,
+                      borderRadius: BorderRadius.circular(9.r),
+                    ),
+                    child: Text(
+                      label,
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.bodySm.copyWith(
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w700,
+                        color: isSelected
+                            ? AppColors.onAccent
+                            : AppColors.text2,
+                      ),
                     ),
                   ),
                 ),

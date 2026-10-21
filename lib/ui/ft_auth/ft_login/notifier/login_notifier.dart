@@ -36,7 +36,11 @@ class LoginNotifier extends Notifier<LoginPageState>
     if (state.isLoading) return;
     if (!_validate()) return;
 
-    state = state.copyWith(isLoading: true, authError: null);
+    state = state.copyWith(
+      isLoading: true,
+      isGoogleLoading: false,
+      authError: null,
+    );
 
     try {
       await _authService.signInWithEmail(state.email, state.password);
@@ -72,7 +76,11 @@ class LoginNotifier extends Notifier<LoginPageState>
   Future<void> loginWithGoogle() async {
     if (state.isLoading) return;
 
-    state = state.copyWith(isLoading: true, authError: null);
+    state = state.copyWith(
+      isLoading: true,
+      isGoogleLoading: true,
+      authError: null,
+    );
 
     try {
       await _authService.signInWithGoogle();
@@ -104,7 +112,10 @@ class LoginNotifier extends Notifier<LoginPageState>
       }
     } finally {
       if (ref.mounted) {
-        state = state.copyWith(isLoading: false);
+        state = state.copyWith(
+          isLoading: false,
+          isGoogleLoading: false,
+        );
       }
     }
   }

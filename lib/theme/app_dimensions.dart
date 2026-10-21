@@ -1,7 +1,6 @@
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 abstract class AppDimensions {
-  // ─── Spacing scale ─────────────────────────────────────────────────────────
   static double get s2 => 2.r;
   static double get s4 => 4.r;
   static double get s6 => 6.r;
@@ -17,23 +16,20 @@ abstract class AppDimensions {
   static double get s40 => 40.r;
   static double get s48 => 48.r;
 
-  // ─── Border radius ─────────────────────────────────────────────────────────
   static double get radiusLg => 20.r;
   static double get radiusMd => 12.r;
   static double get radiusPill => 20.r;
   static double get radiusXl => 36.r;
   static double get radiusSm => 10.r;
 
-  // ─── Component sizes ───────────────────────────────────────────────────────
   static double get iconBtnSize => 36.r;
   static double get avatarSize => 32.r;
-  static double get navFabSize => 48.r;
+  static double get navFabSize => 64.r;
   static double get applianceIconSize => 40.r;
   static double get onboardIconSize => 72.r;
   static double get toggleWidth => 44.r;
   static double get toggleHeight => 24.r;
 
-  // ─── Layout ────────────────────────────────────────────────────────────────
   static double get screenPaddingH => 20.w;
   static double get screenPaddingV => 16.h;
   static double get cardPaddingDefault => 18.r;
@@ -43,7 +39,6 @@ abstract class AppDimensions {
   static double get progressBarHeightLg => 8.r;
   static double get dividerHeight => 1.r;
 
-  // ─── Border widths ─────────────────────────────────────────────────────────
   static double get borderWidth => 1.r;
   static double get borderWidthAccent => 2.r;
   static double get borderWidthScan => 3.r;

@@ -1,7 +1,5 @@
 import 'dart:async';
 
-import 'package:energy_tracker/extensions/tariff_type_extension.dart';
-import 'package:energy_tracker/services/notifier/user_profile_notifier.dart';
 import 'package:energy_tracker/theme/theme.dart';
 import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_notifier.dart';
 import 'package:flutter/material.dart';
@@ -18,27 +16,17 @@ class BillSummaryCard extends ConsumerWidget {
     );
     if (state == null) return const SizedBox.shrink();
 
-    final tariffType = ref.watch(tariffTypeProvider);
     final isAlert = state.isNearBudget || state.isOverBudget;
     final billColor = state.billColor;
+    final projectedBill = state.projectedBill;
 
     return Container(
       padding: EdgeInsets.all(20.r),
       decoration: BoxDecoration(
-        gradient: isAlert
-            ? const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFF2D1A0A), Color(0xFF1E1A0A)],
-              )
-            : const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFF0D2D24), Color(0xFF0A1E2E)],
-              ),
+        gradient: isAlert ? AppColors.warnGradient : AppColors.heroGradient,
         borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
         border: Border.all(
-          color: isAlert ? const Color(0x4DFFB020) : const Color(0x3300D4AA),
+          color: isAlert ? AppColors.borderWarn : AppColors.borderAccent,
         ),
       ),
       child: Stack(
@@ -79,42 +67,8 @@ class BillSummaryCard extends ConsumerWidget {
                                 letterSpacing: 2,
                               ),
                             ),
-                            SizedBox(width: 8.w),
-                            Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 6.w,
-                                vertical: 2.h,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.surface3.withValues(
-                                  alpha: 0.6,
-                                ),
-                                borderRadius: BorderRadius.circular(6.r),
-                                border: Border.all(
-                                  color: AppColors.text3.withValues(alpha: 0.3),
-                                ),
-                              ),
-                              child: Text(
-                                state.tariffType.shortLabel,
-                                style: AppTextStyles.caption.copyWith(
-                                  color: AppColors.text2,
-                                  fontSize: 9.sp,
-                                  height: 1.2,
-                                ),
-                              ),
-                            ),
                           ],
                         ),
-                        if (state.tariffType != tariffType) ...[
-                          SizedBox(height: 4.h),
-                          Text(
-                            'Showing ${state.tariffType.shortLabel} '
-                            "rates — matches this month's readings",
-                            style: AppTextStyles.caption.copyWith(
-                              color: AppColors.text3,
-                            ),
-                          ),
-                        ],
                         SizedBox(height: 4.h),
                         Text(
                           'RM ${state.estimatedBill.toStringAsFixed(2)}',
@@ -122,15 +76,20 @@ class BillSummaryCard extends ConsumerWidget {
                         ),
                         SizedBox(height: 4.h),
                         Text(
-                          isAlert && state.projectedBill != null
-                              ? '${state.kwhUsed.toStringAsFixed(0)} kWh · '
-                                    'Projected: RM '
-                                    '${state.projectedBill!.toStringAsFixed(0)}'
-                              : 'Estimated bill · '
-                                    '${state.kwhUsed.toStringAsFixed(0)} '
-                                    'kWh used',
+                          'Month-to-date · '
+                          '${state.kwhUsed.toStringAsFixed(0)} kWh used',
                           style: AppTextStyles.bodyMd.copyWith(
                             color: AppColors.text2,
+                          ),
+                        ),
+                        SizedBox(height: 2.h),
+                        Text(
+                          projectedBill == null
+                              ? 'Add another reading to project this month'
+                              : 'Projected bill · RM '
+                                    '${projectedBill.toStringAsFixed(2)}',
+                          style: AppTextStyles.caption.copyWith(
+                            color: AppColors.text3,
                           ),
                         ),
                       ],
@@ -142,7 +101,10 @@ class BillSummaryCard extends ConsumerWidget {
                       children: [
                         _ChangeBadge(percent: state.percentageVsLastMonth),
                         SizedBox(height: 6.h),
-                        Text('vs last month', style: AppTextStyles.caption),
+                        Text(
+                          'vs same period',
+                          style: AppTextStyles.caption,
+                        ),
                       ],
                     ),
                 ],
