@@ -44,6 +44,7 @@ class DashboardPageState {
     this.percentageVsLastMonth = 0,
     this.projectedBill,
     this.weeklyUsage = const [],
+    this.readingCount = 0,
     this.errorMessage,
   }) : currentEeiBand = currentEeiBand ?? EeiBand.none;
 
@@ -58,6 +59,9 @@ class DashboardPageState {
   final double percentageVsLastMonth;
   final double? projectedBill;
   final List<DailyUsage> weeklyUsage;
+
+  /// Total saved readings; zero means the dashboard has no data to show yet.
+  final int readingCount;
   final String? errorMessage;
   static const Object _unset = Object();
 
@@ -127,6 +131,7 @@ class DashboardPageState {
     double? percentageVsLastMonth,
     Object? projectedBill = _unset,
     List<DailyUsage>? weeklyUsage,
+    int? readingCount,
     Object? errorMessage = _unset,
   }) {
     return DashboardPageState(
@@ -144,6 +149,7 @@ class DashboardPageState {
           ? this.projectedBill
           : projectedBill as double?,
       weeklyUsage: weeklyUsage ?? this.weeklyUsage,
+      readingCount: readingCount ?? this.readingCount,
       errorMessage: identical(errorMessage, _unset)
           ? this.errorMessage
           : errorMessage as String?,
@@ -170,6 +176,7 @@ class DashboardPageState {
           : null,
       projectedBill: other.projectedBill ?? projectedBill,
       weeklyUsage: other.weeklyUsage.isNotEmpty ? other.weeklyUsage : null,
+      readingCount: other.readingCount != 0 ? other.readingCount : null,
       errorMessage: other.errorMessage ?? errorMessage,
     );
   }
@@ -189,6 +196,7 @@ class DashboardPageState {
         other.percentageVsLastMonth == percentageVsLastMonth &&
         other.projectedBill == projectedBill &&
         listEquals(other.weeklyUsage, weeklyUsage) &&
+        other.readingCount == readingCount &&
         other.errorMessage == errorMessage;
   }
 
@@ -205,6 +213,7 @@ class DashboardPageState {
     percentageVsLastMonth,
     projectedBill,
     Object.hashAll(weeklyUsage),
+    readingCount,
     errorMessage,
   );
 }

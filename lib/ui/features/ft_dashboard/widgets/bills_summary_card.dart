@@ -18,6 +18,7 @@ class BillSummaryCard extends ConsumerWidget {
 
     final isAlert = state.isNearBudget || state.isOverBudget;
     final billColor = state.billColor;
+    final projectedBill = state.projectedBill;
 
     return Container(
       padding: EdgeInsets.all(20.r),
@@ -75,15 +76,20 @@ class BillSummaryCard extends ConsumerWidget {
                         ),
                         SizedBox(height: 4.h),
                         Text(
-                          isAlert && state.projectedBill != null
-                              ? '${state.kwhUsed.toStringAsFixed(0)} kWh · '
-                                    'Projected: RM '
-                                    '${state.projectedBill!.toStringAsFixed(0)}'
-                              : 'Estimated bill · '
-                                    '${state.kwhUsed.toStringAsFixed(0)} '
-                                    'kWh used',
+                          'Month-to-date · '
+                          '${state.kwhUsed.toStringAsFixed(0)} kWh used',
                           style: AppTextStyles.bodyMd.copyWith(
                             color: AppColors.text2,
+                          ),
+                        ),
+                        SizedBox(height: 2.h),
+                        Text(
+                          projectedBill == null
+                              ? 'Add another reading to project this month'
+                              : 'Projected bill · RM '
+                                    '${projectedBill.toStringAsFixed(2)}',
+                          style: AppTextStyles.caption.copyWith(
+                            color: AppColors.text3,
                           ),
                         ),
                       ],
@@ -95,7 +101,10 @@ class BillSummaryCard extends ConsumerWidget {
                       children: [
                         _ChangeBadge(percent: state.percentageVsLastMonth),
                         SizedBox(height: 6.h),
-                        Text('vs last month', style: AppTextStyles.caption),
+                        Text(
+                          'vs same period',
+                          style: AppTextStyles.caption,
+                        ),
                       ],
                     ),
                 ],

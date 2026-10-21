@@ -87,6 +87,11 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState>
       final startOfMonth = DateTime(now.year, now.month);
       final startOf7DayWindow = DateTime(now.year, now.month, now.day - 6);
       final startOfLastMonth = DateTime(now.year, now.month - 1);
+      final lastMonthDays = DateUtils.getDaysInMonth(
+        startOfLastMonth.year,
+        startOfLastMonth.month,
+      );
+      final comparisonDay = now.day > lastMonthDays ? lastMonthDays : now.day;
 
       final readingsSnap = await _firestore
           .collection('users')
@@ -105,11 +110,15 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState>
       );
       final kwhUsed = currentAllocations.first.kwh;
 
+      // Compare like with like: the same calendar days from last month.
       final lastMonthAllocations = UsageAllocationService.monthly(
         readings: readings,
         from: startOfLastMonth,
-        to: startOfLastMonth,
-        includeFullEndMonth: true,
+        to: DateTime(
+          startOfLastMonth.year,
+          startOfLastMonth.month,
+          comparisonDay,
+        ),
       );
       final lastMonthKwh = lastMonthAllocations.first.kwh;
 
@@ -147,6 +156,7 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState>
         percentageVsLastMonth: percentVsLast,
         projectedBill: projectedBill,
         weeklyUsage: weeklyUsage,
+        readingCount: readings.length,
       );
     } on FirebaseException catch (e, st) {
       logError('Failed to load usage data (Firebase)', e, st);

@@ -51,7 +51,8 @@ class WeeklyUsageChartCard extends ConsumerWidget {
       insight: weeklyUsage.isEmpty
           ? null
           : Text(
-              'Total ${weeklyTotal.toStringAsFixed(0)} kWh this week',
+              'Total ${weeklyTotal.toStringAsFixed(0)} kWh · '
+              'from reading intervals',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: AppTextStyles.caption.copyWith(color: AppColors.text2),
