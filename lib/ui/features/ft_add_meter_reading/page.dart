@@ -206,13 +206,13 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
           data: Theme.of(context).copyWith(
             colorScheme: Theme.of(context).colorScheme.copyWith(
               primary: AppColors.accent,
-              onPrimary: Colors.black,
+              onPrimary: AppColors.onAccent,
               surface: AppColors.surface,
               onSurface: AppColors.text,
             ),
-            dialogTheme: const DialogThemeData(
+            dialogTheme: DialogThemeData(
               backgroundColor: AppColors.surface,
-              shape: RoundedRectangleBorder(
+              shape: const RoundedRectangleBorder(
                 borderRadius: BorderRadius.all(Radius.circular(20)),
               ),
             ),
@@ -276,7 +276,7 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
         SnackBar(
           content: Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.check_circle_outline_rounded,
                 color: AppColors.accent,
                 size: 18,
@@ -308,20 +308,34 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
           context.pop();
         }
       }
+    } else if (mounted) {
+      final message =
+          ref.read(addReadingProvider).errorMessage ??
+          'Could not save the reading. Please try again.';
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            message,
+            style: TextStyle(color: AppColors.onAccent),
+          ),
+          backgroundColor: AppColors.danger,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+          ),
+        ),
+      );
     }
   }
 }
 
 final _cardDecoration = BoxDecoration(
-  gradient: const LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [Color(0xFF0D2D24), Color(0xFF0A1E2E)],
-  ),
+  gradient: AppColors.heroGradient,
   borderRadius: BorderRadius.all(
     Radius.circular(AppDimensions.radiusLg),
   ),
-  border: const Border.fromBorderSide(
+  border: Border.fromBorderSide(
     BorderSide(color: AppColors.borderAccent),
   ),
 );
@@ -343,7 +357,7 @@ class _LastReadingCard extends ConsumerWidget {
         child: Center(
           child: SizedBox(
             height: 60.h,
-            child: const CircularProgressIndicator(
+            child: CircularProgressIndicator(
               color: AppColors.accent,
               strokeWidth: 2,
             ),
@@ -642,7 +656,7 @@ class _AutoCalcCard extends ConsumerWidget {
                 valueColor: AppColors.text,
               ),
               SizedBox(height: 10.h),
-              const Divider(color: AppColors.border, height: 1),
+              Divider(color: AppColors.border, height: 1),
               SizedBox(height: 10.h),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -788,15 +802,15 @@ class _NotesField extends StatelessWidget {
         fillColor: AppColors.surface2,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderSide: BorderSide(color: AppColors.border),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderSide: BorderSide(color: AppColors.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-          borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
+          borderSide: BorderSide(color: AppColors.accent, width: 1.5),
         ),
         contentPadding: EdgeInsets.all(14.r),
       ),

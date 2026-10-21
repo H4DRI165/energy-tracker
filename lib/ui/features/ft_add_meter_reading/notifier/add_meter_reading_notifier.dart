@@ -6,6 +6,7 @@ import 'package:energy_tracker/models/reading_record.dart';
 import 'package:energy_tracker/services/auth/providers/current_uid_provider.dart';
 import 'package:energy_tracker/services/billing/bill_recalculation_service.dart';
 import 'package:energy_tracker/services/billing/reading_chain_service.dart';
+import 'package:energy_tracker/services/network/network_status.dart';
 import 'package:energy_tracker/ui/components/logging/app_logger.dart';
 import 'package:energy_tracker/ui/components/logging/notifier/loggable_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_add_meter_reading/notifier/add_meter_reading_state.dart';
@@ -26,6 +27,8 @@ class AddReadingNotifier extends Notifier<AddReadingPageState>
   late final BillRecalculationService _billService = BillRecalculationService(
     _firestore,
   );
+  static const Duration _saveTimeout = Duration(seconds: 15);
+
   int _loadRequestId = 0;
   DateTime? _editingDate;
   String? _editingReadingId;
@@ -125,7 +128,7 @@ class AddReadingNotifier extends Notifier<AddReadingPageState>
         beforeQuery.orderBy('date', descending: true).limit(1).get(),
         nextQuery.orderBy('date').limit(1).get(),
         _loadMonthToDateKwhBefore(uid, selectedDate),
-      ]);
+      ]).timeout(const Duration(seconds: 8));
 
       final beforeSnap = results[0] as QuerySnapshot<Map<String, dynamic>>;
       final nextSnap = results[1] as QuerySnapshot<Map<String, dynamic>>;
@@ -167,7 +170,25 @@ class AddReadingNotifier extends Notifier<AddReadingPageState>
       );
 
       if (requestId == _loadRequestId) {
-        state = state.copyWith(isLoadingLastReading: false);
+        state = state.copyWith(
+          isLoadingLastReading: false,
+          errorMessage: mapFirebaseError(e.code),
+        );
+      }
+    } on TimeoutException catch (e, st) {
+      logError(
+        'Timed out loading surrounding readings',
+        e,
+        st,
+        context: {'selected_date': selectedDate.toIso8601String()},
+      );
+      if (requestId == _loadRequestId) {
+        state = state.copyWith(
+          isLoadingLastReading: false,
+          errorMessage:
+              'Could not load your previous reading. Check your connection '
+              'and try again.',
+        );
       }
     } on Exception catch (e, st) {
       logError(
@@ -180,7 +201,12 @@ class AddReadingNotifier extends Notifier<AddReadingPageState>
         },
       );
       if (requestId == _loadRequestId) {
-        state = state.copyWith(isLoadingLastReading: false);
+        state = state.copyWith(
+          isLoadingLastReading: false,
+          errorMessage:
+              'Could not load your previous reading. Check your connection '
+              'and try again.',
+        );
       }
     }
   }
@@ -305,24 +331,59 @@ class AddReadingNotifier extends Notifier<AddReadingPageState>
 
     state = state.copyWith(isSaving: true, errorMessage: null);
 
+    if (!await NetworkStatus.hasInternet()) {
+      state = state.copyWith(
+        isSaving: false,
+        errorMessage: 'No internet connection. Reconnect and try saving again.',
+      );
+      return false;
+    }
+
     final date = state.selectedDate ?? DateTime.now();
 
     try {
-      await _firestore.collection('users').doc(uid).collection('readings').add({
-        'reading': state.currentReading,
-        'kwh': state.usageKwh,
-        'date': Timestamp.fromDate(date),
-        'notes': state.notes.trim(),
-        'tier': state.currentTier,
-        if (state.lastReadingDate != null)
-          'periodStart': Timestamp.fromDate(state.lastReadingDate!),
-        'createdAt': FieldValue.serverTimestamp(),
-      });
+      await _firestore
+          .collection('users')
+          .doc(uid)
+          .collection('readings')
+          .add({
+            'reading': state.currentReading,
+            'kwh': state.usageKwh,
+            'date': Timestamp.fromDate(date),
+            'notes': state.notes.trim(),
+            'tier': state.currentTier,
+            if (state.lastReadingDate != null)
+              'periodStart': Timestamp.fromDate(state.lastReadingDate!),
+            'createdAt': FieldValue.serverTimestamp(),
+          })
+          .timeout(_saveTimeout);
 
-      await _applyChainFixAndRecalculate(uid, date, state.lastReadingDate);
+      await _applyChainFixAndRecalculate(
+        uid,
+        date,
+        state.lastReadingDate,
+      ).timeout(_saveTimeout);
 
       state = state.copyWith(isSaving: false);
       return true;
+    } on TimeoutException catch (e, st) {
+      logError(
+        'Timed out while saving reading',
+        e,
+        st,
+        context: {
+          'reading_value': state.currentReading,
+          'kwh': state.usageKwh,
+          'date': date.toIso8601String(),
+        },
+      );
+      state = state.copyWith(
+        isSaving: false,
+        errorMessage:
+            'No internet connection or the request timed out. '
+            'Please try again.',
+      );
+      return false;
     } on FirebaseException catch (e, st) {
       logError(
         'Failed to save reading (Firebase)',
@@ -369,6 +430,14 @@ class AddReadingNotifier extends Notifier<AddReadingPageState>
 
     state = state.copyWith(isSaving: true, errorMessage: null);
 
+    if (!await NetworkStatus.hasInternet()) {
+      state = state.copyWith(
+        isSaving: false,
+        errorMessage: 'No internet connection. Reconnect and try saving again.',
+      );
+      return false;
+    }
+
     try {
       // date is fixed in edit mode, never changes
       final date = reading.date;
@@ -386,12 +455,34 @@ class AddReadingNotifier extends Notifier<AddReadingPageState>
             'periodStart': state.lastReadingDate == null
                 ? FieldValue.delete()
                 : Timestamp.fromDate(state.lastReadingDate!),
-          });
+          })
+          .timeout(_saveTimeout);
 
-      await _applyChainFixAndRecalculate(uid, date, state.lastReadingDate);
+      await _applyChainFixAndRecalculate(
+        uid,
+        date,
+        state.lastReadingDate,
+      ).timeout(_saveTimeout);
 
       state = state.copyWith(isSaving: false);
       return true;
+    } on TimeoutException catch (e, st) {
+      logError(
+        'Timed out while updating reading',
+        e,
+        st,
+        context: {
+          'reading_value': state.currentReading,
+          'kwh': state.usageKwh,
+        },
+      );
+      state = state.copyWith(
+        isSaving: false,
+        errorMessage:
+            'No internet connection or the request timed out. '
+            'Please try again.',
+      );
+      return false;
     } on FirebaseException catch (e, st) {
       logError(
         'Failed to update reading (Firebase)',
