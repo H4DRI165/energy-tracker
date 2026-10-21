@@ -43,18 +43,18 @@ void main() {
     await readings.add({
       'reading': 1000.0,
       'kwh': 0.0,
-      'date': Timestamp.fromDate(DateTime(2026, 1)),
+      'date': Timestamp.fromDate(DateTime(2026)),
     });
     await readings.add({
       'reading': 2200.0,
       'kwh': 1200.0,
-      'periodStart': Timestamp.fromDate(DateTime(2026, 1)),
+      'periodStart': Timestamp.fromDate(DateTime(2026)),
       'date': Timestamp.fromDate(DateTime(2026, 7)),
     });
 
     await service.recalculateRange(
       'user-1',
-      DateTime(2026, 1),
+      DateTime(2026),
       DateTime(2026, 7),
     );
 

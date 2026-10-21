@@ -1,6 +1,6 @@
 import 'package:energy_tracker/constants/tariff_rates.dart';
-import 'package:energy_tracker/services/billing/usage_allocation_service.dart';
 import 'package:energy_tracker/extensions/date_time_extension.dart';
+import 'package:energy_tracker/services/billing/usage_allocation_service.dart';
 
 class AddReadingPageState {
   const AddReadingPageState({
@@ -83,7 +83,6 @@ class AddReadingPageState {
         billingMonth: selectedDate,
       );
 
-  /// EEI band number for the cumulative month usage (0 = no rebate).
   int get currentTier => currentEeiBand.number;
 
   EeiBand get currentEeiBand => TariffRates.getEeiBand(cumulativeKwh);

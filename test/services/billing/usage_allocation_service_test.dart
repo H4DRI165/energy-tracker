@@ -29,7 +29,7 @@ void main() {
             id: '1',
             date: DateTime(2026, 7, 10),
             kwh: 80,
-            periodStart: DateTime(2026, 7, 1),
+            periodStart: DateTime(2026, 7),
           ),
           reading(
             id: '2',
@@ -80,17 +80,17 @@ void main() {
         readings: [
           reading(
             id: '1',
-            date: DateTime(2026, 1),
+            date: DateTime(2026),
             kwh: 0,
           ),
           reading(
             id: '2',
             date: DateTime(2026, 7),
             kwh: 1200,
-            periodStart: DateTime(2026, 1),
+            periodStart: DateTime(2026),
           ),
         ],
-        from: DateTime(2026, 1),
+        from: DateTime(2026),
         to: DateTime(2026, 7, 31),
       );
 

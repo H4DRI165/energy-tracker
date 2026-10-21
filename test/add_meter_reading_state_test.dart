@@ -49,7 +49,7 @@ void main() {
     final state = AddReadingPageState(
       isLoadingLastReading: false,
       lastReading: 1000,
-      lastReadingDate: DateTime(2026, 1),
+      lastReadingDate: DateTime(2026),
       selectedDate: DateTime(2026, 7, 15),
       currentReading: 2200,
     );

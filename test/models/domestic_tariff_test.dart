@@ -9,9 +9,9 @@ void main() {
       expect(tariff.isValid, isTrue);
       expect(tariff.energySenPerKwh, 27.03);
       expect(tariff.protectionThresholdKwh(DateTime(2026, 10)), 800);
-      expect(tariff.protectionThresholdKwh(DateTime(2027, 1)), 600);
+      expect(tariff.protectionThresholdKwh(DateTime(2027)), 600);
       expect(tariff.afaSenPerKwh(DateTime(2026, 10)), 3.61);
-      expect(tariff.afaSenPerKwh(DateTime(2030, 1)), isNull);
+      expect(tariff.afaSenPerKwh(DateTime(2030)), isNull);
       expect(tariff.eeiSenPerKwh(200), 25);
       expect(tariff.eeiSenPerKwh(1000), 0.5);
       expect(tariff.eeiSenPerKwh(1001), 0);
@@ -33,7 +33,7 @@ void main() {
     test('rejects a schedule with unsorted EEI bands', () {
       final decoded = DomesticTariff.fromJson({
         ...DomesticTariff.fallback.toJson(),
-        'eeiBands': [
+        'eeiBands': const [
           {'maxKwh': 300, 'senPerKwh': 20},
           {'maxKwh': 200, 'senPerKwh': 25},
         ],
@@ -45,7 +45,7 @@ void main() {
     test('accepts numeric AFA values as well as objects', () {
       final decoded = DomesticTariff.fromJson({
         ...DomesticTariff.fallback.toJson(),
-        'afaByMonth': {'2026-10': 3.61},
+        'afaByMonth': const {'2026-10': 3.61},
       });
 
       expect(decoded.afaSenPerKwh(DateTime(2026, 10)), 3.61);

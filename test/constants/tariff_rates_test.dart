@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   final oct2026 = DateTime(2026, 10);
-  final jan2027 = DateTime(2027, 1);
+  final jan2027 = DateTime(2027);
 
   setUp(TariffRates.resetToFallback);
   tearDown(TariffRates.resetToFallback);
@@ -39,7 +39,7 @@ void main() {
         expect(TariffRates.protectionThresholdKwh(DateTime(2026, 8)), 600);
         expect(TariffRates.protectionThresholdKwh(DateTime(2026, 9)), 800);
         expect(TariffRates.protectionThresholdKwh(DateTime(2026, 12)), 800);
-        expect(TariffRates.protectionThresholdKwh(DateTime(2027, 1)), 600);
+        expect(TariffRates.protectionThresholdKwh(DateTime(2027)), 600);
       });
 
       test('keeps waived retail and SST rows visible with zero amounts', () {

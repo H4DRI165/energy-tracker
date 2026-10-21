@@ -1,12 +1,8 @@
 import 'package:flutter/foundation.dart';
 
-/// A single EEI band from the domestic tariff schedule.
 @immutable
 class EeiBandRate {
   const EeiBandRate({required this.maxKwh, required this.senPerKwh});
-
-  final int maxKwh;
-  final double senPerKwh;
 
   factory EeiBandRate.fromJson(Map<String, dynamic> json) {
     return EeiBandRate(
@@ -14,6 +10,9 @@ class EeiBandRate {
       senPerKwh: (json['senPerKwh'] as num?)?.toDouble() ?? 0,
     );
   }
+
+  final int maxKwh;
+  final double senPerKwh;
 
   Map<String, dynamic> toJson() => {
     'maxKwh': maxKwh,
@@ -31,6 +30,14 @@ class ProtectionPeriod {
     required this.thresholdKwh,
   });
 
+  factory ProtectionPeriod.fromJson(Map<String, dynamic> json) {
+    return ProtectionPeriod(
+      from: DateTime.parse(json['from'] as String),
+      to: DateTime.parse(json['to'] as String),
+      thresholdKwh: (json['thresholdKwh'] as num?)?.toDouble() ?? 0,
+    );
+  }
+
   final DateTime from;
   final DateTime to;
   final double thresholdKwh;
@@ -38,14 +45,6 @@ class ProtectionPeriod {
   bool covers(DateTime month) {
     final m = DateTime(month.year, month.month);
     return !m.isBefore(from) && !m.isAfter(to);
-  }
-
-  factory ProtectionPeriod.fromJson(Map<String, dynamic> json) {
-    return ProtectionPeriod(
-      from: DateTime.parse(json['from'] as String),
-      to: DateTime.parse(json['to'] as String),
-      thresholdKwh: (json['thresholdKwh'] as num?)?.toDouble() ?? 0,
-    );
   }
 
   Map<String, dynamic> toJson() => {
@@ -61,11 +60,6 @@ class ProtectionPeriod {
 class AfaRate {
   const AfaRate({required this.senPerKwh, this.status = 'final'});
 
-  final double senPerKwh;
-  final String status;
-
-  bool get isForecast => status == 'forecast';
-
   factory AfaRate.fromJson(Object? json) {
     if (json is num) {
       return AfaRate(senPerKwh: json.toDouble());
@@ -78,6 +72,11 @@ class AfaRate {
     }
     return const AfaRate(senPerKwh: 0);
   }
+
+  final double senPerKwh;
+  final String status;
+
+  bool get isForecast => status == 'forecast';
 
   Map<String, dynamic> toJson() => {
     'senPerKwh': senPerKwh,
@@ -112,6 +111,62 @@ class DomesticTariff {
     this.updatedAt,
     this.source = '',
   });
+
+  factory DomesticTariff.fromJson(Map<String, dynamic> json) {
+    final rawBands = json['eeiBands'];
+    final rawProtection = json['protectionPeriods'];
+    final rawAfa = json['afaByMonth'];
+
+    return DomesticTariff(
+      id: json['id'] as String? ?? 'domestic_general',
+      schemaVersion:
+          (json['schemaVersion'] as num?)?.toInt() ?? currentSchemaVersion,
+      formulaVersion:
+          (json['formulaVersion'] as num?)?.toInt() ?? currentFormulaVersion,
+      effectiveFrom: _parseDate(json['effectiveFrom']) ?? DateTime(2025, 7),
+      effectiveTo: _parseDate(json['effectiveTo']) ?? DateTime(2027, 12, 31),
+      energySenPerKwh: _num(json['energySenPerKwh']),
+      energyHighSenPerKwh: _num(json['energyHighSenPerKwh']),
+      highUsageThresholdKwh: _num(json['highUsageThresholdKwh'], 1500),
+      capacitySenPerKwh: _num(json['capacitySenPerKwh']),
+      networkSenPerKwh: _num(json['networkSenPerKwh']),
+      retailRmPerMonth: _num(json['retailRmPerMonth']),
+      kwtbbRate: _num(json['kwtbbRate']),
+      sstRate: _num(json['sstRate']),
+      baseProtectionThresholdKwh: _num(
+        json['baseProtectionThresholdKwh'],
+        600,
+      ),
+      protectionPeriods: rawProtection is List
+          ? rawProtection
+                .whereType<Map<Object?, Object?>>()
+                .map(
+                  (e) => ProtectionPeriod.fromJson(
+                    Map<String, dynamic>.from(e),
+                  ),
+                )
+                .toList()
+          : const [],
+      eeiBands: rawBands is List
+          ? rawBands
+                .whereType<Map<Object?, Object?>>()
+                .map(
+                  (e) => EeiBandRate.fromJson(Map<String, dynamic>.from(e)),
+                )
+                .toList()
+          : const [],
+      afaByMonth: rawAfa is Map<Object?, Object?>
+          ? rawAfa.map(
+              (key, value) => MapEntry(
+                key.toString(),
+                AfaRate.fromJson(value),
+              ),
+            )
+          : const {},
+      updatedAt: _parseDate(json['updatedAt']),
+      source: json['source'] as String? ?? '',
+    );
+  }
 
   final String id;
   final int schemaVersion;
@@ -264,62 +319,6 @@ class DomesticTariff {
       if (kwh <= band.maxKwh) return band.senPerKwh;
     }
     return 0;
-  }
-
-  factory DomesticTariff.fromJson(Map<String, dynamic> json) {
-    final rawBands = json['eeiBands'];
-    final rawProtection = json['protectionPeriods'];
-    final rawAfa = json['afaByMonth'];
-
-    return DomesticTariff(
-      id: json['id'] as String? ?? 'domestic_general',
-      schemaVersion:
-          (json['schemaVersion'] as num?)?.toInt() ?? currentSchemaVersion,
-      formulaVersion:
-          (json['formulaVersion'] as num?)?.toInt() ?? currentFormulaVersion,
-      effectiveFrom: _parseDate(json['effectiveFrom']) ?? DateTime(2025, 7),
-      effectiveTo: _parseDate(json['effectiveTo']) ?? DateTime(2027, 12, 31),
-      energySenPerKwh: _num(json['energySenPerKwh']),
-      energyHighSenPerKwh: _num(json['energyHighSenPerKwh']),
-      highUsageThresholdKwh: _num(json['highUsageThresholdKwh'], 1500),
-      capacitySenPerKwh: _num(json['capacitySenPerKwh']),
-      networkSenPerKwh: _num(json['networkSenPerKwh']),
-      retailRmPerMonth: _num(json['retailRmPerMonth']),
-      kwtbbRate: _num(json['kwtbbRate']),
-      sstRate: _num(json['sstRate']),
-      baseProtectionThresholdKwh: _num(
-        json['baseProtectionThresholdKwh'],
-        600,
-      ),
-      protectionPeriods: rawProtection is List
-          ? rawProtection
-                .whereType<Map<Object?, Object?>>()
-                .map(
-                  (e) => ProtectionPeriod.fromJson(
-                    Map<String, dynamic>.from(e),
-                  ),
-                )
-                .toList()
-          : const [],
-      eeiBands: rawBands is List
-          ? rawBands
-                .whereType<Map<Object?, Object?>>()
-                .map(
-                  (e) => EeiBandRate.fromJson(Map<String, dynamic>.from(e)),
-                )
-                .toList()
-          : const [],
-      afaByMonth: rawAfa is Map<Object?, Object?>
-          ? rawAfa.map(
-              (key, value) => MapEntry(
-                key.toString(),
-                AfaRate.fromJson(value),
-              ),
-            )
-          : const {},
-      updatedAt: _parseDate(json['updatedAt']),
-      source: json['source'] as String? ?? '',
-    );
   }
 
   Map<String, dynamic> toJson() => {

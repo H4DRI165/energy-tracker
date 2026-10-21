@@ -188,7 +188,12 @@ class _MainAppState extends ConsumerState<MainApp>
       return;
     }
 
-    final pixelRatio = math.min(View.of(context).devicePixelRatio, 2.0);
+    final pixelRatio = math
+        .min(
+          View.of(context).devicePixelRatio,
+          2,
+        )
+        .toDouble();
     final image = boundary.toImageSync(pixelRatio: pixelRatio);
 
     _themeTransition.value = 0;
@@ -322,7 +327,6 @@ class _SweepOverlay extends StatelessWidget {
               final a = (edge / w).clamp(0.0, 1.0);
               final b = ((edge + feather) / w).clamp(0.0, 1.0);
 
-              // 0 = sun, 1 = moon, regardless of direction.
               final p = toDark ? t : 1 - t;
               final sunOpacity = (1 - p * 1.6).clamp(0.0, 1.0);
               final moonOpacity = ((p - 0.3) / 0.7).clamp(0.0, 1.0);

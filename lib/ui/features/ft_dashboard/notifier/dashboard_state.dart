@@ -46,7 +46,7 @@ class DashboardPageState {
     this.weeklyUsage = const [],
     this.readingCount = 0,
     this.errorMessage,
-  }) : currentEeiBand = currentEeiBand ?? EeiBand.none;
+  }) : currentEeiBand = currentEeiBand ?? EeiBand.none();
 
   final String userName;
   final String monthLabel;
@@ -60,7 +60,6 @@ class DashboardPageState {
   final double? projectedBill;
   final List<DailyUsage> weeklyUsage;
 
-  /// Total saved readings; zero means the dashboard has no data to show yet.
   final int readingCount;
   final String? errorMessage;
   static const Object _unset = Object();
@@ -101,12 +100,10 @@ class DashboardPageState {
     }
   }
 
-  // Recompute from kWh so the colour reflects the active light/dark palette.
   Color get tierColor => TariffRates.getEeiBand(kwhUsed).color;
 
   String get tierRange => TariffRates.getEeiBand(kwhUsed).kwhRange;
 
-  // Used by StatCardsRow badge.
   String get tierBadgeLabel => TariffRates.getEeiBand(kwhUsed).label;
 
   String get greetingEmoji {

@@ -33,14 +33,7 @@ class EeiBand {
     required this.description,
   });
 
-  final int number; // 1–17; 0 means above 1000kWh (no rebate)
-  final String kwhRange; // e.g. "451–500 kWh"
-  final double rebateSenPerKwh;
-  final Color color; // green → amber → red as rebate shrinks
-  final String label; // e.g. "Band 5 · 12.0 sen rebate"
-  final String description; // e.g. "Moderate usage — good rebate"
-
-  static EeiBand get none => EeiBand(
+  factory EeiBand.none() => EeiBand(
     number: 0,
     kwhRange: '0 kWh',
     rebateSenPerKwh: 0,
@@ -48,15 +41,20 @@ class EeiBand {
     label: 'No usage',
     description: 'No usage recorded',
   );
+
+  final int number; // 1–17; 0 means above 1000kWh (no rebate)
+  final String kwhRange; // e.g. "451–500 kWh"
+  final double rebateSenPerKwh;
+  final Color color; // green → amber → red as rebate shrinks
+  final String label; // e.g. "Band 5 · 12.0 sen rebate"
+  final String description; // e.g. "Moderate usage — good rebate"
 }
 
 class TariffRates {
   static DomesticTariff _tariff = DomesticTariff.fallback;
 
-  /// The tariff data currently in use (bundled or Firestore-backed).
   static DomesticTariff get tariff => _tariff;
 
-  /// Applies a remote/bundled schedule. Invalid schedules are ignored.
   static void configure(DomesticTariff tariff) {
     if (tariff.isValid) _tariff = tariff;
   }
@@ -94,7 +92,6 @@ class TariffRates {
   static double protectionThresholdKwh(DateTime billingMonth) =>
       _tariff.protectionThresholdKwh(billingMonth);
 
-  /// Human-readable threshold for the current billing month.
   static String get protectionThresholdLabel =>
       '${protectionThresholdKwh(DateTime.now()).toStringAsFixed(0)} kWh';
 
@@ -206,19 +203,16 @@ class TariffRates {
   static String _senLabel(double sen) =>
       '${sen.toStringAsFixed(sen.truncateToDouble() == sen ? 0 : 1)} sen';
 
-  // --- Generation (Energy) -------------------------------------------------
   /// Applied to ALL kWh when total ≤1500 kWh.
   static double get domesticGenerationLow => _tariff.energySenPerKwh / 100;
 
   /// Applied to ALL kWh (not just excess) when total >1500 kWh.
   static double get domesticGenerationHigh => _tariff.energyHighSenPerKwh / 100;
 
-  // --- Other flat components -----------------------------------------------
   static double get domesticCapacityRate => _tariff.capacitySenPerKwh / 100;
   static double get domesticNetworkRate => _tariff.networkSenPerKwh / 100;
   static double get domesticRetailCharge => _tariff.retailRmPerMonth;
 
-  // --- AFA -----------------------------------------------------------------
   /// AFA is published by TNB monthly. The schedule carries the published
   /// rates; returns null when the billing month has not been published yet.
   static double? afaSenPerKwhFor(DateTime billingMonth) =>
@@ -227,7 +221,6 @@ class TariffRates {
   static AfaRate? afaRateFor(DateTime billingMonth) =>
       _tariff.afaRate(billingMonth);
 
-  // --- Levies --------------------------------------------------------------
   /// KWTBB: 1.6% of (Energy + Capacity + Network − EEI).
   /// Excludes AFA and Retail from its base.
   /// Exempt when total ≤300 kWh.
@@ -238,7 +231,6 @@ class TariffRates {
   /// it is a fixed charge.
   static double get domesticSstRate => _tariff.sstRate;
 
-  // --- EEI lookup table ----------------------------------------------------
   /// Each band covers usage up to `maxKwh` (inclusive). The rebate rate is
   /// applied to the ENTIRE month's kWh, not just the incremental portion.
   static List<EeiBandRate> get _eeiBands => _tariff.eeiBands;
@@ -465,7 +457,7 @@ class TariffRates {
   /// used by badge/summary displays (Direction C).
   static EeiBand getEeiBand(double kwh) {
     if (kwh <= 0) {
-      return EeiBand.none;
+      return EeiBand.none();
     }
 
     if (kwh > 1000) {

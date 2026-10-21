@@ -62,8 +62,7 @@ class UsageAllocationService {
       // make a 10 kWh test entry look like ~0.5 kWh/day for weeks.
       if (!end.isAfter(start)) {
         final key = _monthKey(end);
-        final acc = totals.putIfAbsent(key, _MonthAccumulator.new);
-        acc.kwh += reading.kwh;
+        totals.putIfAbsent(key, _MonthAccumulator.new).kwh += reading.kwh;
         continue;
       }
 
@@ -87,8 +86,9 @@ class UsageAllocationService {
         if (overlapDays > 0) {
           final key = _monthKey(month);
           final acc = totals.putIfAbsent(key, _MonthAccumulator.new);
-          acc.kwh += reading.kwh * overlapDays / intervalDays;
-          acc.isEstimated = acc.isEstimated || estimated;
+          acc
+            ..kwh += reading.kwh * overlapDays / intervalDays
+            ..isEstimated = acc.isEstimated || estimated;
         }
 
         month = DateTime(month.year, month.month + 1);
