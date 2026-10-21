@@ -685,48 +685,55 @@ class _BaselineHintCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.all(14.r),
-      decoration: BoxDecoration(
-        color: AppColors.accent.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-        border: Border.all(color: AppColors.borderAccent),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            Icons.flag_outlined,
-            size: 18.r,
-            color: AppColors.accent,
+    return Column(
+      children: [
+        Container(
+          padding: EdgeInsets.all(14.r),
+          decoration: BoxDecoration(
+            color: AppColors.accent.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+            border: Border.all(color: AppColors.borderAccent),
           ),
-          SizedBox(width: 10.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'This is your starting point',
-                  style: AppTextStyles.bodySm.copyWith(
-                    color: AppColors.accent,
-                    fontWeight: FontWeight.w700,
-                  ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                Icons.flag_outlined,
+                size: 18.r,
+                color: AppColors.accent,
+              ),
+              SizedBox(width: 10.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'This is your starting point',
+                      style: AppTextStyles.bodySm.copyWith(
+                        color: AppColors.accent,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    SizedBox(height: 4.h),
+                    Text(
+                      'Your first reading will be saved as the baseline. Add a '
+                      'second reading later to calculate usage and your '
+                      'estimated bill.',
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.text2,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
                 ),
-                SizedBox(height: 4.h),
-                Text(
-                  'Your first reading will be saved as the baseline. Add a '
-                  'second reading later to calculate usage and your estimated '
-                  'bill.',
-                  style: AppTextStyles.caption.copyWith(
-                    color: AppColors.text2,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+        SizedBox(
+          height: 10.h,
+        ),
+      ],
     );
   }
 }
