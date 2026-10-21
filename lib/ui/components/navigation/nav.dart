@@ -15,9 +15,17 @@ class AppBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Register a dependency on Theme so the shell is rebuilt when the app
+    // switches palette. The shell is preserved by GoRouter, so using only
+    // static AppColors here would leave the nav on the old colour.
+    final theme = Theme.of(context);
+    final navBackground = theme.brightness == Brightness.dark
+        ? AppPalette.dark.bg
+        : AppPalette.light.bg;
+
     return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xF20A0E1A),
+      decoration: BoxDecoration(
+        color: navBackground.withValues(alpha: 0.95),
         border: Border(top: BorderSide(color: AppColors.border)),
       ),
       child: SafeArea(

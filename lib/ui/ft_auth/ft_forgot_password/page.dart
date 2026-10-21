@@ -106,9 +106,9 @@ class _Header extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const StringIcon(
+        StringIcon(
           icon: '🔑',
-          gradient: LinearGradient(
+          gradient: const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [Color(0x2600D4AA), Color(0x1A0099FF)],
@@ -283,11 +283,11 @@ class ForgotPasswordSuccess extends StatelessWidget {
         Container(
           width: 96.r,
           height: 96.r,
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: LinearGradient(
               colors: [
-                Color(0xFF00C853),
+                const Color(0xFF00C853),
                 AppColors.accent,
               ],
             ),

@@ -269,7 +269,7 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
               ? SizedBox(
                   width: 20.r,
                   height: 20.r,
-                  child: const CircularProgressIndicator(
+                  child: CircularProgressIndicator(
                     strokeWidth: 2,
                     valueColor: AlwaysStoppedAnimation<Color>(AppColors.text),
                   ),

@@ -8,7 +8,6 @@ class SettingsPageState {
     this.budgetAlertsEnabled = true,
     this.billRemindersEnabled = true,
     this.monthlySummaryEnabled = false,
-    this.isDarkMode = true,
     this.isSigningOut = false,
     this.errorMessage,
     this.photoUrl,
@@ -23,7 +22,6 @@ class SettingsPageState {
   final bool budgetAlertsEnabled;
   final bool billRemindersEnabled;
   final bool monthlySummaryEnabled;
-  final bool isDarkMode;
   final bool isSigningOut;
   final String? errorMessage;
   final String? photoUrl;
@@ -72,7 +70,6 @@ class SettingsPageState {
     bool? budgetAlertsEnabled,
     bool? billRemindersEnabled,
     bool? monthlySummaryEnabled,
-    bool? isDarkMode,
     bool? isSigningOut,
     Object? errorMessage = _unset,
     Object? photoUrl = _unset,
@@ -88,7 +85,6 @@ class SettingsPageState {
       billRemindersEnabled: billRemindersEnabled ?? this.billRemindersEnabled,
       monthlySummaryEnabled:
           monthlySummaryEnabled ?? this.monthlySummaryEnabled,
-      isDarkMode: isDarkMode ?? this.isDarkMode,
       isSigningOut: isSigningOut ?? this.isSigningOut,
       errorMessage: identical(errorMessage, _unset)
           ? this.errorMessage

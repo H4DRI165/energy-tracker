@@ -5,18 +5,26 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 abstract class AppTheme {
-  static ThemeData get dark {
+  static ThemeData get current => _build(
+    AppColors.isDark ? Brightness.dark : Brightness.light,
+  );
+
+  static ThemeData _build(Brightness brightness) {
     return ThemeData(
       useMaterial3: true,
-      brightness: Brightness.dark,
+      brightness: brightness,
 
       // ─── Color scheme ──────────────────────────────────────────────────────
-      colorScheme: const ColorScheme.dark(
+      colorScheme: ColorScheme(
+        brightness: brightness,
         primary: AppColors.accent,
+        onPrimary: AppColors.onAccent,
         secondary: AppColors.accent2,
+        onSecondary: AppColors.onAccent,
         tertiary: AppColors.accent3,
-        onTertiary: Colors.black,
+        onTertiary: AppColors.onAccent,
         error: AppColors.danger,
+        onError: AppColors.onAccent,
         surface: AppColors.surface,
         onSurface: AppColors.text,
         surfaceContainerHighest: AppColors.surface2,
@@ -33,14 +41,20 @@ abstract class AppTheme {
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        systemOverlayStyle: const SystemUiOverlayStyle(
-          statusBarBrightness: Brightness.dark,
-          statusBarIconBrightness: Brightness.light,
+        systemOverlayStyle: SystemUiOverlayStyle(
+          statusBarBrightness: brightness == Brightness.dark
+              ? Brightness.dark
+              : Brightness.light,
+          statusBarIconBrightness: brightness == Brightness.dark
+              ? Brightness.light
+              : Brightness.dark,
           systemNavigationBarColor: AppColors.bg,
-          systemNavigationBarIconBrightness: Brightness.light,
+          systemNavigationBarIconBrightness: brightness == Brightness.dark
+              ? Brightness.light
+              : Brightness.dark,
         ),
         titleTextStyle: AppTextStyles.titleMd,
-        iconTheme: const IconThemeData(color: AppColors.text, size: 22),
+        iconTheme: IconThemeData(color: AppColors.text, size: 22),
       ),
 
       // ─── Card ──────────────────────────────────────────────────────────────
@@ -49,7 +63,7 @@ abstract class AppTheme {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
-          side: const BorderSide(
+          side: BorderSide(
             color: AppColors.border,
           ),
         ),
@@ -66,23 +80,23 @@ abstract class AppTheme {
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderSide: BorderSide(color: AppColors.border),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderSide: BorderSide(color: AppColors.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-          borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
+          borderSide: BorderSide(color: AppColors.accent, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-          borderSide: const BorderSide(color: AppColors.danger),
+          borderSide: BorderSide(color: AppColors.danger),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-          borderSide: const BorderSide(color: AppColors.danger, width: 1.5),
+          borderSide: BorderSide(color: AppColors.danger, width: 1.5),
         ),
         hintStyle: AppTextStyles.bodyLg.copyWith(color: AppColors.text3),
         labelStyle: AppTextStyles.label,
@@ -96,8 +110,8 @@ abstract class AppTheme {
       // ─── Elevated button (primary CTA) ─────────────────────────────────────
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ButtonStyle(
-          backgroundColor: const WidgetStatePropertyAll(AppColors.accent),
-          foregroundColor: const WidgetStatePropertyAll(Colors.black),
+          backgroundColor: WidgetStatePropertyAll(AppColors.accent),
+          foregroundColor: WidgetStatePropertyAll(AppColors.onAccent),
           elevation: const WidgetStatePropertyAll(0),
           shadowColor: const WidgetStatePropertyAll(Colors.transparent),
           padding: const WidgetStatePropertyAll(
@@ -116,8 +130,8 @@ abstract class AppTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: ButtonStyle(
           backgroundColor: const WidgetStatePropertyAll(Colors.transparent),
-          foregroundColor: const WidgetStatePropertyAll(AppColors.text),
-          side: const WidgetStatePropertyAll(
+          foregroundColor: WidgetStatePropertyAll(AppColors.text),
+          side: WidgetStatePropertyAll(
             BorderSide(color: AppColors.border),
           ),
           padding: const WidgetStatePropertyAll(
@@ -137,7 +151,7 @@ abstract class AppTheme {
       // ─── Text button ───────────────────────────────────────────────────────
       textButtonTheme: TextButtonThemeData(
         style: ButtonStyle(
-          foregroundColor: const WidgetStatePropertyAll(AppColors.accent),
+          foregroundColor: WidgetStatePropertyAll(AppColors.accent),
           textStyle: WidgetStatePropertyAll(
             AppTextStyles.bodyMd.copyWith(
               fontWeight: FontWeight.w600,
@@ -148,8 +162,8 @@ abstract class AppTheme {
       ),
 
       // ─── Bottom navigation bar ─────────────────────────────────────────────
-      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: Color(0xF20A0E1A), // bg at 95% opacity
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        backgroundColor: AppColors.bg.withValues(alpha: 0.95),
         elevation: 0,
         type: BottomNavigationBarType.fixed,
         selectedItemColor: AppColors.accent,
@@ -160,14 +174,14 @@ abstract class AppTheme {
 
       // ─── Navigation bar (Material 3) ───────────────────────────────────────
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: const Color(0xF20A0E1A),
+        backgroundColor: AppColors.bg.withValues(alpha: 0.95),
         elevation: 0,
         indicatorColor: AppColors.accent.withValues(alpha: 0.15),
         iconTheme: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return const IconThemeData(color: AppColors.accent, size: 24);
+            return IconThemeData(color: AppColors.accent, size: 24);
           }
-          return const IconThemeData(color: AppColors.text3, size: 24);
+          return IconThemeData(color: AppColors.text3, size: 24);
         }),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
@@ -178,7 +192,7 @@ abstract class AppTheme {
       ),
 
       // ─── Divider ───────────────────────────────────────────────────────────
-      dividerTheme: const DividerThemeData(
+      dividerTheme: DividerThemeData(
         color: AppColors.border,
         thickness: 1,
         space: 0,
@@ -187,8 +201,8 @@ abstract class AppTheme {
       // ─── Switch (toggle) ───────────────────────────────────────────────────
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) return Colors.white;
-          return Colors.white;
+          if (states.contains(WidgetState.selected)) return AppColors.onAccent;
+          return AppColors.text3;
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) return AppColors.accent;
@@ -203,8 +217,8 @@ abstract class AppTheme {
           if (states.contains(WidgetState.selected)) return AppColors.accent;
           return Colors.transparent;
         }),
-        checkColor: const WidgetStatePropertyAll(Colors.black),
-        side: const BorderSide(color: AppColors.border, width: 1.5),
+        checkColor: WidgetStatePropertyAll(AppColors.onAccent),
+        side: BorderSide(color: AppColors.border, width: 1.5),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
       ),
 
@@ -217,7 +231,7 @@ abstract class AppTheme {
       ),
 
       // ─── Progress indicator ────────────────────────────────────────────────
-      progressIndicatorTheme: const ProgressIndicatorThemeData(
+      progressIndicatorTheme: ProgressIndicatorThemeData(
         color: AppColors.accent,
         linearTrackColor: AppColors.surface3,
         circularTrackColor: AppColors.surface3,
@@ -228,7 +242,7 @@ abstract class AppTheme {
         backgroundColor: AppColors.surface2,
         selectedColor: AppColors.accent.withValues(alpha: 0.15),
         labelStyle: AppTextStyles.tag,
-        side: const BorderSide(color: AppColors.border),
+        side: BorderSide(color: AppColors.border),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
         ),
@@ -252,7 +266,7 @@ abstract class AppTheme {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
-          side: const BorderSide(color: AppColors.border),
+          side: BorderSide(color: AppColors.border),
         ),
         titleTextStyle: AppTextStyles.titleMd,
         contentTextStyle: AppTextStyles.bodyMd.copyWith(color: AppColors.text2),
@@ -270,12 +284,16 @@ abstract class AppTheme {
       ),
 
       // ─── Icon ──────────────────────────────────────────────────────────────
-      iconTheme: const IconThemeData(color: AppColors.text2, size: 22),
-      primaryIconTheme: const IconThemeData(color: AppColors.accent, size: 22),
+      iconTheme: IconThemeData(color: AppColors.text2, size: 22),
+      primaryIconTheme: IconThemeData(color: AppColors.accent, size: 22),
 
       // ─── Text theme (base, overridden per widget) ──────────────────────────
-      textTheme: GoogleFonts.dmSansTextTheme(ThemeData.dark().textTheme)
-          .copyWith(
+      textTheme:
+          GoogleFonts.dmSansTextTheme(
+            brightness == Brightness.dark
+                ? ThemeData.dark().textTheme
+                : ThemeData.light().textTheme,
+          ).copyWith(
             displayLarge: AppTextStyles.displayXl,
             displayMedium: AppTextStyles.displayLg,
             displaySmall: AppTextStyles.displayMd,

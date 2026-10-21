@@ -113,7 +113,7 @@ abstract class AppTextStyles {
   static TextStyle get button => GoogleFonts.lato(
     fontSize: 15.sp,
     fontWeight: FontWeight.w700,
-    color: Colors.black,
+    color: AppColors.onAccent,
     letterSpacing: 0.5,
     height: 1,
   );

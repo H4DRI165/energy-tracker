@@ -278,7 +278,7 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
         SnackBar(
           content: Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.check_circle_outline_rounded,
                 color: AppColors.accent,
                 size: 18,
@@ -488,7 +488,11 @@ class _HoursStepper extends StatelessWidget {
                 color: AppColors.accent,
                 borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
               ),
-              child: Icon(Icons.add_rounded, size: 20.r, color: Colors.black),
+              child: Icon(
+                Icons.add_rounded,
+                size: 20.r,
+                color: AppColors.onAccent,
+              ),
             ),
           ),
         ),

@@ -117,12 +117,8 @@ class _LandingPageState extends State<LandingPage>
           FadeTransition(
             opacity: _bgFade,
             child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFF060912), Color(0xFF0D1A2E)],
-                ),
+              decoration: BoxDecoration(
+                gradient: AppColors.splashGradient,
               ),
             ),
           ),
@@ -172,8 +168,8 @@ class _LandingPageState extends State<LandingPage>
                       child: RichText(
                         text: TextSpan(
                           style: AppTextStyles.displayLg.copyWith(height: 1.15),
-                          children: const [
-                            TextSpan(text: 'Track your\n'),
+                          children: [
+                            const TextSpan(text: 'Track your\n'),
                             TextSpan(
                               text: 'TNB energy',
                               style: TextStyle(color: AppColors.accent),
@@ -201,7 +197,7 @@ class _LandingPageState extends State<LandingPage>
                   SizedBox(height: 40.h),
                   FadeTransition(
                     opacity: _pill1Fade,
-                    child: const _FeaturePill(
+                    child: _FeaturePill(
                       icon: '📊',
                       label: 'Real-time usage tracking',
                       color: AppColors.accent,
@@ -210,7 +206,7 @@ class _LandingPageState extends State<LandingPage>
                   SizedBox(height: 10.h),
                   FadeTransition(
                     opacity: _pill2Fade,
-                    child: const _FeaturePill(
+                    child: _FeaturePill(
                       icon: '🎯',
                       label: 'Monthly budget alerts',
                       color: AppColors.accent2,
@@ -219,7 +215,7 @@ class _LandingPageState extends State<LandingPage>
                   SizedBox(height: 10.h),
                   FadeTransition(
                     opacity: _pill3Fade,
-                    child: const _FeaturePill(
+                    child: _FeaturePill(
                       icon: '📄',
                       label: 'Scan TNB bills instantly',
                       color: AppColors.accent3,

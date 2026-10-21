@@ -71,7 +71,7 @@ class ComingSoonPage extends StatelessWidget {
                 label: const Text('Back to Dashboard'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.text,
-                  side: const BorderSide(color: AppColors.border),
+                  side: BorderSide(color: AppColors.border),
                   padding: EdgeInsets.symmetric(
                     horizontal: 32.w,
                     vertical: 16.h,

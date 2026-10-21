@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:energy_tracker/app.dart';
+import 'package:energy_tracker/services/theme/theme_mode_provider.dart';
 import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_settings/pg_settings/notifier/notifier.dart';
 import 'package:energy_tracker/ui/features/ft_settings/pg_settings/widgets/widgets.dart';
@@ -33,7 +34,7 @@ class SettingsPage extends ConsumerWidget {
             const _Header(),
             Expanded(
               child: switch (status) {
-                _Status.loading => const Center(
+                _Status.loading => Center(
                   child: CircularProgressIndicator(color: AppColors.accent),
                 ),
                 _Status.error => ErrorView(
@@ -44,12 +45,6 @@ class SettingsPage extends ConsumerWidget {
                   onEditProfile: () async {
                     await context.push(AppRoutes.editProfile);
                   },
-                  onToggleBudgetAlerts: (v) =>
-                      notifier.toggleBudgetAlerts(value: v),
-                  onToggleBillReminders: (v) =>
-                      notifier.toggleBillReminders(value: v),
-                  onToggleMonthlySummary: (v) =>
-                      notifier.toggleMonthlySummary(value: v),
                   onSignOut: () async {
                     final confirmed = await ConfirmDialog.show(
                       context,
@@ -98,20 +93,16 @@ class _Header extends StatelessWidget {
 class _SettingsBody extends ConsumerWidget {
   const _SettingsBody({
     required this.onEditProfile,
-    required this.onToggleBudgetAlerts,
-    required this.onToggleBillReminders,
-    required this.onToggleMonthlySummary,
     required this.onSignOut,
   });
 
   final VoidCallback onEditProfile;
-  final ValueChanged<bool> onToggleBudgetAlerts;
-  final ValueChanged<bool> onToggleBillReminders;
-  final ValueChanged<bool> onToggleMonthlySummary;
   final VoidCallback onSignOut;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = ref.watch(themeModeProvider);
+
     return SingleChildScrollView(
       padding: EdgeInsets.symmetric(
         horizontal: AppDimensions.screenPaddingH,
@@ -126,14 +117,29 @@ class _SettingsBody extends ConsumerWidget {
           SizedBox(height: 20.h),
           const SettingsSection(label: 'ACCOUNT'),
           SizedBox(height: 8.h),
+          const _SettingsGroup(
+            children: [
+              _TariffAndBudgetTiles(),
+            ],
+          ),
+          SizedBox(height: 20.h),
+          const SettingsSection(label: 'APPEARANCE'),
+          SizedBox(height: 8.h),
           _SettingsGroup(
             children: [
               SettingsListTile(
-                icon: '👤',
-                label: 'Edit Profile',
-                onTap: onEditProfile,
+                icon: isDark ? '🌙' : '☀️',
+                label: 'Dark Mode',
+                trailingWidget: Switch(
+                  value: isDark,
+                  onChanged: (value) => ref
+                      .read(themeModeProvider.notifier)
+                      .setDark(value: value),
+                ),
+                onTap: () => ref.read(themeModeProvider.notifier).toggle(),
+                showChevron: false,
+                isLast: true,
               ),
-              const _TariffAndBudgetTiles(),
             ],
           ),
           SizedBox(height: 20.h),
@@ -151,33 +157,25 @@ class _SettingsBody extends ConsumerWidget {
           ),
           SizedBox(height: 20.h),
 
-          // TODO(dev): implement notifications settings in future
-          // const SettingsSection(label: 'NOTIFICATIONS'),
-          // SizedBox(height: 8.h),
-          // _SettingsGroup(
-          //   children: [
-          //     SettingsToggleTile(
-          //       icon: '⚠️',
-          //       label: 'Budget Alerts',
-          //       fieldSelector: (s) => s.budgetAlertsEnabled,
-          //       onChanged: onToggleBudgetAlerts,
-          //     ),
-          //     SettingsToggleTile(
-          //       icon: '📅',
-          //       label: 'Bill Reminders',
-          //       fieldSelector: (s) => s.billRemindersEnabled,
-          //       onChanged: onToggleBillReminders,
-          //     ),
-          //     SettingsToggleTile(
-          //       icon: '📊',
-          //       label: 'Monthly Summary',
-          //       fieldSelector: (s) => s.monthlySummaryEnabled,
-          //       onChanged: onToggleMonthlySummary,
-          //       isLast: true,
-          //     ),
-          //   ],
-          // ),
-          // SizedBox(height: 20.h),
+          const SettingsSection(label: 'NOTIFICATIONS'),
+          SizedBox(height: 8.h),
+          _SettingsGroup(
+            children: [
+              SettingsListTile(
+                icon: '🔔',
+                label: 'Notifications',
+                trailing: 'Budget alerts',
+                onTap: () => showModalBottomSheet<void>(
+                  context: context,
+                  backgroundColor: Colors.transparent,
+                  isScrollControlled: true,
+                  builder: (_) => const NotificationPrefsSheet(),
+                ),
+                isLast: true,
+              ),
+            ],
+          ),
+          SizedBox(height: 20.h),
           const SettingsSection(label: 'ABOUT'),
           SizedBox(height: 8.h),
           const _AboutGroup(),
@@ -271,15 +269,6 @@ class _AboutGroup extends ConsumerWidget {
           ),
           showChevron: false,
         ),
-
-        // TODO(dev): implement  in future
-        // SettingsListTile(icon: '📄', label: 'Terms of Service', onTap: () {}),
-        // SettingsListTile(
-        //   icon: '🔒',
-        //   label: 'Privacy Policy',
-        //   onTap: () {},
-        //   isLast: true,
-        // ),
       ],
     );
   }

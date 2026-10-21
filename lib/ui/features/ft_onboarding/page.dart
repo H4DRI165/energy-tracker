@@ -142,7 +142,7 @@ class _OnboardingHeader extends ConsumerWidget {
             child: LinearProgressIndicator(
               value: progressValue,
               backgroundColor: AppColors.surface3,
-              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.accent),
+              valueColor: AlwaysStoppedAnimation<Color>(AppColors.accent),
               minHeight: 3,
             ),
           ),
@@ -231,7 +231,7 @@ class _StepBudget extends ConsumerWidget {
               trackHeight: 4,
               activeTrackColor: AppColors.accent,
               inactiveTrackColor: AppColors.surface3,
-              thumbColor: Colors.white,
+              thumbColor: AppColors.onAccent,
               thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
               overlayColor: AppColors.accent.withValues(alpha: 0.15),
               overlayShape: const RoundSliderOverlayShape(overlayRadius: 18),
@@ -309,8 +309,10 @@ class _StepBudget extends ConsumerWidget {
                   child: RichText(
                     text: TextSpan(
                       style: AppTextStyles.bodySm,
-                      children: const [
-                        TextSpan(text: 'Average Malaysian household spends '),
+                      children: [
+                        const TextSpan(
+                          text: 'Average Malaysian household spends ',
+                        ),
                         TextSpan(
                           text: 'RM 120–180',
                           style: TextStyle(
@@ -318,7 +320,7 @@ class _StepBudget extends ConsumerWidget {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        TextSpan(text: '/month on electricity'),
+                        const TextSpan(text: '/month on electricity'),
                       ],
                     ),
                   ),

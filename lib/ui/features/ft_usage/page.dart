@@ -17,7 +17,7 @@ class UsagePage extends ConsumerWidget {
       color: AppColors.bg,
       child: SafeArea(
         child: state.when(
-          loading: () => const Center(
+          loading: () => Center(
             child: CircularProgressIndicator(color: AppColors.accent),
           ),
           error: (e, _) => ErrorView(

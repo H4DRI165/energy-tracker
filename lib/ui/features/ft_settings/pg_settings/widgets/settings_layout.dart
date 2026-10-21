@@ -38,10 +38,13 @@ class UserProfileCard extends ConsumerWidget {
       child: Container(
         padding: EdgeInsets.all(16.r),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
+          gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color.fromARGB(37, 52, 59, 58), Color(0x140099FF)],
+            colors: [
+              AppColors.surface2,
+              AppColors.accent.withValues(alpha: 0.05),
+            ],
           ),
           borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
           border: Border.all(color: AppColors.borderAccent),
@@ -79,7 +82,7 @@ class UserProfileCard extends ConsumerWidget {
                           child: Text(
                             initials,
                             style: AppTextStyles.titleMd.copyWith(
-                              color: Colors.black,
+                              color: AppColors.onAccent,
                             ),
                           ),
                         ),
@@ -88,7 +91,7 @@ class UserProfileCard extends ConsumerWidget {
                         child: Text(
                           initials,
                           style: AppTextStyles.titleMd.copyWith(
-                            color: Colors.black,
+                            color: AppColors.onAccent,
                           ),
                         ),
                       ),
@@ -154,6 +157,7 @@ class SettingsListTile extends StatelessWidget {
     required this.icon,
     required this.label,
     this.trailing,
+    this.trailingWidget,
     this.onTap,
     this.isLast = false,
     this.showChevron = true,
@@ -163,6 +167,7 @@ class SettingsListTile extends StatelessWidget {
   final String icon;
   final String label;
   final String? trailing;
+  final Widget? trailingWidget;
   final VoidCallback? onTap;
   final bool isLast;
   final bool showChevron;
@@ -180,7 +185,7 @@ class SettingsListTile extends StatelessWidget {
         decoration: BoxDecoration(
           border: isLast
               ? null
-              : const Border(
+              : Border(
                   bottom: BorderSide(color: AppColors.border),
                 ),
         ),
@@ -198,7 +203,10 @@ class SettingsListTile extends StatelessWidget {
             Expanded(
               child: Text(label, style: AppTextStyles.bodyMd),
             ),
-            if (trailing != null) ...[
+            if (trailingWidget != null) ...[
+              trailingWidget!,
+              SizedBox(width: 6.w),
+            ] else if (trailing != null) ...[
               Text(
                 trailing!,
                 style: AppTextStyles.bodySm.copyWith(
@@ -250,7 +258,7 @@ class SettingsToggleTile extends ConsumerWidget {
       decoration: BoxDecoration(
         border: isLast
             ? null
-            : const Border(bottom: BorderSide(color: AppColors.border)),
+            : Border(bottom: BorderSide(color: AppColors.border)),
       ),
       child: Row(
         children: [
@@ -267,10 +275,10 @@ class SettingsToggleTile extends ConsumerWidget {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeThumbColor: Colors.white,
+            activeThumbColor: AppColors.onAccent,
             activeTrackColor: AppColors.accent,
             inactiveTrackColor: AppColors.surface3,
-            inactiveThumbColor: Colors.white,
+            inactiveThumbColor: AppColors.onAccent,
             trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
@@ -309,7 +317,7 @@ class SettingsSignOutButton extends StatelessWidget {
               ? SizedBox(
                   width: 18.r,
                   height: 18.r,
-                  child: const CircularProgressIndicator(
+                  child: CircularProgressIndicator(
                     strokeWidth: 2,
                     color: AppColors.danger,
                   ),

@@ -30,7 +30,7 @@ class DevicesPage extends ConsumerWidget {
             const _Header(),
             Expanded(
               child: isLoading
-                  ? const Center(
+                  ? Center(
                       child: CircularProgressIndicator(color: AppColors.accent),
                     )
                   : errorMessage != null
@@ -75,7 +75,11 @@ class _Header extends StatelessWidget {
                 color: AppColors.accent,
                 borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
               ),
-              child: Icon(Icons.add_rounded, size: 20.r, color: Colors.black),
+              child: Icon(
+                Icons.add_rounded,
+                size: 20.r,
+                color: AppColors.onAccent,
+              ),
             ),
           ),
         ],
@@ -196,7 +200,7 @@ class _EmptyDevicesView extends StatelessWidget {
               child: Container(
                 padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 14.h),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
+                  gradient: LinearGradient(
                     colors: [AppColors.accent, AppColors.accent2],
                   ),
                   borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
@@ -204,7 +208,7 @@ class _EmptyDevicesView extends StatelessWidget {
                 child: Text(
                   'Add First Appliance',
                   style: AppTextStyles.bodyMd.copyWith(
-                    color: Colors.black,
+                    color: AppColors.onAccent,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -231,7 +235,7 @@ class _SummaryCard extends ConsumerWidget {
     final totalCost = ref.watch(
       devicesProvider.select((s) => s.totalMonthlyCost),
     );
-    final kwhRef = TariffRates.ringReferenceKwh;
+    const kwhRef = TariffRates.ringReferenceKwh;
 
     return Container(
       padding: EdgeInsets.all(18.r),
@@ -323,7 +327,7 @@ class _RingPainter extends CustomPainter {
       center,
       radius,
       Paint()
-        ..color = Colors.white.withValues(alpha: 0.05)
+        ..color = AppColors.border
         ..style = PaintingStyle.stroke
         ..strokeWidth = strokeWidth,
     );
@@ -335,7 +339,7 @@ class _RingPainter extends CustomPainter {
       fraction * 2 * math.pi,
       false,
       Paint()
-        ..shader = const LinearGradient(
+        ..shader = LinearGradient(
           colors: [AppColors.accent, AppColors.accent2],
         ).createShader(rect)
         ..style = PaintingStyle.stroke

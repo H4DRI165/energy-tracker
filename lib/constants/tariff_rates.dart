@@ -40,7 +40,7 @@ class EeiBand {
   final String label; // e.g. "Band 5 · 12.0 sen rebate"
   final String description; // e.g. "Moderate usage — good rebate"
 
-  static const none = EeiBand(
+  static EeiBand get none => EeiBand(
     number: 0,
     kwhRange: '0 kWh',
     rebateSenPerKwh: 0,
@@ -438,7 +438,7 @@ class TariffRates {
     }
 
     if (kwh > 1000) {
-      return const EeiBand(
+      return EeiBand(
         number: 0,
         kwhRange: '1001+ kWh',
         rebateSenPerKwh: 0,
@@ -523,7 +523,7 @@ class TariffRates {
     }
 
     // Should not reach here given the >1000 guard above
-    return const EeiBand(
+    return EeiBand(
       number: 0,
       kwhRange: '1001+ kWh',
       rebateSenPerKwh: 0,

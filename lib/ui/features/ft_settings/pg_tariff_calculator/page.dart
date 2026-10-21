@@ -415,7 +415,7 @@ class _DomesticInfo extends StatelessWidget {
                   ],
                 ),
               ),
-              const Divider(height: 1, color: AppColors.border),
+              Divider(height: 1, color: AppColors.border),
               for (final group in TariffRates.eeiBandGroups)
                 _EeiBandRow(
                   group.range,
@@ -531,7 +531,7 @@ class _EeiBandRow extends StatelessWidget {
       decoration: BoxDecoration(
         border: isLast
             ? null
-            : const Border(bottom: BorderSide(color: AppColors.border)),
+            : Border(bottom: BorderSide(color: AppColors.border)),
       ),
       child: Row(
         children: [

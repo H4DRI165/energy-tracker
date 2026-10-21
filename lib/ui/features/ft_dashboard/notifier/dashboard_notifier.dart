@@ -27,7 +27,7 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState>
   @override
   Future<DashboardPageState> build() async {
     final uid = ref.watch(currentUidProvider).value;
-    if (uid == null) return const DashboardPageState();
+    if (uid == null) return DashboardPageState();
 
     final authName = _auth.currentUser?.displayName ?? '';
     final results = await Future.wait([
@@ -74,7 +74,7 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState>
       return DashboardPageState(errorMessage: mapFirebaseError(e.code));
     } on Object catch (e, st) {
       logError('Failed to load user profile', e, st);
-      return const DashboardPageState(errorMessage: 'Failed to load profile.');
+      return DashboardPageState(errorMessage: 'Failed to load profile.');
     }
   }
 
@@ -153,7 +153,7 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState>
       return DashboardPageState(errorMessage: mapFirebaseError(e.code));
     } on Object catch (e, st) {
       logError('Failed to load usage data', e, st);
-      return const DashboardPageState(
+      return DashboardPageState(
         errorMessage: 'Failed to load usage data.',
       );
     }

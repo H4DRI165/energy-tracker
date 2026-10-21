@@ -62,7 +62,7 @@ class _TariffCard extends ConsumerWidget {
       dashboardProvider.select((s) => s.value?.tierColor),
     );
 
-    final label = 'EEI Band';
+    const label = 'EEI Band';
     final value =
         'Band ${currentBand?.number == 0 ? '—' : currentBand?.number}';
     final badge = currentBand?.description ?? '';

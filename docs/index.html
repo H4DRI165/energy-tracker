@@ -899,17 +899,19 @@ Jump to: [Auth](#auth) · [Onboarding](#onboarding) · [Dashboard](#dashboard) �
 ## Settings
 **Status:** Shipped
 
-**What it does:** Profile card, account section (Edit Profile, Monthly Budget), Tools (Tariff Calculator), About (version), and Sign Out.
+**What it does:** Profile card, Appearance (light/dark mode), Account (Monthly Budget), Tools (Tariff Calculator), Notifications, About (version), and Sign Out.
 
-**Key files:** `lib/ui/features/ft_settings/pg_settings/page.dart`, `widgets/settings_layout.dart`, `widgets/budget_sheet.dart`, `notifier/settings_notifier.dart`
+**Key files:** `lib/ui/features/ft_settings/pg_settings/page.dart`, `widgets/settings_layout.dart`, `widgets/budget_sheet.dart`, `widgets/notification_prefs_sheet.dart`, `notifier/settings_notifier.dart`
 
 **Details**
+- The profile card opens Edit Profile; there is no duplicate Edit Profile list tile.
+- Dark mode is a persisted local preference, defaulting to **light**. Toggling it plays a day-to-night transition.
+- The Notifications tile opens the budget-alert preferences sheet.
 - Budget changes are confirmed via a dialog.
 - Sign out is confirmed and redirects to login.
 
 **Gaps / issues**
-- The "NOTIFICATIONS" settings section is **commented out**; notification prefs actually live in the dashboard bell sheet.
-- Reads `budgetAlertsEnabled` / `billRemindersEnabled` fields that the notification system does not use (see `DATA_MODEL.md`).
+- Legacy `budgetAlertsEnabled` / `billRemindersEnabled` fields remain in the settings model but are not used by the notification system (see `DATA_MODEL.md`).
 
 ---
 
@@ -951,7 +953,7 @@ Jump to: [Auth](#auth) · [Onboarding](#onboarding) · [Dashboard](#dashboard) �
 **Architecture:** Server-driven. Cloud Functions react to bill writes and a monthly schedule; the client handles foreground display and tap routing.
 
 **Key files**
-- Client: `lib/services/notification/service/notification_service.dart`, `prefs/notification_prefs_notifier.dart`, `ft_dashboard/widgets/notification_prefs_sheet.dart`
+- Client: `lib/services/notification/service/notification_service.dart`, `prefs/notification_prefs_notifier.dart`, `ft_settings/pg_settings/widgets/notification_prefs_sheet.dart`
 - Backend: `functions/index.js`
 
 **Details**
@@ -1620,7 +1622,7 @@ See [BILLING.md §9](BILLING.md#9-when-tnb-changes-rates).
 
 **Add a budget alert field / change notification behavior**
 - Client prefs: `lib/services/notification/prefs/notification_prefs_notifier.dart`
-- Sheet UI: `lib/ui/features/ft_dashboard/widgets/notification_prefs_sheet.dart`
+- Sheet UI: `lib/ui/features/ft_settings/pg_settings/widgets/notification_prefs_sheet.dart`
 - Server: `functions/index.js`
 
 **Change validation or error copy**

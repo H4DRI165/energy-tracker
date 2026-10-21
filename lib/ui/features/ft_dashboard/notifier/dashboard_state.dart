@@ -32,21 +32,20 @@ class DailyUsage {
 
 @immutable
 class DashboardPageState {
-  const DashboardPageState({
+  DashboardPageState({
     this.userName = '',
     this.monthLabel = '',
     this.estimatedBill = 0,
     this.kwhUsed = 0,
     this.monthlyBudget = 150,
     this.dailyAvg = 0,
-    this.currentEeiBand = EeiBand.none,
+    EeiBand? currentEeiBand,
     this.daysLeft = 0,
     this.percentageVsLastMonth = 0,
     this.projectedBill,
     this.weeklyUsage = const [],
-    this.hasUnreadNotifications = false,
     this.errorMessage,
-  });
+  }) : currentEeiBand = currentEeiBand ?? EeiBand.none;
 
   final String userName;
   final String monthLabel;
@@ -59,7 +58,6 @@ class DashboardPageState {
   final double percentageVsLastMonth;
   final double? projectedBill;
   final List<DailyUsage> weeklyUsage;
-  final bool hasUnreadNotifications;
   final String? errorMessage;
   static const Object _unset = Object();
 
@@ -99,12 +97,13 @@ class DashboardPageState {
     }
   }
 
-  Color get tierColor => currentEeiBand.color;
+  // Recompute from kWh so the colour reflects the active light/dark palette.
+  Color get tierColor => TariffRates.getEeiBand(kwhUsed).color;
 
-  String get tierRange => currentEeiBand.kwhRange;
+  String get tierRange => TariffRates.getEeiBand(kwhUsed).kwhRange;
 
   // Used by StatCardsRow badge.
-  String get tierBadgeLabel => currentEeiBand.label;
+  String get tierBadgeLabel => TariffRates.getEeiBand(kwhUsed).label;
 
   String get greetingEmoji {
     switch (budgetStatus) {
@@ -128,7 +127,6 @@ class DashboardPageState {
     double? percentageVsLastMonth,
     Object? projectedBill = _unset,
     List<DailyUsage>? weeklyUsage,
-    bool? hasUnreadNotifications,
     Object? errorMessage = _unset,
   }) {
     return DashboardPageState(
@@ -146,8 +144,6 @@ class DashboardPageState {
           ? this.projectedBill
           : projectedBill as double?,
       weeklyUsage: weeklyUsage ?? this.weeklyUsage,
-      hasUnreadNotifications:
-          hasUnreadNotifications ?? this.hasUnreadNotifications,
       errorMessage: identical(errorMessage, _unset)
           ? this.errorMessage
           : errorMessage as String?,
@@ -193,7 +189,6 @@ class DashboardPageState {
         other.percentageVsLastMonth == percentageVsLastMonth &&
         other.projectedBill == projectedBill &&
         listEquals(other.weeklyUsage, weeklyUsage) &&
-        other.hasUnreadNotifications == hasUnreadNotifications &&
         other.errorMessage == errorMessage;
   }
 
@@ -210,7 +205,6 @@ class DashboardPageState {
     percentageVsLastMonth,
     projectedBill,
     Object.hashAll(weeklyUsage),
-    hasUnreadNotifications,
     errorMessage,
   );
 }

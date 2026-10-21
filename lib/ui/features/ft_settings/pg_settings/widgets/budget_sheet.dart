@@ -113,7 +113,7 @@ class _BudgetSheetState extends State<BudgetSheet> {
               data: SliderTheme.of(context).copyWith(
                 activeTrackColor: AppColors.accent,
                 inactiveTrackColor: AppColors.surface3,
-                thumbColor: Colors.white,
+                thumbColor: AppColors.onAccent,
                 overlayColor: AppColors.accent.withValues(alpha: 0.1),
                 thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
                 trackHeight: 4,

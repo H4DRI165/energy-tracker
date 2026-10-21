@@ -138,7 +138,7 @@ See [BILLING.md §9](BILLING.md#9-when-tnb-changes-rates).
 
 **Add a budget alert field / change notification behavior**
 - Client prefs: `lib/services/notification/prefs/notification_prefs_notifier.dart`
-- Sheet UI: `lib/ui/features/ft_dashboard/widgets/notification_prefs_sheet.dart`
+- Sheet UI: `lib/ui/features/ft_settings/pg_settings/widgets/notification_prefs_sheet.dart`
 - Server: `functions/index.js`
 
 **Change validation or error copy**

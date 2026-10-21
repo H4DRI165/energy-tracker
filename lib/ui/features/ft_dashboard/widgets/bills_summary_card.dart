@@ -22,20 +22,10 @@ class BillSummaryCard extends ConsumerWidget {
     return Container(
       padding: EdgeInsets.all(20.r),
       decoration: BoxDecoration(
-        gradient: isAlert
-            ? const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFF2D1A0A), Color(0xFF1E1A0A)],
-              )
-            : const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFF0D2D24), Color(0xFF0A1E2E)],
-              ),
+        gradient: isAlert ? AppColors.warnGradient : AppColors.heroGradient,
         borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
         border: Border.all(
-          color: isAlert ? const Color(0x4DFFB020) : const Color(0x3300D4AA),
+          color: isAlert ? AppColors.borderWarn : AppColors.borderAccent,
         ),
       ),
       child: Stack(

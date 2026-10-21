@@ -166,7 +166,7 @@ class _BillHistoryTile extends ConsumerWidget {
           decoration: BoxDecoration(
             border: isLast
                 ? null
-                : const Border(bottom: BorderSide(color: AppColors.border)),
+                : Border(bottom: BorderSide(color: AppColors.border)),
           ),
           child: Row(
             children: [

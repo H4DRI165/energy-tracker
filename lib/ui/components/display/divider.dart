@@ -14,7 +14,7 @@ class AppDivider extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        const Expanded(
+        Expanded(
           child: DecoratedBox(
             decoration: BoxDecoration(
               border: Border(
@@ -23,7 +23,7 @@ class AppDivider extends StatelessWidget {
                 ),
               ),
             ),
-            child: SizedBox(height: 1),
+            child: const SizedBox(height: 1),
           ),
         ),
         if (middleText != null) ...[
@@ -39,7 +39,7 @@ class AppDivider extends StatelessWidget {
               ),
             ),
           ),
-          const Expanded(
+          Expanded(
             child: DecoratedBox(
               decoration: BoxDecoration(
                 border: Border(
@@ -48,7 +48,7 @@ class AppDivider extends StatelessWidget {
                   ),
                 ),
               ),
-              child: SizedBox(height: 1),
+              child: const SizedBox(height: 1),
             ),
           ),
         ],

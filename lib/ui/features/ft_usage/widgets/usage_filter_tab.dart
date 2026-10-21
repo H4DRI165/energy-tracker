@@ -51,7 +51,9 @@ class UsageFilterTabs extends StatelessWidget {
                       style: AppTextStyles.bodySm.copyWith(
                         fontSize: 12.sp,
                         fontWeight: FontWeight.w700,
-                        color: isSelected ? Colors.black : AppColors.text2,
+                        color: isSelected
+                            ? AppColors.onAccent
+                            : AppColors.text2,
                       ),
                     ),
                   ),
