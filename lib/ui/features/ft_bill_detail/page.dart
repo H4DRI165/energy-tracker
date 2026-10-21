@@ -78,7 +78,7 @@ class _BillDetailPageState extends ConsumerState<BillDetailPage> {
     }
 
     if (state.bill == null || state.isLoading) {
-      return const Center(
+      return Center(
         child: CircularProgressIndicator(color: AppColors.accent),
       );
     }
@@ -187,41 +187,192 @@ class _BillSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final effectiveRate = bill.kwh > 0 ? bill.amount / bill.kwh : null;
+    final band = TariffRates.getEeiBand(bill.kwh);
+    final bandTitle = bill.kwh <= 0
+        ? 'No usage'
+        : band.number == 0
+        ? 'No rebate'
+        : 'Band ${band.number}';
+    final bandDetail = bill.kwh <= 0
+        ? '—'
+        : band.number == 0
+        ? 'No EEI rebate'
+        : '${band.rebateSenPerKwh.toStringAsFixed(1)} sen rebate';
+
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(20.r),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF0D2D24), Color(0xFF0A1E2E)],
-        ),
+        gradient: AppColors.heroGradient,
         borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
         border: Border.all(color: AppColors.accent.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'ESTIMATED BILL',
-            style: AppTextStyles.caption.copyWith(
-              color: AppColors.accent,
-              letterSpacing: 2,
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'ESTIMATED BILL',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.accent,
+                    letterSpacing: 2,
+                  ),
+                ),
+              ),
+              if (bill.isEstimated) ...[
+                SizedBox(width: 8.w),
+                Tooltip(
+                  message:
+                      'This month includes usage estimated from a reading gap.',
+                  child: Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 8.w,
+                      vertical: 4.h,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.warn.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(20.r),
+                      border: Border.all(
+                        color: AppColors.warn.withValues(alpha: 0.35),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.info_outline_rounded,
+                          size: 10.r,
+                          color: AppColors.warn,
+                        ),
+                        SizedBox(width: 3.w),
+                        Text(
+                          'Estimated',
+                          style: AppTextStyles.tag.copyWith(
+                            color: AppColors.warn,
+                            fontSize: 9.sp,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
           SizedBox(height: 6.h),
           Text(
             'RM ${bill.amount.toStringAsFixed(2)}',
             style: AppTextStyles.displayLg.copyWith(color: AppColors.text),
           ),
-          SizedBox(height: 4.h),
-          Text(
-            '${bill.kwh.toStringAsFixed(0)} kWh · ${bill.monthYear}'
-            '${bill.isEstimated ? ' · Estimated' : ''}',
-            style: AppTextStyles.bodySm.copyWith(color: AppColors.text2),
+          SizedBox(height: 14.h),
+          Container(
+            height: 1,
+            color: AppColors.border,
+          ),
+          SizedBox(height: 12.h),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _BillSummaryStat(
+                  label: 'ENERGY USED',
+                  value: '${bill.kwh.toStringAsFixed(0)} kWh',
+                ),
+              ),
+              const _SummaryDivider(),
+              Expanded(
+                child: _BillSummaryStat(
+                  label: 'EFFECTIVE RATE',
+                  value: effectiveRate == null
+                      ? '—'
+                      : 'RM ${effectiveRate.toStringAsFixed(2)}',
+                  detail: effectiveRate == null ? null : 'per kWh',
+                ),
+              ),
+              const _SummaryDivider(),
+              Expanded(
+                child: _BillSummaryStat(
+                  label: 'EEI BAND',
+                  value: bandTitle,
+                  detail: bandDetail,
+                  valueColor: bill.kwh <= 0 ? null : band.color,
+                ),
+              ),
+            ],
           ),
         ],
       ),
+    );
+  }
+}
+
+class _BillSummaryStat extends StatelessWidget {
+  const _BillSummaryStat({
+    required this.label,
+    required this.value,
+    this.detail,
+    this.valueColor,
+  });
+
+  final String label;
+  final String value;
+  final String? detail;
+  final Color? valueColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: AppTextStyles.caption.copyWith(
+            color: AppColors.text3,
+            fontSize: 9.sp,
+            letterSpacing: 0.6,
+          ),
+        ),
+        SizedBox(height: 5.h),
+        Text(
+          value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AppTextStyles.bodyMd.copyWith(
+            fontSize: 15.sp,
+            fontWeight: FontWeight.w700,
+            color: valueColor ?? AppColors.text,
+          ),
+        ),
+        if (detail != null) ...[
+          SizedBox(height: 2.h),
+          Text(
+            detail!,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTextStyles.caption.copyWith(
+              color: AppColors.text3,
+              fontSize: 9.sp,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _SummaryDivider extends StatelessWidget {
+  const _SummaryDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 1,
+      height: 34.h,
+      margin: EdgeInsets.symmetric(horizontal: 10.w),
+      color: AppColors.border,
     );
   }
 }
@@ -302,6 +453,30 @@ class _ReadingsSection extends ConsumerWidget {
               }).toList(),
             ),
           ),
+        if (state.hasMoreReadings) ...[
+          SizedBox(height: 8.h),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                Icons.info_outline_rounded,
+                size: 12.r,
+                color: AppColors.text3,
+              ),
+              SizedBox(width: 6.w),
+              Expanded(
+                child: Text(
+                  'Showing the latest '
+                  '${BillDetailNotifier.maxReadingsPerMonth} readings for '
+                  'this month.',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.text3,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ],
     );
   }
@@ -391,7 +566,7 @@ class _ReadingRow extends ConsumerWidget {
             decoration: BoxDecoration(
               border: isLast
                   ? null
-                  : const Border(
+                  : Border(
                       bottom: BorderSide(color: AppColors.border),
                     ),
             ),

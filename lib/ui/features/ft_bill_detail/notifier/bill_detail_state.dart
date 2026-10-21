@@ -6,6 +6,7 @@ class BillDetailPageState {
     this.isLoading = true,
     this.bill,
     this.readings = const [],
+    this.hasMoreReadings = false,
     this.billDeleted = false,
     this.errorMessage,
   });
@@ -13,6 +14,9 @@ class BillDetailPageState {
   final bool isLoading;
   final BillRecord? bill;
   final List<ReadingRecord> readings;
+
+  /// True when the month has more readings than the display limit.
+  final bool hasMoreReadings;
   final bool billDeleted;
   final String? errorMessage;
   static const Object _unset = Object();
@@ -21,6 +25,7 @@ class BillDetailPageState {
     bool? isLoading,
     Object? bill = _unset,
     List<ReadingRecord>? readings,
+    bool? hasMoreReadings,
     bool? billDeleted,
     Object? errorMessage = _unset,
   }) {
@@ -28,6 +33,7 @@ class BillDetailPageState {
       isLoading: isLoading ?? this.isLoading,
       bill: identical(bill, _unset) ? this.bill : bill as BillRecord?,
       readings: readings ?? this.readings,
+      hasMoreReadings: hasMoreReadings ?? this.hasMoreReadings,
       billDeleted: billDeleted ?? this.billDeleted,
       errorMessage: identical(errorMessage, _unset)
           ? this.errorMessage

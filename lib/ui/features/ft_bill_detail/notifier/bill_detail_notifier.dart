@@ -37,6 +37,10 @@ extension ReadingRecordListX on List<ReadingRecord> {
 
 class BillDetailNotifier extends Notifier<BillDetailPageState>
     with LoggableNotifier<BillDetailPageState> {
+  /// A strict user taking four readings a day needs at most 124 per month.
+  /// 150 leaves headroom while keeping the monthly query bounded.
+  static const int maxReadingsPerMonth = 150;
+
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;
   late final ReadingChainService _chainService = ReadingChainService(
     _firestore,
@@ -93,9 +97,15 @@ class BillDetailNotifier extends Notifier<BillDetailPageState>
           )
           .where('date', isLessThan: Timestamp.fromDate(endOfMonth))
           .orderBy('date', descending: true)
+          .limit(maxReadingsPerMonth + 1)
           .get();
 
-      final readings = snap.docs.map((doc) {
+      final hasMoreReadings = snap.docs.length > maxReadingsPerMonth;
+      final readingDocs = hasMoreReadings
+          ? snap.docs.take(maxReadingsPerMonth)
+          : snap.docs;
+
+      final readings = readingDocs.map((doc) {
         final data = doc.data();
         final date = (data['date'] as Timestamp).toDate();
         return ReadingRecord(
@@ -109,7 +119,11 @@ class BillDetailNotifier extends Notifier<BillDetailPageState>
         );
       }).toList();
 
-      state = state.copyWith(isLoading: false, readings: readings);
+      state = state.copyWith(
+        isLoading: false,
+        readings: readings,
+        hasMoreReadings: hasMoreReadings,
+      );
     } on FirebaseException catch (e, st) {
       logError(
         'Failed to load readings (Firebase)',
