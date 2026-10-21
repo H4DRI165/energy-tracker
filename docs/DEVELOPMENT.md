@@ -114,9 +114,15 @@ Output:
 build/app/outputs/flutter-apk/app-release.apk
 ```
 
-CI: `.github/workflows/release-apk.yml` builds on pushes to `main` and publishes
-a GitHub Release. It restores Firebase and signing files from repository
-secrets.
+CI (`.github/workflows/release-apk.yml`):
+
+- runs `flutter analyze` and `flutter test` on pull requests and `main`
+- builds a signed APK on `main` and manual workflow runs
+- uploads the APK as a workflow artifact
+- publishes a GitHub Release for `main` builds
+
+The build job restores Firebase and signing files from repository secrets.
+Firestore rules and Cloud Functions are deployed separately.
 
 ## 7. Conventions
 

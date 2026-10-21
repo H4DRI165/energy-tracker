@@ -1,13 +1,57 @@
-name: Build & Release APK
+name: CI & Release APK
 
 on:
   push:
     branches:
       - main
+  pull_request:
+  workflow_dispatch:
 
 jobs:
-  build:
+  quality:
+    name: Analyze & test
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.44.1"
+          channel: stable
+          cache: true
+
+      - name: Cache pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      - name: Create CI Firebase options
+        run: cp tool/ci/ci_default_firebase_options.dart lib/firebase_options.dart
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test
+        run: flutter test
+
+  build:
+    name: Build release APK
+    needs: quality
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: write
 
@@ -30,8 +74,6 @@ jobs:
           channel: stable
           cache: true
 
-      # Only cache the global pub cache. Caching .dart_tool/build isn't
-      # worth it here since the runner is a fresh VM every run anyway.
       - name: Cache pub dependencies
         uses: actions/cache@v4
         with:
@@ -40,16 +82,20 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pub-
 
-      # --- Recreate gitignored config files that the build needs ---
-
       - name: Write google-services.json
-        run: echo "${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}" | base64 -d > android/app/google-services.json
+        env:
+          GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+        run: printf '%s' "$GOOGLE_SERVICES_JSON_BASE64" | base64 -d > android/app/google-services.json
 
       - name: Write firebase_options.dart
-        run: echo "${{ secrets.FIREBASE_OPTIONS_DART_BASE64 }}" | base64 -d > lib/firebase_options.dart
+        env:
+          FIREBASE_OPTIONS_DART_BASE64: ${{ secrets.FIREBASE_OPTIONS_DART_BASE64 }}
+        run: printf '%s' "$FIREBASE_OPTIONS_DART_BASE64" | base64 -d > lib/firebase_options.dart
 
       - name: Write release keystore
-        run: echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > android/release.keystore
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+        run: printf '%s' "$RELEASE_KEYSTORE_BASE64" | base64 -d > android/release.keystore
 
       - name: Write key.properties
         run: |
@@ -60,18 +106,21 @@ jobs:
           storeFile=../release.keystore
           EOF
 
-      # NOTE: no .env step — add one back (with an ENV_FILE_BASE64 secret)
-      # only if you start using flutter_dotenv in code.
-
-      # --- Build ---
-
       - name: Get dependencies
         run: flutter pub get
 
       - name: Build APK
         run: flutter build apk --release
 
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: energy-tracker-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 14
+
       - name: Create Release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: ncipollo/release-action@v1
         with:
           tag: v${{ github.run_number }}

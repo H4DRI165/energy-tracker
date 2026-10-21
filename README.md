@@ -93,7 +93,9 @@ Local Firebase configuration is required; see [docs/DEVELOPMENT.md](docs/DEVELOP
 flutter build apk --release
 ```
 
-GitHub Actions builds a release APK on pushes to `main`:
+GitHub Actions runs analysis and tests on pull requests and `main`. Signed
+release APKs are built on `main` and manual runs; `main` builds are published
+to GitHub Releases:
 
 https://github.com/H4DRI165/energy-tracker/releases/latest
 

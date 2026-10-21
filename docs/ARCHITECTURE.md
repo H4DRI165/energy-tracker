@@ -1,7 +1,7 @@
 # Architecture
 
 - **Status:** Current
-- **App version:** `0.5.7+1`
+- **App version:** `0.6.0+2`
 
 ## 1. Overview
 
@@ -147,9 +147,11 @@ calculations update without delaying launch.
 
 ## 11. Release pipeline
 
-`.github/workflows/release-apk.yml` builds a signed release APK on pushes to
-`main`. It restores Firebase configuration and signing secrets, then publishes
-the APK to GitHub Releases.
+`.github/workflows/release-apk.yml` runs analysis and tests on pull requests
+and `main`. It builds a signed release APK on `main` and manual runs, uploads
+the APK as an artifact, and publishes `main` builds to GitHub Releases. The
+build job restores Firebase configuration and signing secrets. Firestore rules
+and functions are deployed separately.
 
 ## 12. Trade-offs
 
