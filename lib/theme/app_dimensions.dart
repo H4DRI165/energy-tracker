@@ -27,7 +27,7 @@ abstract class AppDimensions {
   // ─── Component sizes ───────────────────────────────────────────────────────
   static double get iconBtnSize => 36.r;
   static double get avatarSize => 32.r;
-  static double get navFabSize => 48.r;
+  static double get navFabSize => 64.r;
   static double get applianceIconSize => 40.r;
   static double get onboardIconSize => 72.r;
   static double get toggleWidth => 44.r;

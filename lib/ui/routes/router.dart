@@ -236,6 +236,9 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state, navigationShell) {
         return Scaffold(
           body: navigationShell,
+          floatingActionButton: const AppAddReadingFab(),
+          floatingActionButtonLocation:
+              FloatingActionButtonLocation.centerDocked,
           bottomNavigationBar: AppBottomNav(
             currentIndex: navigationShell.currentIndex,
             onTap: (index) => navigationShell.goBranch(
