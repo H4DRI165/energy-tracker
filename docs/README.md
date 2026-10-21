@@ -18,7 +18,7 @@ maintainer-level detail.
 
 ## Project snapshot
 
-- **App version:** `0.5.7+1`
+- **App version:** `0.6.0+2`
 - **Platform:** Flutter mobile, Android-first
 - **Firebase project:** `energy-tracker-848fa`
 - **Tariff:** TNB Domestic General only
