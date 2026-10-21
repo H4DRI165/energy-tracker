@@ -12,7 +12,6 @@ enum AppFormFieldBorder {
 }
 
 class AppTextFloatingLabelField extends StatelessWidget {
-  // ------------------------------- CONSTRUCTORS ------------------------------
   const AppTextFloatingLabelField({
     super.key,
     this.controller,
@@ -55,7 +54,6 @@ class AppTextFloatingLabelField extends StatelessWidget {
     this.scrollPadding = const EdgeInsets.all(20),
   });
 
-  // ---------------------------------- FIELDS ---------------------------------
   final TextEditingController? controller;
   final FocusNode? focusNode;
   final String? labelText;
@@ -95,7 +93,6 @@ class AppTextFloatingLabelField extends StatelessWidget {
   final EdgeInsets? padding;
   final EdgeInsets scrollPadding;
 
-  // --------------------------------- METHODS ---------------------------------
   @override
   Widget build(BuildContext context) {
     InputBorder createBorder(Color borderColor, {required bool isFocused}) {

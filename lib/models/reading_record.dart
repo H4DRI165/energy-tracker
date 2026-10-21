@@ -34,7 +34,6 @@ class ReadingRecord {
 
   final String id;
 
-  /// Cumulative meter value.
   final double reading;
 
   /// Usage since the previous reading, not usage in [date]'s month.

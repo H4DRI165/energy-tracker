@@ -139,7 +139,6 @@ class UsageNotifier extends AsyncNotifier<UsageState>
     final endOfMonth = DateTime(bill.date.year, bill.date.month + 1);
 
     try {
-      // Fetch all readings and bills for this month
       final results = await Future.wait([
         _firestore
             .collection('users')
@@ -174,7 +173,6 @@ class UsageNotifier extends AsyncNotifier<UsageState>
       }
       await batch.commit();
 
-      // Remove from local state without re-fetching
       state = state.whenData(
         (s) => s.copyWith(
           billHistory: s.billHistory.where((b) => b.id != bill.id).toList(),
@@ -203,7 +201,6 @@ class UsageNotifier extends AsyncNotifier<UsageState>
         st,
         context: {'bill_id': bill.id, 'month_year': bill.monthYear},
       );
-      // Re-fetch on error to ensure UI reflects actual server state
       state = const AsyncLoading();
       state = await AsyncValue.guard(() => _fetchUsageData(uid));
     } on Exception catch (e, st) {

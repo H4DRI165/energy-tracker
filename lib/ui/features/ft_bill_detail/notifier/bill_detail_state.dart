@@ -15,7 +15,6 @@ class BillDetailPageState {
   final BillRecord? bill;
   final List<ReadingRecord> readings;
 
-  /// True when the month has more readings than the display limit.
   final bool hasMoreReadings;
   final bool billDeleted;
   final String? errorMessage;

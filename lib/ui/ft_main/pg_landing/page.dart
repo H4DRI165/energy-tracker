@@ -16,7 +16,6 @@ class _LandingPageState extends State<LandingPage>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
 
-  // Staggered reveal animations
   late final Animation<double> _bgFade;
   late final Animation<Offset> _heroSlide;
   late final Animation<double> _heroFade;

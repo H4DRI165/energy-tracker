@@ -20,7 +20,6 @@ billDetailProvider =
     );
 
 extension ReadingRecordListX on List<ReadingRecord> {
-  // sum of all kwh to get tier
   Map<String, String> cumulativeTierLabels() {
     final sorted = [...this]..sort((a, b) => a.date.compareTo(b.date));
     var runningKwh = 0.0;
@@ -206,7 +205,6 @@ class BillDetailNotifier extends Notifier<BillDetailPageState>
 
     final previousState = state;
 
-    // update widget tree update on Dismissible's
     state = state.copyWith(
       readings: state.readings.where((r) => r.id != reading.id).toList(),
       errorMessage: null,

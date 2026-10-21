@@ -2,10 +2,6 @@ import 'package:energy_tracker/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// Consistent animation and presentation for every app bottom sheet.
-///
-/// Confirmation dialogs stay fast, but full sheets glide in at the same speed
-/// and share the same surface, handle, safe-area and scrolling behaviour.
 Future<T?> showAppBottomSheet<T>({
   required BuildContext context,
   required WidgetBuilder builder,
@@ -32,9 +28,6 @@ Future<T?> showAppBottomSheet<T>({
   );
 }
 
-/// Shared shell for scrollable bottom-sheet content.
-///
-/// Pass [header] for content that must stay fixed above the scrolling body.
 class AppBottomSheet extends StatelessWidget {
   const AppBottomSheet({
     required this.child,

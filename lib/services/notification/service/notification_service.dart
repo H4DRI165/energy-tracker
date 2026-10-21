@@ -116,13 +116,11 @@ class NotificationService {
   }
 
   void _listenNotificationTaps() {
-    // App was backgrounded, user tapped the notification to return
     FirebaseMessaging.onMessageOpenedApp.listen((message) {
       debugPrint('Notification opened app: ${message.messageId}');
       _handleNotificationTap(message.data['type'] as String?);
     });
 
-    // App was fully terminated, user tapped notification to launch it
     unawaited(
       _fcm.getInitialMessage().then((message) {
         if (message != null) {

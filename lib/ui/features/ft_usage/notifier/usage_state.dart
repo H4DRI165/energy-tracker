@@ -62,11 +62,8 @@ class UsageState {
   final String currentMonthLabel;
   final double monthlyBudget;
 
-  /// Number of saved readings. One reading is only a baseline; a second
-  /// reading is needed before any usage can be calculated.
   final int readingCount;
 
-  /// Date of the latest saved reading, if any.
   final DateTime? lastReadingDate;
 
   /// Usage measured by the latest reading, since the previous reading.

@@ -439,7 +439,6 @@ class AddReadingNotifier extends Notifier<AddReadingPageState>
     }
 
     try {
-      // date is fixed in edit mode, never changes
       final date = reading.date;
 
       await _firestore

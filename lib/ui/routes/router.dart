@@ -198,21 +198,6 @@ final GoRouter appRouter = GoRouter(
       },
     ),
 
-    // -------------------------------WIP ROUTES--------------------------------
-    GoRoute(
-      path: AppRoutes.scanBill,
-      name: 'scan_bill',
-      pageBuilder: (context, state) => const NoTransitionPage(
-        child: ComingSoonPage(
-          title: 'Scan TNB Bill',
-          subtitle:
-              'Point your camera at your bill and '
-              'let AI extract the data automatically.',
-          icon: Icons.document_scanner_rounded,
-        ),
-      ),
-    ),
-
     // --------------------------------ERROR ROUTES-----------------------------
     GoRoute(
       path: AppRoutes.error,

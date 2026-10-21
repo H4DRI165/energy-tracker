@@ -29,7 +29,6 @@ class _SplashPageState extends State<SplashPage>
       duration: const Duration(milliseconds: 1000),
     );
 
-    // Logo fades + scales in first
     _fadeIn = CurvedAnimation(
       parent: _controller,
       curve: const Interval(0, 0.5, curve: Curves.easeOut),
@@ -42,13 +41,11 @@ class _SplashPageState extends State<SplashPage>
       ),
     );
 
-    // Tagline fades in slightly after
     _taglineFade = CurvedAnimation(
       parent: _controller,
       curve: const Interval(0.4, 0.75, curve: Curves.easeOut),
     );
 
-    // Bottom dot indicator last
     _dotFade = CurvedAnimation(
       parent: _controller,
       curve: const Interval(0.65, 1, curve: Curves.easeOut),
@@ -59,7 +56,6 @@ class _SplashPageState extends State<SplashPage>
 
   void _navigateToLanding() {
     if (!mounted) return;
-    // Brief hold so the splash feels intentional, not a flash
     Future.delayed(const Duration(milliseconds: 120), () {
       if (mounted) context.go(AppRoutes.landing);
     });

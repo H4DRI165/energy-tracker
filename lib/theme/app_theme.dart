@@ -14,7 +14,6 @@ abstract class AppTheme {
       useMaterial3: true,
       brightness: brightness,
 
-      // ─── Color scheme ──────────────────────────────────────────────────────
       colorScheme: ColorScheme(
         brightness: brightness,
         primary: AppColors.accent,
@@ -32,10 +31,8 @@ abstract class AppTheme {
         outlineVariant: AppColors.borderAccent,
       ),
 
-      // ─── Scaffold ──────────────────────────────────────────────────────────
       scaffoldBackgroundColor: AppColors.bg,
 
-      // ─── App bar ───────────────────────────────────────────────────────────
       appBarTheme: AppBarTheme(
         backgroundColor: AppColors.bg,
         elevation: 0,
@@ -57,7 +54,6 @@ abstract class AppTheme {
         iconTheme: IconThemeData(color: AppColors.text, size: 22),
       ),
 
-      // ─── Card ──────────────────────────────────────────────────────────────
       cardTheme: CardThemeData(
         color: AppColors.surface2,
         elevation: 0,
@@ -70,7 +66,6 @@ abstract class AppTheme {
         margin: EdgeInsets.zero,
       ),
 
-      // ─── Input / text field ────────────────────────────────────────────────
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.surface2,
@@ -107,7 +102,6 @@ abstract class AppTheme {
         suffixIconColor: AppColors.text3,
       ),
 
-      // ─── Elevated button (primary CTA) ─────────────────────────────────────
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ButtonStyle(
           backgroundColor: WidgetStatePropertyAll(AppColors.accent),
@@ -126,7 +120,6 @@ abstract class AppTheme {
         ),
       ),
 
-      // ─── Outlined button (secondary) ───────────────────────────────────────
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: ButtonStyle(
           backgroundColor: const WidgetStatePropertyAll(Colors.transparent),
@@ -148,7 +141,6 @@ abstract class AppTheme {
         ),
       ),
 
-      // ─── Text button ───────────────────────────────────────────────────────
       textButtonTheme: TextButtonThemeData(
         style: ButtonStyle(
           foregroundColor: WidgetStatePropertyAll(AppColors.accent),
@@ -161,7 +153,6 @@ abstract class AppTheme {
         ),
       ),
 
-      // ─── Bottom navigation bar ─────────────────────────────────────────────
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: AppColors.bg.withValues(alpha: 0.95),
         elevation: 0,
@@ -172,7 +163,6 @@ abstract class AppTheme {
         showUnselectedLabels: true,
       ),
 
-      // ─── Navigation bar (Material 3) ───────────────────────────────────────
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: AppColors.bg.withValues(alpha: 0.95),
         elevation: 0,
@@ -191,14 +181,12 @@ abstract class AppTheme {
         }),
       ),
 
-      // ─── Divider ───────────────────────────────────────────────────────────
       dividerTheme: DividerThemeData(
         color: AppColors.border,
         thickness: 1,
         space: 0,
       ),
 
-      // ─── Switch (toggle) ───────────────────────────────────────────────────
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) return AppColors.onAccent;
@@ -211,7 +199,6 @@ abstract class AppTheme {
         trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
       ),
 
-      // ─── Checkbox ──────────────────────────────────────────────────────────
       checkboxTheme: CheckboxThemeData(
         fillColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) return AppColors.accent;
@@ -222,7 +209,6 @@ abstract class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
       ),
 
-      // ─── Radio ─────────────────────────────────────────────────────────────
       radioTheme: RadioThemeData(
         fillColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) return AppColors.accent;
@@ -230,14 +216,12 @@ abstract class AppTheme {
         }),
       ),
 
-      // ─── Progress indicator ────────────────────────────────────────────────
       progressIndicatorTheme: ProgressIndicatorThemeData(
         color: AppColors.accent,
         linearTrackColor: AppColors.surface3,
         circularTrackColor: AppColors.surface3,
       ),
 
-      // ─── Chip ──────────────────────────────────────────────────────────────
       chipTheme: ChipThemeData(
         backgroundColor: AppColors.surface2,
         selectedColor: AppColors.accent.withValues(alpha: 0.15),
@@ -249,7 +233,6 @@ abstract class AppTheme {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       ),
 
-      // ─── Snack bar ─────────────────────────────────────────────────────────
       snackBarTheme: SnackBarThemeData(
         backgroundColor: AppColors.surface2,
         contentTextStyle: AppTextStyles.bodyMd,
@@ -260,7 +243,6 @@ abstract class AppTheme {
         behavior: SnackBarBehavior.floating,
       ),
 
-      // ─── Dialog ────────────────────────────────────────────────────────────
       dialogTheme: DialogThemeData(
         backgroundColor: AppColors.surface,
         elevation: 0,
@@ -272,7 +254,6 @@ abstract class AppTheme {
         contentTextStyle: AppTextStyles.bodyMd.copyWith(color: AppColors.text2),
       ),
 
-      // ─── List tile ─────────────────────────────────────────────────────────
       listTileTheme: ListTileThemeData(
         tileColor: Colors.transparent,
         textColor: AppColors.text,
@@ -283,11 +264,9 @@ abstract class AppTheme {
         ),
       ),
 
-      // ─── Icon ──────────────────────────────────────────────────────────────
       iconTheme: IconThemeData(color: AppColors.text2, size: 22),
       primaryIconTheme: IconThemeData(color: AppColors.accent, size: 22),
 
-      // ─── Text theme (base, overridden per widget) ──────────────────────────
       textTheme:
           GoogleFonts.dmSansTextTheme(
             brightness == Brightness.dark
@@ -314,7 +293,6 @@ abstract class AppTheme {
             labelSmall: AppTextStyles.caption,
           ),
 
-      // ─── Page transitions ──────────────────────────────────────────────────
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
           TargetPlatform.android: CupertinoPageTransitionsBuilder(),

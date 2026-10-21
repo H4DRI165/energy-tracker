@@ -11,7 +11,6 @@ class BudgetSheet extends StatefulWidget {
 
   final double current;
 
-  /// Persists the selected budget. The sheet owns its saving/error state.
   final Future<bool> Function(double value) onSave;
 
   @override

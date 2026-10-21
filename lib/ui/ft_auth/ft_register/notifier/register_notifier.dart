@@ -205,9 +205,6 @@ class RegisterNotifier extends Notifier<RegisterPageState>
       });
       userDocWritten = true;
 
-      // TODO(dev): enable when want to test email verification flow
-      // await user.sendEmailVerification();
-
       shouldRollback = false;
     } on FirebaseAuthException catch (e, st) {
       logError('Failed to register (Firebase Auth)', e, st);

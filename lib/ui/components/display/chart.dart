@@ -23,7 +23,6 @@ class BarChartEntry {
   final String label;
   final double kwh;
 
-  /// Optional secondary value shown in the tooltip (e.g. the bill amount).
   final String? detail;
   final bool isEstimated;
   final bool isHighlighted;
@@ -123,8 +122,6 @@ class MonthlyUsageChartCard extends ConsumerWidget {
       }
     }
 
-    // If this month has no readings yet, still show a meaningful trend from
-    // the last two months that do.
     if (trendPercent == null) {
       final withData = state.monthlyData.where((m) => m.kwh > 0).toList();
       if (withData.length >= 2) {
@@ -264,16 +261,12 @@ class UsageBarChartCard extends StatefulWidget {
   final String subtitle;
   final List<BarChartEntry> entries;
 
-  /// Replaces the default legend on the right of the header (e.g. a filter).
   final Widget? trailing;
 
-  /// Optional summary line under the header (average, trend, etc.).
   final Widget? insight;
 
-  /// Per-bar value labels. Off keeps 12-month charts compact.
   final bool showValueLabels;
 
-  /// Optional monthly kWh target, drawn as a dashed line.
   final double? targetKwh;
   final double chartHeight;
 

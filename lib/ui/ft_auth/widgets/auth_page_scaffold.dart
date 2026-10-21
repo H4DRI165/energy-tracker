@@ -4,7 +4,6 @@ import 'package:energy_tracker/app.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// Shared animated shell for Login, Register and Forgot Password.
 class AuthPageScaffold extends StatefulWidget {
   const AuthPageScaffold({
     required this.header,
