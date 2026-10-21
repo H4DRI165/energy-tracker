@@ -70,7 +70,7 @@ EEI band lookup (`eeiBands`): 17 bands from `≤200 kWh → 25.0 sen` down to `�
 - Published monthly by TNB; it can be a rebate (negative) or a surcharge.
 - The schedule carries the published rate per month. `TariffRates.calculate` uses it automatically; pass `afaSenPerKwh: 0` to exclude it explicitly.
 - Domestic usage at or below the protection threshold is exempt.
-- The AFA line appears in the bill breakdown only when it is chargeable and non-zero.
+- The bill breakdown mirrors TNB's calculator and always shows every row, including zero-value Retail, Service Tax and KWTBB rows. It shows the current month's AFA and a next-month forecast row; the forecast is reference only and is not added to the total.
 - Forecast values (future months) are marked `status: forecast` in the schedule.
 
 ## 5. Reading intervals

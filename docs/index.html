@@ -797,7 +797,7 @@ Jump to: [Auth](#auth) · [Onboarding](#onboarding) · [Dashboard](#dashboard) �
 ## Dashboard
 **Status:** Shipped
 
-**What it does:** The home screen. Shows current-month estimated bill, budget progress, 7-day usage chart, EEI band, saving tips, and quick actions.
+**What it does:** The home screen. Shows the current-month month-to-date bill, projected bill, budget progress, 7-day usage chart, EEI band, saving tips, and quick actions.
 
 **Key files**
 - Screen: `lib/ui/features/ft_dashboard/page.dart`
@@ -806,6 +806,14 @@ Jump to: [Auth](#auth) · [Onboarding](#onboarding) · [Dashboard](#dashboard) �
 
 **Data read:** current-month readings, previous-month readings, user profile (name, budget).
 **Derived values:** `kwhUsed`, `estimatedBill`, `dailyAvg`, projected bill, `percentageVsLastMonth`, budget status (normal/warning/exceeded at 80/100%), 7-day usage series.
+
+**Details**
+- The comparison uses the same number of days from the previous month, not a partial month against a full month.
+- The hero card labels the current amount as month-to-date and always shows the projected full-month bill.
+- Daily average is compared with a budget-derived daily kWh target instead of a fixed threshold.
+- A first-run empty state prompts for the first reading; one saved baseline gets a next-reading hint.
+- The weekly chart says its daily values come from reading intervals.
+- At 80% budget the hero card and saving tips warn; the separate alert banner is reserved for exceeded budgets.
 
 **Gaps / issues**
 - Error state previously dumped raw exceptions (fixed in `ux-review` C1).
@@ -840,16 +848,17 @@ Jump to: [Auth](#auth) · [Onboarding](#onboarding) · [Dashboard](#dashboard) �
 ## Bill detail
 **Status:** Shipped
 
-**What it does:** Per-month bill page: estimated amount, itemized breakdown, payment status toggle, and the month's readings (tap to edit, swipe to delete).
+**What it does:** Per-month bill page: estimated amount, itemized breakdown, and the month's readings. Tapping a reading opens a read-only detail sheet with explicit Edit/Delete actions; swiping also deletes.
 
 **Key files**
 - Screen: `lib/ui/features/ft_bill_detail/page.dart`
 - State: `ft_bill_detail/notifier/bill_detail_notifier.dart`, `bill_detail_state.dart`
 
 **Details**
-- Paid toggle updates all bill docs for the month and refreshes usage.
+- Readings show meter value, interval usage, date, EEI band, and notes in a read-only detail sheet.
+- Editing from the sheet opens the reading editor; deleting from the sheet asks for confirmation.
 - Deleting a reading recomputes neighbors and recalculates the month.
-- "Swipe to delete history" hint is shown.
+- The section uses a "Tap for details" hint; swipe-to-delete remains available.
 
 **Gaps / issues**
 - Delete failure copy was misleading (see `ux-review` H4).
@@ -859,7 +868,7 @@ Jump to: [Auth](#auth) · [Onboarding](#onboarding) · [Dashboard](#dashboard) �
 ## Usage
 **Status:** Shipped
 
-**What it does:** Monthly/yearly kWh chart (last 6 or 12 months), current month summary, charge breakdown, and bill history with delete-month.
+**What it does:** Monthly/yearly kWh chart (last 6 or 12 months), current month summary with latest-reading status, an expandable charge breakdown shared with the tariff calculator, and recent bills (last 12 months) with delete-month.
 
 **Key files**
 - Screen: `lib/ui/features/ft_usage/page.dart`
@@ -869,8 +878,10 @@ Jump to: [Auth](#auth) · [Onboarding](#onboarding) · [Dashboard](#dashboard) �
 **Details**
 - Empty state with "Add First Reading" CTA.
 - After only a baseline reading exists, the empty state changes to "Baseline reading saved / 1 of 2 readings" and prompts for the next reading, so a zero-usage screen is not mistaken for a broken refresh.
+- The summary shows the latest reading date, its interval usage and month-to-date progress.
 - Deleting a bill month removes all its readings + bill docs in a batch.
 - AFA disclaimer shown for applicable tariffs.
+- Each charge line opens a plain-language explanation sheet.
 
 **Gaps / issues**
 - Bare spinner loading (M1); error uses generic `ErrorView` (L5).
@@ -880,14 +891,21 @@ Jump to: [Auth](#auth) · [Onboarding](#onboarding) · [Dashboard](#dashboard) �
 ## Appliances
 **Status:** Shipped
 
-**What it does:** Manage household appliances (name, category, wattage, daily hours) and see estimated monthly kWh and RM cost, plus a share-of-total ring.
+**What it does:** Manage household appliances (name, category, wattage, typical daily hours), review estimated monthly cost and range, see biggest consumers and category breakdowns, and open a per-appliance detail page with hourly cost and savings insight.
 
 **Key files**
-- Screen: `lib/ui/features/ft_devices/pg_devices/page.dart`, `pg_add_appliance/page.dart`
+- Screen: `lib/ui/features/ft_devices/pg_devices/page.dart`, `pg_add_appliance/page.dart`, `pg_appliance_detail/page.dart`
 - State: `pg_devices/notifier/devices_notifier.dart`, `pg_add_appliance/notifier/add_appliance_notifier.dart`
 - Model: `lib/models/appliance.dart`
 
-**Formula:** `monthlyKwh = (wattage / 1000) * dailyHours * 30`; cost via `TariffRates.marginalCost`.
+**Formula:** `monthlyKwh = (wattage / 1000) * typicalDailyHours * 30`; cost via `TariffRates.marginalCost`. The UI labels costs as estimates (~RM), shows a 50%–150% usage range, states that the total is not the TNB bill, and compares the estimate with the monthly budget.
+
+**Details**
+- The appliance list uses compact rows with search, category filters and sorting available for non-empty lists.
+- Biggest-consumers ranking and category cost breakdown live inside one collapsible Insights card, not as separate cards.
+- Add/edit supports quick hour presets (`1h`, `4h`, `8h`, `12h`, `24h ? Always on`) in addition to the stepper.
+- Appliance cards open a detail page with cost/day, cost/hour, monthly kWh, share of tracked usage, a 1-hour reduction saving, and the estimation assumptions.
+- Tapping Edit from the detail page returns to the edit form; the detail view refreshes from the provider.
 
 **Gaps / issues**
 - Category silently defaults to "Cooling" (M7).
@@ -899,12 +917,13 @@ Jump to: [Auth](#auth) · [Onboarding](#onboarding) · [Dashboard](#dashboard) �
 ## Settings
 **Status:** Shipped
 
-**What it does:** Profile card, Appearance (light/dark mode), Account (Monthly Budget), Tools (Tariff Calculator), Notifications, About (version), and Sign Out.
+**What it does:** Profile card, Preferences (Monthly Budget, Dark Mode, Notifications), Tools (Tariff Calculator), About (version), and Sign Out.
 
 **Key files:** `lib/ui/features/ft_settings/pg_settings/page.dart`, `widgets/settings_layout.dart`, `widgets/budget_sheet.dart`, `widgets/notification_prefs_sheet.dart`, `notifier/settings_notifier.dart`
 
 **Details**
 - The profile card opens Edit Profile; there is no duplicate Edit Profile list tile.
+- Preferences combines Monthly Budget, Dark Mode and Notifications in one group.
 - Dark mode is a persisted local preference, defaulting to **light**. Toggling it plays a day-to-night transition.
 - The Notifications tile opens the budget-alert preferences sheet.
 - Budget changes are confirmed via a dialog.
@@ -936,12 +955,12 @@ Jump to: [Auth](#auth) · [Onboarding](#onboarding) · [Dashboard](#dashboard) �
 ## Tariff calculator
 **Status:** Shipped
 
-**What it does:** Standalone calculator: enter kWh, see the itemized domestic breakdown, total and EEI band. Includes tariff reference cards.
+**What it does:** Standalone calculator: enter kWh in a clearly editable field, see a read-only estimated total, then the shared itemized breakdown and an expandable tariff reference sheet. Each charge line opens a plain-language explanation sheet.
 
 **Key files:** `lib/ui/features/ft_settings/pg_tariff_calculator/page.dart`, `notifier/tariff_calculator_notifier.dart`
 
 **Gaps / issues**
-- Input has no accessible label (M9) and is integer-only (L7).
+- Input is integer-only (L7).
 
 ---
 
@@ -1377,7 +1396,7 @@ EEI band lookup (`eeiBands`): 17 bands from `≤200 kWh → 25.0 sen` down to `�
 - Published monthly by TNB; it can be a rebate (negative) or a surcharge.
 - The schedule carries the published rate per month. `TariffRates.calculate` uses it automatically; pass `afaSenPerKwh: 0` to exclude it explicitly.
 - Domestic usage at or below the protection threshold is exempt.
-- The AFA line appears in the bill breakdown only when it is chargeable and non-zero.
+- The bill breakdown mirrors TNB's calculator and always shows every row, including zero-value Retail, Service Tax and KWTBB rows. It shows the current month's AFA and a next-month forecast row; the forecast is reference only and is not added to the total.
 - Forecast values (future months) are marked `status: forecast` in the schedule.
 
 ## 5. Reading intervals
