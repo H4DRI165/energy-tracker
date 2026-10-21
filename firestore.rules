@@ -34,7 +34,7 @@ service cloud.firestore {
         && request.resource.data.onboardingCompleted is bool;
 
       allow update: if isOwner(uid)
-        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.uid == uid
         && request.resource.data.monthlyBudget is number
         && request.resource.data.monthlyBudget >= 0;
 
