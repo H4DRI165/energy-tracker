@@ -42,7 +42,7 @@ void main() {
         expect(TariffRates.protectionThresholdKwh(DateTime(2027, 1)), 600);
       });
 
-      test('waives retail and SST up to 800 kWh in Oct 2026', () {
+      test('keeps waived retail and SST rows visible with zero amounts', () {
         final relief = TariffRates.domesticBreakdown(
           700,
           billingMonth: oct2026,
@@ -52,16 +52,52 @@ void main() {
           billingMonth: jan2027,
         );
 
-        expect(relief.any((line) => line.label == 'Retail'), isFalse);
-        expect(
-          relief.any((line) => line.label == 'Service Tax (SST)'),
-          isFalse,
+        final reliefRetail = relief.firstWhere(
+          (line) => line.label == 'Retail',
         );
-        expect(normal.any((line) => line.label == 'Retail'), isTrue);
-        expect(
-          normal.any((line) => line.label == 'Service Tax (SST)'),
-          isTrue,
+        final reliefSst = relief.firstWhere(
+          (line) => line.label == 'Service Tax (ST) (8%)',
         );
+        final normalRetail = normal.firstWhere(
+          (line) => line.label == 'Retail',
+        );
+        final normalSst = normal.firstWhere(
+          (line) => line.label == 'Service Tax (ST) (8%)',
+        );
+
+        expect(reliefRetail.amount, 0);
+        expect(reliefSst.amount, 0);
+        expect(normalRetail.amount, 10);
+        expect(normalSst.amount, greaterThan(0));
+      });
+
+      test('shows every TNB calculator row, including zero-value rows', () {
+        final breakdown = TariffRates.domesticBreakdown(
+          350,
+          billingMonth: oct2026,
+        );
+        final labels = breakdown.map((line) => line.label).toList();
+
+        expect(labels, contains('Energy'));
+        expect(
+          labels,
+          contains('Forecast Automatic Fuel Adjustment (AFA) - Oct'),
+        );
+        expect(
+          labels,
+          contains('Forecast Automatic Fuel Adjustment (AFA) - Nov'),
+        );
+        expect(labels, contains('Capacity'));
+        expect(labels, contains('Network'));
+        expect(labels, contains('Retail'));
+        expect(labels, contains('Energy Efficiency Incentive'));
+        expect(labels, contains('KWTBB (1.6%)'));
+        expect(labels, contains('Service Tax (ST) (8%)'));
+
+        final nextMonthAfa = breakdown.firstWhere(
+          (line) => line.label.contains('- Nov'),
+        );
+        expect(nextMonthAfa.amount, 0);
       });
 
       test('charges AFA only above the month threshold', () {

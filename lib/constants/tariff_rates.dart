@@ -377,6 +377,13 @@ class TariffRates {
       afaSenPerKwh: afaSenPerKwh,
       billingMonth: billingMonth,
     );
+    final month = billingMonth ?? DateTime.now();
+    final nextMonth = DateTime(month.year, month.month + 1);
+    final currentAfaSen = c.chargeable ? c.afaSen : 0.0;
+    // TNB's calculator also shows the next month's AFA forecast. It is a
+    // reference row only for a calendar-month bill, so it never counts toward
+    // this month's total.
+    final nextAfaSen = c.chargeable ? afaSenPerKwhFor(nextMonth) ?? 0 : 0.0;
 
     return [
       ChargeLineItem(
@@ -384,12 +391,20 @@ class TariffRates {
         rateLabel: '${(c.gen * 100).toStringAsFixed(2)} sen/kWh',
         amount: c.energy,
       ),
-      if (c.chargeable && c.afaSen != 0)
-        ChargeLineItem(
-          label: 'AFA',
-          rateLabel: '${c.afaSen.toStringAsFixed(2)} sen/kWh',
-          amount: c.afa,
-        ),
+      ChargeLineItem(
+        label:
+            'Forecast Automatic Fuel Adjustment (AFA) - '
+            '${_monthAbbreviation(month)}',
+        rateLabel: '${currentAfaSen.toStringAsFixed(2)} sen/kWh',
+        amount: c.afa,
+      ),
+      ChargeLineItem(
+        label:
+            'Forecast Automatic Fuel Adjustment (AFA) - '
+            '${_monthAbbreviation(nextMonth)}',
+        rateLabel: '${nextAfaSen.toStringAsFixed(2)} sen/kWh · forecast',
+        amount: 0,
+      ),
       ChargeLineItem(
         label: 'Capacity',
         rateLabel: '${(domesticCapacityRate * 100).toStringAsFixed(2)} sen/kWh',
@@ -400,35 +415,51 @@ class TariffRates {
         rateLabel: '${(domesticNetworkRate * 100).toStringAsFixed(2)} sen/kWh',
         amount: c.network,
       ),
-      if (c.chargeable)
-        ChargeLineItem(
-          label: 'Retail',
-          rateLabel: 'RM${domesticRetailCharge.toStringAsFixed(0)}/month',
-          amount: c.retail,
-        ),
-      if (c.eei > 0)
-        ChargeLineItem(
-          label: 'Energy Efficiency Incentive',
-          rateLabel: '-${_eeiSenPerKwh(kwh).toStringAsFixed(2)} sen/kWh',
-          amount: -c.eei,
-          isRebate: true,
-        ),
-      if (c.kwtbb > 0)
-        ChargeLineItem(
-          label: 'KWTBB',
-          rateLabel: kwtbbLabel,
-          amount: c.kwtbb,
-          isLevy: true,
-        ),
-      if (c.sst > 0)
-        ChargeLineItem(
-          label: 'Service Tax (SST)',
-          rateLabel: '8% on usage above ${c.threshold.toStringAsFixed(0)} kWh',
-          amount: c.sst,
-          isLevy: true,
-        ),
+      ChargeLineItem(
+        label: 'Retail',
+        rateLabel: 'RM${domesticRetailCharge.toStringAsFixed(0)}/month',
+        amount: c.retail,
+      ),
+      ChargeLineItem(
+        label: 'Energy Efficiency Incentive',
+        rateLabel: c.eei > 0
+            ? '-${_eeiSenPerKwh(kwh).toStringAsFixed(2)} sen/kWh'
+            : '0.00 sen/kWh',
+        amount: -c.eei,
+        isRebate: true,
+      ),
+      ChargeLineItem(
+        label: 'Service Tax (ST) (8%)',
+        rateLabel: '8% on usage above ${c.threshold.toStringAsFixed(0)} kWh',
+        amount: c.sst,
+        isLevy: true,
+      ),
+      ChargeLineItem(
+        label: 'KWTBB (1.6%)',
+        rateLabel: '1.6% of eligible charges',
+        amount: c.kwtbb,
+        isLevy: true,
+      ),
     ];
   }
+
+  static const _monthAbbreviations = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+
+  static String _monthAbbreviation(DateTime month) =>
+      _monthAbbreviations[month.month - 1];
 
   /// EEI band for the given kWh — the new "tier" equivalent for domestic,
   /// used by badge/summary displays (Direction C).
