@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 class UsagePage extends ConsumerWidget {
   const UsagePage({super.key});
@@ -58,6 +59,7 @@ class _BodyContent extends ConsumerWidget {
             kwh: state.currentKwh,
             bill: state.currentBill,
             monthLabel: state.currentMonthLabel,
+            status: _ReadingStatus(state: state),
           ),
         ),
         SizedBox(height: 10.h),
@@ -80,6 +82,7 @@ class _BodyContent extends ConsumerWidget {
                   BillBreakdownCard(
                     items: state.chargeBreakdown,
                     emptyLabel: 'No usage data for ${state.currentMonthLabel}',
+                    subtitle: 'Tap any charge to learn what it means.',
                   ),
                   SizedBox(height: 14.h),
                   const MonthlyUsageChartCard(),
@@ -88,6 +91,60 @@ class _BodyContent extends ConsumerWidget {
                 ],
               ),
             ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ReadingStatus extends StatelessWidget {
+  const _ReadingStatus({required this.state});
+
+  final UsageState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final lastReadingDate = state.lastReadingDate;
+    final formattedDate = lastReadingDate == null
+        ? null
+        : DateFormat(
+            lastReadingDate.year == now.year ? 'd MMM' : 'd MMM yyyy',
+          ).format(lastReadingDate);
+    final usageLabel = state.lastReadingKwh > 0
+        ? '+${state.lastReadingKwh.toStringAsFixed(1)} kWh'
+        : state.readingCount <= 1
+        ? 'baseline'
+        : 'no usage';
+    final lastReadingLabel = formattedDate == null
+        ? 'No readings saved yet'
+        : 'Last reading $formattedDate · $usageLabel';
+    final daysInMonth = DateUtils.getDaysInMonth(now.year, now.month);
+
+    return Row(
+      children: [
+        Icon(Icons.history_rounded, size: 14.r, color: AppColors.text3),
+        SizedBox(width: 6.w),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                lastReadingLabel,
+                style: AppTextStyles.caption.copyWith(color: AppColors.text2),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              SizedBox(height: 1.h),
+              Text(
+                'Month-to-date · ${now.day} of $daysInMonth days',
+                style: AppTextStyles.caption.copyWith(
+                  color: AppColors.text3,
+                  fontSize: 10.sp,
+                ),
+              ),
+            ],
           ),
         ),
       ],

@@ -21,9 +21,24 @@ class BillHistoryList extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              'Bill History',
-              style: AppTextStyles.bodyMd.copyWith(fontWeight: FontWeight.w700),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Recent bills',
+                  style: AppTextStyles.bodyMd.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                SizedBox(height: 1.h),
+                Text(
+                  'Last 12 months',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.text3,
+                    fontSize: 10.sp,
+                  ),
+                ),
+              ],
             ),
             Row(
               children: [
@@ -34,7 +49,7 @@ class BillHistoryList extends StatelessWidget {
                 ),
                 SizedBox(width: 4.w),
                 Text(
-                  'Swipe to delete history',
+                  'Swipe to delete',
                   style: AppTextStyles.caption.copyWith(color: AppColors.text3),
                 ),
               ],

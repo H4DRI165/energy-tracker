@@ -7,12 +7,14 @@ class UsageSummaryRow extends StatelessWidget {
     required this.kwh,
     required this.bill,
     required this.monthLabel,
+    this.status,
     super.key,
   });
 
   final double kwh;
   final double bill;
   final String monthLabel;
+  final Widget? status;
 
   @override
   Widget build(BuildContext context) {
@@ -23,6 +25,10 @@ class UsageSummaryRow extends StatelessWidget {
           monthLabel,
           style: AppTextStyles.bodySm.copyWith(color: AppColors.text2),
         ),
+        if (status != null) ...[
+          SizedBox(height: 4.h),
+          status!,
+        ],
         SizedBox(height: 8.h),
         Row(
           children: [

@@ -67,6 +67,7 @@ class UsageNotifier extends AsyncNotifier<UsageState>
     final readings = readingsSnap.docs
         .map((doc) => ReadingRecord.fromDoc(doc.id, doc.data()))
         .toList();
+    final lastReading = readings.isEmpty ? null : readings.last;
     final allocations = UsageAllocationService.monthly(
       readings: readings,
       from: DateTime(now.year, now.month - 11),
@@ -101,6 +102,8 @@ class UsageNotifier extends AsyncNotifier<UsageState>
       currentBill: currentBill,
       currentMonthLabel: currentMonthLabel,
       readingCount: readings.length,
+      lastReadingDate: lastReading?.date,
+      lastReadingKwh: lastReading?.kwh ?? 0,
     );
   }
 
@@ -187,9 +190,10 @@ class UsageNotifier extends AsyncNotifier<UsageState>
                     : m,
               )
               .toList(),
-          readingCount: (s.readingCount - results[0].docs.length)
-              .clamp(0, s.readingCount)
-              .toInt(),
+          readingCount: (s.readingCount - results[0].docs.length).clamp(
+            0,
+            s.readingCount,
+          ),
         ),
       );
     } on FirebaseException catch (e, st) {

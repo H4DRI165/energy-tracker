@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 
 enum UsageFilter { monthly, yearly }
 
+const Object _unset = Object();
+
 @immutable
 class MonthlyUsage {
   const MonthlyUsage({
@@ -48,6 +50,8 @@ class UsageState {
     this.currentMonthLabel = '',
     this.monthlyBudget = 0,
     this.readingCount = 0,
+    this.lastReadingDate,
+    this.lastReadingKwh = 0,
   });
 
   final UsageFilter filter;
@@ -61,6 +65,12 @@ class UsageState {
   /// Number of saved readings. One reading is only a baseline; a second
   /// reading is needed before any usage can be calculated.
   final int readingCount;
+
+  /// Date of the latest saved reading, if any.
+  final DateTime? lastReadingDate;
+
+  /// Usage measured by the latest reading, since the previous reading.
+  final double lastReadingKwh;
 
   bool get hasUsage =>
       monthlyData.any((month) => month.kwh > 0) || billHistory.isNotEmpty;
@@ -92,6 +102,8 @@ class UsageState {
     String? currentMonthLabel,
     double? monthlyBudget,
     int? readingCount,
+    Object? lastReadingDate = _unset,
+    double? lastReadingKwh,
   }) {
     return UsageState(
       filter: filter ?? this.filter,
@@ -102,6 +114,10 @@ class UsageState {
       currentMonthLabel: currentMonthLabel ?? this.currentMonthLabel,
       monthlyBudget: monthlyBudget ?? this.monthlyBudget,
       readingCount: readingCount ?? this.readingCount,
+      lastReadingDate: identical(lastReadingDate, _unset)
+          ? this.lastReadingDate
+          : lastReadingDate as DateTime?,
+      lastReadingKwh: lastReadingKwh ?? this.lastReadingKwh,
     );
   }
 
@@ -116,7 +132,9 @@ class UsageState {
         other.currentBill == currentBill &&
         other.currentMonthLabel == currentMonthLabel &&
         other.monthlyBudget == monthlyBudget &&
-        other.readingCount == readingCount;
+        other.readingCount == readingCount &&
+        other.lastReadingDate == lastReadingDate &&
+        other.lastReadingKwh == lastReadingKwh;
   }
 
   @override
@@ -129,5 +147,7 @@ class UsageState {
     currentMonthLabel,
     monthlyBudget,
     readingCount,
+    lastReadingDate,
+    lastReadingKwh,
   );
 }
