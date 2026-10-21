@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:energy_tracker/app.dart';
 import 'package:energy_tracker/ui/ft_auth/ft_register/notifier/register_notifier.dart';
 import 'package:flutter/material.dart';
@@ -15,89 +13,14 @@ class RegisterPage extends ConsumerStatefulWidget {
   ConsumerState<RegisterPage> createState() => _RegisterPageState();
 }
 
-class _RegisterPageState extends ConsumerState<RegisterPage>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<double> _fadeIn;
-  late final Animation<Offset> _slideIn;
-
-  @override
-  void initState() {
-    super.initState();
-
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 500),
-    );
-
-    unawaited(_controller.forward());
-
-    _fadeIn = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOut,
-    );
-
-    _slideIn =
-        Tween<Offset>(
-          begin: const Offset(0, 0.04),
-          end: Offset.zero,
-        ).animate(
-          CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-        );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
+class _RegisterPageState extends ConsumerState<RegisterPage> {
   @override
   Widget build(BuildContext context) {
-    final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
-
-    return Scaffold(
-      backgroundColor: AppColors.bg,
-      resizeToAvoidBottomInset: true,
-      body: SafeArea(
-        child: FadeTransition(
-          opacity: _fadeIn,
-          child: SlideTransition(
-            position: _slideIn,
-            child: Column(
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    keyboardDismissBehavior:
-                        ScrollViewKeyboardDismissBehavior.onDrag,
-                    padding: EdgeInsets.symmetric(
-                      horizontal: AppDimensions.screenPaddingH,
-                      vertical: AppDimensions.screenPaddingV,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(height: 24.h),
-                        const _Header(),
-                        SizedBox(height: 32.h),
-                        const _BodyContent(),
-                      ],
-                    ),
-                  ),
-                ),
-                if (!keyboardOpen)
-                  Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: AppDimensions.screenPaddingH,
-                      vertical: 24.h,
-                    ),
-                    child: const _LoginAccountRow(),
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
+    return const AuthPageScaffold(
+      topSpacing: 0,
+      header: _Header(),
+      footer: _LoginAccountRow(),
+      child: _BodyContent(),
     );
   }
 }
@@ -110,6 +33,11 @@ class _Header extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        AuthBackButton(
+          onTap: () =>
+              context.canPop() ? context.pop() : context.go(AppRoutes.login),
+        ),
+        SizedBox(height: 4.h),
         Text(
           'Get Started',
           style: AppTextStyles.overline.copyWith(color: AppColors.accent),
@@ -210,16 +138,14 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
             color: AppColors.text3,
           ),
           errorText: state.fullNameError,
+          autofillHints: const [AutofillHints.name],
           clearable: true,
           maxLength: 60,
           textCapitalization: TextCapitalization.words,
           textInputAction: TextInputAction.next,
           onSubmitted: (_) => _emailFocusNode.requestFocus(),
           scrollPadding: fieldScrollPadding,
-          inputFormatters: [
-            LengthLimitingTextInputFormatter(60),
-            FilteringTextInputFormatter.allow(RegExp(r"[a-zA-Z\s'\-\.]")),
-          ],
+          inputFormatters: [LengthLimitingTextInputFormatter(60)],
         ),
         SizedBox(height: 16.h),
         AppTextFloatingLabelField(
@@ -235,6 +161,9 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
             color: AppColors.text3,
           ),
           errorText: state.emailError,
+          autofillHints: const [AutofillHints.email],
+          enableSuggestions: false,
+          autocorrect: false,
           clearable: true,
           textInputAction: TextInputAction.next,
           onSubmitted: (_) => _tnbAccountFocusNode.requestFocus(),
@@ -264,12 +193,20 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
             LengthLimitingTextInputFormatter(12),
           ],
         ),
+        SizedBox(height: 6.h),
+        Text(
+          'Used to match your TNB account. Must be 12 digits.',
+          style: AppTextStyles.caption.copyWith(color: AppColors.text3),
+        ),
         SizedBox(height: 16.h),
         AppTextFloatingLabelField(
           controller: _passwordController,
           focusNode: _passwordFocusNode,
+          autofillHints: const [AutofillHints.newPassword],
+          enableSuggestions: false,
+          autocorrect: false,
           labelText: 'Password',
-          hintText: 'At least 8 characters, with a number',
+          hintText: '8+ characters with uppercase, number and symbol',
           border: AppFormFieldBorder.roundedOutlined,
           prefixIcon: Icon(
             Icons.lock_outlined,
@@ -282,6 +219,7 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
           onSubmitted: (_) => _confirmedPasswordFocusNode.requestFocus(),
           scrollPadding: fieldScrollPadding,
           suffixIcon: IconButton(
+            tooltip: state.obscurePassword ? 'Show password' : 'Hide password',
             onPressed: ref
                 .read(registerProvider.notifier)
                 .toggleObscurePassword,
@@ -315,11 +253,17 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
             color: AppColors.text3,
           ),
           errorText: state.confirmedPasswordError,
+          autofillHints: const [AutofillHints.newPassword],
+          enableSuggestions: false,
+          autocorrect: false,
           obscureText: state.obscureConfirmedPassword,
           textInputAction: TextInputAction.done,
-          onSubmitted: (_) => _confirmedPasswordFocusNode.unfocus(),
+          onSubmitted: (_) => _handleRegister(),
           scrollPadding: fieldScrollPadding,
           suffixIcon: IconButton(
+            tooltip: state.obscureConfirmedPassword
+                ? 'Show password'
+                : 'Hide password',
             onPressed: ref
                 .read(registerProvider.notifier)
                 .toggleObscureConfirmedPassword,
@@ -334,34 +278,7 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
         ),
         SizedBox(height: 24.h),
         if (state.authError != null) ...[
-          Container(
-            padding: EdgeInsets.all(12.r),
-            decoration: BoxDecoration(
-              color: AppColors.danger.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: AppColors.danger.withValues(alpha: 0.3),
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.error_outline,
-                  color: AppColors.danger,
-                  size: 16.r,
-                ),
-                SizedBox(width: 8.w),
-                Expanded(
-                  child: Text(
-                    state.authError!,
-                    style: AppTextStyles.bodySm.copyWith(
-                      color: AppColors.danger,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          AuthErrorBanner(message: state.authError!),
           SizedBox(height: 16.h),
         ],
         GradientButton(
@@ -532,8 +449,9 @@ class _LoginAccountRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Wrap(
+      alignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         Text(
           'Already have an account? ',
@@ -541,8 +459,13 @@ class _LoginAccountRow extends StatelessWidget {
             color: AppColors.text2,
           ),
         ),
-        GestureDetector(
-          onTap: () => context.go(AppRoutes.login),
+        TextButton(
+          onPressed: () =>
+              context.canPop() ? context.pop() : context.go(AppRoutes.login),
+          style: TextButton.styleFrom(
+            padding: EdgeInsets.symmetric(horizontal: 4.w),
+            minimumSize: const Size(48, 44),
+          ),
           child: Text(
             'Sign In',
             style: AppTextStyles.bodyMd.copyWith(

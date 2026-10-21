@@ -44,6 +44,9 @@ class AppTextFloatingLabelField extends StatelessWidget {
     this.obscureText = false,
     this.onChanged,
     this.onSubmitted,
+    this.autofillHints,
+    this.enableSuggestions = true,
+    this.autocorrect = true,
     this.inputFormatters,
     this.enabled = true,
     this.clearable = false,
@@ -82,6 +85,9 @@ class AppTextFloatingLabelField extends StatelessWidget {
   final bool obscureText;
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
+  final Iterable<String>? autofillHints;
+  final bool enableSuggestions;
+  final bool autocorrect;
   final List<TextInputFormatter>? inputFormatters;
   final bool enabled;
   final bool clearable;
@@ -223,6 +229,9 @@ class AppTextFloatingLabelField extends StatelessWidget {
                 obscureText: obscureText,
                 onChanged: onChanged,
                 onSubmitted: onSubmitted,
+                autofillHints: autofillHints,
+                enableSuggestions: enableSuggestions,
+                autocorrect: autocorrect,
                 onTapOutside: (_) =>
                     FocusManager.instance.primaryFocus?.unfocus(),
                 scrollPadding: scrollPadding,
