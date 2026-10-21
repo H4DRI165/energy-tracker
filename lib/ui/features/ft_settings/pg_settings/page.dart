@@ -136,11 +136,11 @@ class _SettingsBody extends ConsumerWidget {
                 icon: '🔔',
                 label: 'Notifications',
                 trailing: 'Budget alerts',
-                onTap: () => showModalBottomSheet<void>(
+                onTap: () => showAppBottomSheet<void>(
                   context: context,
-                  backgroundColor: Colors.transparent,
-                  isScrollControlled: true,
-                  builder: (_) => const NotificationPrefsSheet(),
+                  builder: (_) => const AppBottomSheet(
+                    child: NotificationPrefsSheet(),
+                  ),
                 ),
                 isLast: true,
               ),
@@ -199,30 +199,22 @@ class _BudgetTile extends ConsumerWidget {
     if (state == null) return;
 
     unawaited(
-      showModalBottomSheet(
+      showAppBottomSheet<void>(
         context: context,
-        backgroundColor: Colors.transparent,
-        isScrollControlled: true,
-        builder: (_) => BudgetSheet(
-          current: state.monthlyBudget,
-          onSave: (value) async {
-            final saved = await ref
-                .read(settingsProvider.notifier)
-                .updateMonthlyBudget(value);
+        builder: (_) => AppBottomSheet(
+          child: BudgetSheet(
+            current: state.monthlyBudget,
+            onSave: (value) async {
+              final saved = await ref
+                  .read(settingsProvider.notifier)
+                  .updateMonthlyBudget(value);
 
-            if (!context.mounted) return;
-
-            if (!saved) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Failed to save budget.')),
-              );
-              return;
-            }
-
-            Navigator.pop(context);
-
-            await ref.read(dashboardProvider.notifier).refresh();
-          },
+              if (saved) {
+                unawaited(ref.read(dashboardProvider.notifier).refresh());
+              }
+              return saved;
+            },
+          ),
         ),
       ),
     );

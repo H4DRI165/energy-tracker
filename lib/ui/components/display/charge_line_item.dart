@@ -160,82 +160,60 @@ void _showChargeInfo(
   _ChargeExplanation info,
 ) {
   unawaited(
-    showModalBottomSheet<void>(
+    showAppBottomSheet<void>(
       context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (_) => Container(
-        padding: EdgeInsets.fromLTRB(20.w, 10.h, 20.w, 28.h),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: SafeArea(
-          top: false,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 36.w,
-                  height: 4.h,
-                  decoration: BoxDecoration(
-                    color: AppColors.text3.withValues(alpha: 0.4),
-                    borderRadius: BorderRadius.circular(2.r),
+      builder: (_) => AppBottomSheet(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    info.title,
+                    style: AppTextStyles.titleMd,
                   ),
                 ),
-              ),
-              SizedBox(height: 16.h),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      info.title,
-                      style: AppTextStyles.titleMd,
-                    ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  tooltip: 'Close',
+                  icon: Icon(
+                    Icons.close_rounded,
+                    size: 20.r,
+                    color: AppColors.text2,
                   ),
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    tooltip: 'Close',
-                    icon: Icon(
-                      Icons.close_rounded,
-                      size: 20.r,
-                      color: AppColors.text2,
-                    ),
+                ),
+              ],
+            ),
+            SizedBox(height: 8.h),
+            Text(
+              info.description,
+              style: AppTextStyles.bodyMd.copyWith(color: AppColors.text2),
+            ),
+            SizedBox(height: 16.h),
+            Container(
+              padding: EdgeInsets.all(12.r),
+              decoration: BoxDecoration(
+                color: AppColors.surface2,
+                borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Column(
+                children: [
+                  _InfoRow(label: 'Rate', value: item.rateLabel),
+                  SizedBox(height: 8.h),
+                  _InfoRow(
+                    label: 'Amount',
+                    value:
+                        '${item.isRebate ? '−' : ''}RM '
+                        '${item.amount.abs().toStringAsFixed(2)}',
+                    valueColor: item.isRebate ? AppColors.accent : null,
                   ),
                 ],
               ),
-              SizedBox(height: 8.h),
-              Text(
-                info.description,
-                style: AppTextStyles.bodyMd.copyWith(color: AppColors.text2),
-              ),
-              SizedBox(height: 16.h),
-              Container(
-                padding: EdgeInsets.all(12.r),
-                decoration: BoxDecoration(
-                  color: AppColors.surface2,
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: Column(
-                  children: [
-                    _InfoRow(label: 'Rate', value: item.rateLabel),
-                    SizedBox(height: 8.h),
-                    _InfoRow(
-                      label: 'Amount',
-                      value:
-                          '${item.isRebate ? '−' : ''}RM '
-                          '${item.amount.abs().toStringAsFixed(2)}',
-                      valueColor: item.isRebate ? AppColors.accent : null,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     ),

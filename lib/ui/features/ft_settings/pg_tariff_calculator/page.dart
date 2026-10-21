@@ -371,62 +371,30 @@ class _InfoCard extends StatelessWidget {
 
 void _showTariffReference(BuildContext context) {
   unawaited(
-    showModalBottomSheet<void>(
+    showAppBottomSheet<void>(
       context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (_) => FractionallySizedBox(
-        heightFactor: 0.9,
-        child: Container(
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: Column(
-            children: [
-              SizedBox(height: 10.h),
-              Center(
-                child: Container(
-                  width: 36.w,
-                  height: 4.h,
-                  decoration: BoxDecoration(
-                    color: AppColors.text3.withValues(alpha: 0.4),
-                    borderRadius: BorderRadius.circular(2.r),
-                  ),
-                ),
+      builder: (_) => AppBottomSheet(
+        maxHeightFactor: 0.92,
+        header: Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Tariff reference',
+                style: AppTextStyles.titleMd,
               ),
-              Padding(
-                padding: EdgeInsets.fromLTRB(20.w, 10.h, 8.w, 4.h),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Tariff reference',
-                        style: AppTextStyles.titleMd,
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      tooltip: 'Close',
-                      icon: Icon(
-                        Icons.close_rounded,
-                        size: 20.r,
-                        color: AppColors.text2,
-                      ),
-                    ),
-                  ],
-                ),
+            ),
+            IconButton(
+              onPressed: () => Navigator.pop(context),
+              tooltip: 'Close',
+              icon: Icon(
+                Icons.close_rounded,
+                size: 20.r,
+                color: AppColors.text2,
               ),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: EdgeInsets.fromLTRB(20.w, 4.h, 20.w, 28.h),
-                  child: _DomesticInfo(),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
+        child: _DomesticInfo(),
       ),
     ),
   );

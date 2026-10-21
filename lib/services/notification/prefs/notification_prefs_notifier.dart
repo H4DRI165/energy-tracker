@@ -24,35 +24,76 @@ class NotificationPrefsNotifier extends Notifier<NotificationPrefsState> {
     return const NotificationPrefsState();
   }
 
+  Future<void> reload() async {
+    state = state.copyWith(isLoading: true, errorMessage: null);
+    await _load();
+  }
+
   Future<void> _load() async {
     final uid = ref.read(currentUidProvider).value;
-    if (uid == null) return;
+    if (uid == null) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'Session expired. Please sign in again.',
+      );
+      return;
+    }
 
-    final doc = await _firestore.collection('users').doc(uid).get();
-    final data = doc.data();
+    try {
+      final doc = await _firestore.collection('users').doc(uid).get();
+      final data = doc.data();
+      state = state.copyWith(
+        alert80Enabled: data?['alert80Enabled'] as bool? ?? true,
+        alert100Enabled: data?['alert100Enabled'] as bool? ?? true,
+        isLoading: false,
+        hasLoaded: true,
+        errorMessage: null,
+      );
+    } on Exception {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage:
+            'Could not load notification settings. Check your connection.',
+      );
+    }
+  }
+
+  Future<bool> setAlert80({required bool value}) =>
+      _update('alert80Enabled', value, alert80Enabled: value);
+
+  Future<bool> setAlert100({required bool value}) =>
+      _update('alert100Enabled', value, alert100Enabled: value);
+
+  Future<bool> _update(
+    String field,
+    bool value, {
+    bool? alert80Enabled,
+    bool? alert100Enabled,
+  }) async {
+    final previous = state;
     state = state.copyWith(
-      alert80Enabled: data?['alert80Enabled'] as bool? ?? true,
-      alert100Enabled: data?['alert100Enabled'] as bool? ?? true,
-      isLoading: false,
+      alert80Enabled: alert80Enabled,
+      alert100Enabled: alert100Enabled,
+      isSaving: true,
+      errorMessage: null,
     );
-  }
 
-  Future<void> setAlert80({required bool value}) async {
-    state = state.copyWith(alert80Enabled: value);
-    await _update('alert80Enabled', value);
-  }
-
-  Future<void> setAlert100({required bool value}) async {
-    state = state.copyWith(alert100Enabled: value);
-    await _update('alert100Enabled', value);
-  }
-
-  Future<void> _update(String field, bool value) async {
-    final uid = ref.read(currentUidProvider).value;
-    if (uid == null) return;
-    await _firestore.collection('users').doc(uid).set(
-      {field: value},
-      SetOptions(merge: true),
-    );
+    try {
+      final uid = ref.read(currentUidProvider).value;
+      if (uid == null) throw Exception('Session expired');
+      await _firestore.collection('users').doc(uid).set(
+        {field: value},
+        SetOptions(merge: true),
+      );
+      state = state.copyWith(isSaving: false);
+      return true;
+    } on Exception {
+      state = previous.copyWith(
+        isSaving: false,
+        errorMessage:
+            'Could not save this setting. Check your connection and try again.',
+      );
+      return false;
+    }
   }
 }
