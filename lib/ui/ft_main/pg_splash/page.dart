@@ -26,7 +26,7 @@ class _SplashPageState extends State<SplashPage>
 
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1800),
+      duration: const Duration(milliseconds: 1000),
     );
 
     // Logo fades + scales in first
@@ -60,7 +60,7 @@ class _SplashPageState extends State<SplashPage>
   void _navigateToLanding() {
     if (!mounted) return;
     // Brief hold so the splash feels intentional, not a flash
-    Future.delayed(const Duration(milliseconds: 600), () {
+    Future.delayed(const Duration(milliseconds: 120), () {
       if (mounted) context.go(AppRoutes.landing);
     });
   }
@@ -148,7 +148,7 @@ class _SplashPageState extends State<SplashPage>
             ),
           ),
           Positioned(
-            bottom: 60,
+            bottom: MediaQuery.paddingOf(context).bottom + 32,
             left: 0,
             right: 0,
             child: FadeTransition(
