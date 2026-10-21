@@ -115,18 +115,11 @@ class _SettingsBody extends ConsumerWidget {
             onTap: onEditProfile,
           ),
           SizedBox(height: 20.h),
-          const SettingsSection(label: 'ACCOUNT'),
-          SizedBox(height: 8.h),
-          const _SettingsGroup(
-            children: [
-              _TariffAndBudgetTiles(),
-            ],
-          ),
-          SizedBox(height: 20.h),
-          const SettingsSection(label: 'APPEARANCE'),
+          const SettingsSection(label: 'PREFERENCES'),
           SizedBox(height: 8.h),
           _SettingsGroup(
             children: [
+              const _BudgetTile(),
               SettingsListTile(
                 icon: isDark ? '🌙' : '☀️',
                 label: 'Dark Mode',
@@ -138,6 +131,17 @@ class _SettingsBody extends ConsumerWidget {
                 ),
                 onTap: () => ref.read(themeModeProvider.notifier).toggle(),
                 showChevron: false,
+              ),
+              SettingsListTile(
+                icon: '🔔',
+                label: 'Notifications',
+                trailing: 'Budget alerts',
+                onTap: () => showModalBottomSheet<void>(
+                  context: context,
+                  backgroundColor: Colors.transparent,
+                  isScrollControlled: true,
+                  builder: (_) => const NotificationPrefsSheet(),
+                ),
                 isLast: true,
               ),
             ],
@@ -156,26 +160,6 @@ class _SettingsBody extends ConsumerWidget {
             ],
           ),
           SizedBox(height: 20.h),
-
-          const SettingsSection(label: 'NOTIFICATIONS'),
-          SizedBox(height: 8.h),
-          _SettingsGroup(
-            children: [
-              SettingsListTile(
-                icon: '🔔',
-                label: 'Notifications',
-                trailing: 'Budget alerts',
-                onTap: () => showModalBottomSheet<void>(
-                  context: context,
-                  backgroundColor: Colors.transparent,
-                  isScrollControlled: true,
-                  builder: (_) => const NotificationPrefsSheet(),
-                ),
-                isLast: true,
-              ),
-            ],
-          ),
-          SizedBox(height: 20.h),
           const SettingsSection(label: 'ABOUT'),
           SizedBox(height: 8.h),
           const _AboutGroup(),
@@ -188,8 +172,8 @@ class _SettingsBody extends ConsumerWidget {
   }
 }
 
-class _TariffAndBudgetTiles extends ConsumerWidget {
-  const _TariffAndBudgetTiles();
+class _BudgetTile extends ConsumerWidget {
+  const _BudgetTile();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -200,16 +184,11 @@ class _TariffAndBudgetTiles extends ConsumerWidget {
       }),
     );
 
-    return Column(
-      children: [
-        SettingsListTile(
-          icon: '🎯',
-          label: 'Monthly Budget',
-          trailing: formattedBudget,
-          onTap: () => _showBudgetSheet(context, ref),
-          isLast: true,
-        ),
-      ],
+    return SettingsListTile(
+      icon: '🎯',
+      label: 'Monthly Budget',
+      trailing: formattedBudget,
+      onTap: () => _showBudgetSheet(context, ref),
     );
   }
 
@@ -268,6 +247,7 @@ class _AboutGroup extends ConsumerWidget {
             error: (_, _) => 'unknown',
           ),
           showChevron: false,
+          isLast: true,
         ),
       ],
     );
