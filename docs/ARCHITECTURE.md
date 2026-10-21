@@ -5,153 +5,158 @@
 
 ## 1. Overview
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│                        Flutter app (lib/)                     │
-│                                                               │
-│  ui/            Presentation: pages, widgets, components      │
-│   ├─ features/  Feature slices (dashboard, usage, devices…)   │
-│   ├─ ft_auth/   Auth feature slice                            │
-│   ├─ ft_main/   Splash + landing                              │
-│   ├─ components Shared widgets (input, display, feedback…)    │
-│   └─ routes/    go_router config + auth redirect               │
-│                                                               │
-│  Riverpod       Notifiers / AsyncNotifiers hold screen state   │
-│                 and orchestrate reads/writes                   │
-│                                                               │
-│  services/      Auth, billing engine, notifications, logging   │
-│  models/        Plain data models (from Firestore docs)        │
-│  theme/         Colors, dimensions, text styles, ThemeData     │
-│  constants/     Tariff rates (domain constants)                │
-└──────────────────────────────────────────────────────────────┘
-              │                          │
-              ▼                          ▼
-     Firebase Auth            Cloud Firestore
-     Firebase Storage         (users/{uid}/…)
-     Firebase Messaging
-              ▲
-              │ triggers
-┌──────────────────────────────────────────────────────────────┐
-│         Cloud Functions (functions/index.js, Node 24)          │
-│  checkBudgetOnBillUpdate · sendMonthlyReadingReminder          │
-└──────────────────────────────────────────────────────────────┘
+```text
+Flutter app
+  ui/
+    features/     dashboard, usage, devices, settings, readings, bill detail
+    ft_auth/      login, register, forgot password
+    ft_main/      splash, landing
+    components/   shared input, display, feedback and navigation widgets
+    routes/       go_router configuration
+  services/       auth, billing, notifications, tariff, network, logging
+  models/         Firestore-backed data models
+  theme/          colors, dimensions, typography and ThemeData
+  constants/      tariff calculations and domain constants
 ```
 
-Key idea: **the client owns everything except notifications.** Bill math, reading chains, and bill writes happen on-device; Cloud Functions only react to bill writes and run a scheduled reminder.
+Firebase provides Auth, Firestore, Storage, Messaging, Crashlytics and App
+Check. Cloud Functions send budget alerts and reading reminders.
 
-## 2. Tech stack
+The client owns the billing data and recomputes affected bills after reading
+changes. Cloud Functions react to bill writes and scheduled reminders; they do
+not perform the core bill calculation.
 
-| Layer | Choice |
+## 2. Stack
+
+| Area | Choice |
 |---|---|
-| Framework | Flutter (Dart SDK `>=3.10.0`, Flutter `>=3.44.0`; CI pins `3.44.1`) |
-| State | `flutter_riverpod` 3.x |
-| Routing | `go_router` 17 with `StatefulShellRoute` bottom nav |
-| Backend | Firebase: Auth, Firestore, Storage, Messaging, Analytics, Crashlytics, App Check |
+| Framework | Flutter 3.44+, Dart 3.10+ |
+| State | Riverpod 3 |
+| Routing | go_router with a stateful bottom-navigation shell |
+| Auth | Firebase Authentication (email/password and Google) |
+| Data | Cloud Firestore |
 | Server logic | Firebase Cloud Functions v2, Node.js 24 |
-| UI scale | `flutter_screenutil` (design size 390×844) |
-| Charts | `fl_chart` (+ custom `CustomPaint` for the appliance ring) |
-| Fonts | `google_fonts` (Lato headings, DM Sans body) |
-| Local prefs | `shared_preferences`, `flutter_secure_storage` |
+| Notifications | FCM + flutter_local_notifications |
+| Integrity | Firebase App Check |
+| Sizing | flutter_screenutil, design size 390×844 |
+| Fonts | Lato + DM Sans, bundled locally |
 
-## 3. Folder map
+## 3. App shell
 
-```
-lib/
-├── main.dart                 # bootstrap: Firebase, Crashlytics, App Check, runApp
-├── app.dart                  # barrel export
-├── firebase_options.dart     # generated (gitignored in CI, restored from secret)
-├── constants/tariff_rates.dart
-├── extensions/               # DateTime extensions
-├── models/                   # Appliance, BillRecord, ReadingRecord, UserProfile
-├── services/
-│   ├── auth/                 # AuthService singleton + currentUidProvider
-│   ├── billing/              # ReadingChainService, BillRecalculationService
-│   ├── notification/         # FCM/local notifications + prefs
-│   ├── notifier/             # AppUserNotifier, userProfileProvider
-│   └── observers/            # CrashlyticsProviderObserver
-├── theme/                    # AppColors, AppDimensions, AppTextStyles, AppTheme
-└── ui/
-    ├── components/           # shared input/display/feedback/navigation
-    ├── features/             # dashboard, usage, devices, settings, meter reading, bill
-    ├── ft_auth/              # login, register, forgot password
-    ├── ft_main/              # splash, landing
-    └── routes/              # router + AppRoutes constants
-```
+`lib/main.dart` initializes Firebase, Crashlytics, App Check, notifications and
+fonts, loads the bundled tariff immediately, then refreshes the published
+tariff in the background.
 
-Feature slice convention: `pg_<name>/page.dart` (the screen) + `notifier/<name>_notifier.dart` + `notifier/<name>_state.dart` (+ optional `widgets/`).
+The main tabs use `StatefulShellRoute.indexedStack`:
+
+- Dashboard
+- Usage
+- Devices
+- Settings
+
+A notched centre FAB opens Add Reading. Non-tab routes include onboarding,
+bill detail, edit profile, add/edit appliance, tariff calculator and error.
 
 ## 4. State management
 
-- **Riverpod** providers, mostly:
-  - `AsyncNotifierProvider` for async screen data (`dashboardProvider`, `usageProvider`, `settingsProvider`, `editProfileProvider`).
-  - `NotifierProvider` for synchronous/form state (`loginProvider`, `registerProvider`, `addReadingProvider`, `addApplianceProvider`, `billDetailProvider`, `onboardingProvider`).
-  - `Provider` for derived values (`isProfileLoadingProvider`).
-  - `ChangeNotifierProvider` bridging `AppUserNotifier` (`userProfileProvider`).
-  - `StreamProvider` for uid (`currentUidProvider`).
-- Screen state classes use a `_unset` sentinel so `copyWith` can distinguish "no change" from "set to null".
-- `loggable_notifier.dart` mixes in screen-name context for error logging.
+Most screen state uses Riverpod:
 
-## 5. Auth & routing gate
+- `AsyncNotifierProvider` for Firestore-backed screens.
+- `NotifierProvider` for synchronous form and detail state.
+- `StreamProvider` for the current UID.
+- `ChangeNotifierProvider` bridges the auth/onboarding notifier.
 
-`AuthService` is a **singleton** (`factory AuthService() => _instance`) that:
-- listens to `authStateChanges`, subscribes to the user's Firestore doc, and drives `AppUserNotifier`.
-- exposes `uidChanges` (immediate current value, then future changes).
+State classes use an unset sentinel where `copyWith` must distinguish
+"unchanged" from "clear to null".
 
-`AppUserNotifier` holds `OnboardingStatus`: `loading | complete | incomplete | error`.
+## 5. Authentication and onboarding gate
 
-`appRouter` (`lib/ui/routes/router.dart`) uses `refreshListenable` on auth + profile and redirects:
-- Logged in + loading → stay.
-- Logged in + error → `/error` (safe retry screen; never overwrites data).
-- Logged in + incomplete → `/onboarding`.
-- Logged in + complete hitting a public/onboarding route → `/dashboard`.
-- Logged out + protected route → `/login`.
+`AuthService` is a singleton. It listens to Firebase Auth, subscribes to the
+user profile document and drives `AppUserNotifier`:
 
-Navigation is a `StatefulShellRoute.indexedStack` with four branches (Dashboard, Usage, Devices, Settings) behind `AppBottomNav`, plus non-tab routes (onboarding, add reading, bill detail, add/edit appliance, edit profile, tariff calculator, scan bill, error).
+```text
+loading | complete | incomplete | error
+```
 
-## 6. Data access patterns
+The router redirects based on that state:
 
-- Reads happen in notifiers via Firestore queries scoped to `users/{uid}/…`.
-- Writes that must stay consistent use **`WriteBatch`** (reading delete + chain fix) or **transactions** (budget-alert reservation in the Cloud Function).
-- Bills are **denormalized**: one `bills/{YYYY-MM}` doc per month, recomputed by `BillRecalculationService.recalculateRange` whenever readings change; reading intervals are allocated across the months they cover.
-- Tariff is resolved from the **most recent reading** of the month, falling back to the live profile tariff.
+- loading → stay on the current route
+- error → `/error`
+- incomplete → `/onboarding`
+- complete on a public/onboarding route → `/dashboard`
+- signed out on a protected route → `/login`
 
-See [DATA_MODEL.md](DATA_MODEL.md) and [BILLING.md](BILLING.md).
+Email registration creates the full Firestore profile. Google sign-in may have
+no profile yet, so onboarding bootstraps the required profile fields and then
+syncs the FCM token. This keeps Firestore rules strict without blocking OAuth
+users.
 
-## 7. Billing engine
+## 6. Billing data flow
 
-Two services on top of `TariffRates`:
+```text
+reading save/edit/delete
+  → ReadingChainService fixes neighbouring deltas
+  → BillRecalculationService finds affected months
+  → usage intervals are allocated by calendar day
+  → one bill document per affected month is upserted or deleted
+```
 
-- `ReadingChainService` — finds previous/next readings globally across months and computes corrected `kwh`/`tier` for a reading whose chain position changed. Invariant: a reading cannot be lower than its predecessor.
-- `BillRecalculationService` — sums a month's readings and upserts/deletes the month's bill doc.
+The first reading is a baseline. Long intervals are marked estimated and split
+across the months they overlap.
 
-Full domain detail: [BILLING.md](BILLING.md).
+See [BILLING.md](BILLING.md) and [DATA_MODEL.md](DATA_MODEL.md).
+
+## 7. Tariff loading
+
+`TariffRepository` resolves data in this order:
+
+1. Bundled `assets/tariff/domestic_general.json` (fast startup fallback).
+2. Firestore `tariffs/domestic_general` (background refresh).
+3. Compiled-in `DomesticTariff.fallback`.
+
+Remote refresh invalidates usage, dashboard and devices providers so visible
+calculations update without delaying launch.
 
 ## 8. Notifications
 
-- Client (`NotificationService`): requests permission, initializes the Android channel `budget_alerts`, renders foreground messages via `flutter_local_notifications`, routes taps by `data.type`, attaches/detaches FCM tokens on login/logout.
-- Server (`functions/index.js`): `checkBudgetOnBillUpdate` (Firestore trigger + atomic tier reservation + rollback on failure) and `sendMonthlyReadingReminder` (scheduled, batched, stale-token cleanup).
+- `NotificationService` requests permission, creates the Android channel,
+  displays foreground messages, routes notification taps and stores the FCM
+  token.
+- Token writes are skipped until the profile exists. Onboarding calls
+  `syncToken()` after creating a Google profile.
+- `functions/index.js` handles 80%/100% budget alerts and monthly reading
+  reminders.
 
-## 9. Error handling & logging
+## 9. Security
 
-- `AppLogger.error` sanitizes keys and forwards to Crashlytics.
-- `mapFirebaseError` / `mapFirebaseAuthError` centralize user-facing messages.
-- Router sends profile-load failures to `/error`, which calls `AuthService.retryLoadUser()`.
-- `CrashlyticsProviderObserver` records Riverpod provider errors.
+- Firestore rules are version-controlled in `firestore.rules`.
+- User data is owner-scoped under `users/{uid}`.
+- Tariff reads are public; tariff writes are denied to clients.
+- App Check is configured for the app. Firestore enforcement is currently
+  **unenforced**; enable it only after confirming debug tokens and Play
+  Integrity work in the target builds.
 
-## 10. Theming
+## 10. UI systems
 
-- `AppColors` (dark palette, semantic colors, gradients, shadows), `AppDimensions` (spacing/radius/sizes via `.r`/`.w`/`.h`), `AppTextStyles` (Lato + DM Sans), assembled in `AppTheme.dark`.
-- `ScreenUtilInit(designSize: 390×844, minTextAdapt: true)` wraps `MaterialApp.router`.
+- `AppColors` supplies the semantic light/dark palette.
+- `AppDimensions` centralizes spacing, radii and component sizes.
+- `AppTextStyles` supplies Lato headings and DM Sans body text.
+- `AppBottomSheet` + `showAppBottomSheet` provide one animation, surface,
+  handle, safe-area and scrolling policy for all bottom sheets.
+- `AuthPageScaffold` provides the shared auth-page animation and layout.
 
-## 11. CI/CD
+## 11. Release pipeline
 
-`.github/workflows/release-apk.yml`: on push to `main` → Java 17, Flutter 3.44.1, restore secrets (`google-services.json`, `firebase_options.dart`, keystore, `key.properties`), `flutter build apk --release`, publish a GitHub Release `v<run_number>`.
+`.github/workflows/release-apk.yml` builds a signed release APK on pushes to
+`main`. It restores Firebase configuration and signing secrets, then publishes
+the APK to GitHub Releases.
 
-## 12. Known architectural risks / tech debt
+## 12. Trade-offs
 
-1. **Field-name drift** between settings and notification systems (`budgetAlertsEnabled` vs `alert80Enabled`). See `DATA_MODEL.md`.
-2. **No Firestore security rules in the repo** — `firebase.json` only declares Functions. Rules are not version-controlled here.
-3. **All migration/versioning is implicit** — no schema version field; older docs fall back via `??` defaults.
-4. **Hard-coded tariff constants** — a TNB update requires a code change and release.
-5. **No integration/E2E tests** — unit tests cover state and billing services only.
-6. **Singleton `AuthService`** — convenient, but makes isolated testing harder.
+- Billing runs client-side; Cloud Functions only handle notifications.
+- Google profiles are bootstrapped at onboarding rather than by a server-side
+  auth trigger.
+- TNB account number is blank for Google users until they edit their profile.
+- Rules and App Check must be configured per Firebase project.
+- Integration and widget coverage is still limited; billing and state services
+  have unit tests.
