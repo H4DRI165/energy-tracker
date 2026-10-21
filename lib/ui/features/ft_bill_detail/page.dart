@@ -410,7 +410,7 @@ class _ReadingsSection extends ConsumerWidget {
                 ),
                 SizedBox(width: 4.w),
                 Text(
-                  'Swipe to delete history',
+                  'Tap for details',
                   style: AppTextStyles.caption.copyWith(color: AppColors.text3),
                 ),
               ],
@@ -531,33 +531,12 @@ class _ReadingRow extends ConsumerWidget {
             ],
           ),
         ),
-        confirmDismiss: (_) => ConfirmDialog.show(
-          context,
-          title: 'Delete Reading?',
-          message:
-              'Delete the reading on '
-              '${reading.formattedDate} (${reading.kwh.toStringAsFixed(1)} '
-              'kWh)?',
-          confirmLabel: 'Delete',
-          confirmColor: AppColors.danger,
-          warning: 'This will also remove the associated bill entry.',
-        ),
+        confirmDismiss: (_) => _confirmDelete(context),
         onDismissed: (_) async {
-          final billDetailNotifier = ref.read(billDetailProvider.notifier);
-          final usageNotifier = ref.read(usageProvider.notifier);
-          final dashboardNotifier = ref.read(dashboardProvider.notifier);
-
-          final success = await billDetailNotifier.deleteReading(reading, bill);
-
-          if (success) {
-            await Future.wait([
-              usageNotifier.refresh(),
-              dashboardNotifier.refresh(),
-            ]);
-          }
+          await _deleteReading(ref);
         },
         child: GestureDetector(
-          onTap: () => onEdit(reading),
+          onTap: () => _openReadingDetails(context, ref),
           child: Container(
             padding: EdgeInsets.symmetric(
               horizontal: 14.w,
@@ -648,6 +627,230 @@ class _ReadingRow extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Future<void> _openReadingDetails(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final action = await showAppBottomSheet<_ReadingSheetAction>(
+      context: context,
+      builder: (_) => AppBottomSheet(
+        child: _ReadingDetailsSheet(
+          reading: reading,
+          tierLabel: tierLabel,
+        ),
+      ),
+    );
+
+    if (!context.mounted || action == null) return;
+
+    if (action == _ReadingSheetAction.edit) {
+      await onEdit(reading);
+      return;
+    }
+
+    final confirmed = await _confirmDelete(context);
+    if (confirmed && context.mounted) {
+      await _deleteReading(ref);
+    }
+  }
+
+  Future<bool> _confirmDelete(BuildContext context) {
+    return ConfirmDialog.show(
+      context,
+      title: 'Delete Reading?',
+      message:
+          'Delete the reading on '
+          '${reading.formattedDate} (${reading.kwh.toStringAsFixed(1)} '
+          'kWh)?',
+      confirmLabel: 'Delete',
+      confirmColor: AppColors.danger,
+      warning: 'This will also remove the associated bill entry.',
+    );
+  }
+
+  Future<void> _deleteReading(WidgetRef ref) async {
+    final billDetailNotifier = ref.read(billDetailProvider.notifier);
+    final usageNotifier = ref.read(usageProvider.notifier);
+    final dashboardNotifier = ref.read(dashboardProvider.notifier);
+
+    final success = await billDetailNotifier.deleteReading(reading, bill);
+
+    if (success) {
+      await Future.wait([
+        usageNotifier.refresh(),
+        dashboardNotifier.refresh(),
+      ]);
+    }
+  }
+}
+
+enum _ReadingSheetAction { edit, delete }
+
+class _ReadingDetailsSheet extends StatelessWidget {
+  const _ReadingDetailsSheet({
+    required this.reading,
+    required this.tierLabel,
+  });
+
+  final ReadingRecord reading;
+  final String tierLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final periodStart = reading.periodStart;
+    final intervalValue = reading.kwh > 0
+        ? '+${reading.kwh.toStringAsFixed(1)} kWh'
+        : 'Baseline reading';
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Reading details',
+                style: AppTextStyles.titleMd,
+              ),
+            ),
+            IconButton(
+              onPressed: () => Navigator.pop(context),
+              tooltip: 'Close',
+              icon: Icon(
+                Icons.close_rounded,
+                size: 20.r,
+                color: AppColors.text2,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 8.h),
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(14.r),
+          decoration: BoxDecoration(
+            color: AppColors.accent.withValues(alpha: 0.07),
+            borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+            border: Border.all(
+              color: AppColors.accent.withValues(alpha: 0.2),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Meter reading',
+                style: AppTextStyles.caption.copyWith(
+                  color: AppColors.text2,
+                ),
+              ),
+              SizedBox(height: 4.h),
+              Text(
+                '${reading.reading.toStringAsFixed(0)} kWh',
+                style: AppTextStyles.statMd.copyWith(
+                  color: AppColors.accent,
+                ),
+              ),
+              SizedBox(height: 2.h),
+              Text(
+                reading.formattedDate,
+                style: AppTextStyles.caption.copyWith(
+                  color: AppColors.text3,
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 14.h),
+        _ReadingInfoRow(label: 'Interval usage', value: intervalValue),
+        if (periodStart != null) ...[
+          SizedBox(height: 8.h),
+          _ReadingInfoRow(
+            label: 'Since',
+            value: periodStart.shortDayLabel,
+          ),
+        ],
+        SizedBox(height: 8.h),
+        _ReadingInfoRow(label: 'EEI rebate', value: tierLabel),
+        if (reading.notes.isNotEmpty) ...[
+          SizedBox(height: 12.h),
+          Text(
+            'Notes',
+            style: AppTextStyles.caption.copyWith(
+              color: AppColors.text3,
+            ),
+          ),
+          SizedBox(height: 3.h),
+          Text(reading.notes, style: AppTextStyles.bodySm),
+        ],
+        SizedBox(height: 20.h),
+        GradientButton(
+          label: 'Edit reading',
+          isLoading: false,
+          onTap: () => Navigator.pop(
+            context,
+            _ReadingSheetAction.edit,
+          ),
+        ),
+        SizedBox(height: 2.h),
+        TextButton(
+          onPressed: () => Navigator.pop(
+            context,
+            _ReadingSheetAction.delete,
+          ),
+          style: TextButton.styleFrom(
+            foregroundColor: AppColors.danger,
+            minimumSize: Size.fromHeight(48.h),
+          ),
+          child: Text(
+            'Delete reading',
+            style: AppTextStyles.caption.copyWith(
+              color: AppColors.danger,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        SizedBox(height: 4.h),
+        Text(
+          "Editing a reading can recalculate this month's bill.",
+          style: AppTextStyles.caption.copyWith(
+            color: AppColors.text3,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+}
+
+class _ReadingInfoRow extends StatelessWidget {
+  const _ReadingInfoRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: AppTextStyles.bodySm.copyWith(color: AppColors.text2),
+          ),
+        ),
+        SizedBox(width: 12.w),
+        Text(
+          value,
+          style: AppTextStyles.bodySm.copyWith(fontWeight: FontWeight.w600),
+          textAlign: TextAlign.right,
+        ),
+      ],
     );
   }
 }

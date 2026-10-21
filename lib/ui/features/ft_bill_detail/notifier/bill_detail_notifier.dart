@@ -108,6 +108,7 @@ class BillDetailNotifier extends Notifier<BillDetailPageState>
       final readings = readingDocs.map((doc) {
         final data = doc.data();
         final date = (data['date'] as Timestamp).toDate();
+        final rawPeriodStart = data['periodStart'];
         return ReadingRecord(
           id: doc.id,
           reading: (data['reading'] as num?)?.toDouble() ?? 0,
@@ -116,6 +117,11 @@ class BillDetailNotifier extends Notifier<BillDetailPageState>
           notes: data['notes'] as String? ?? '',
           estimatedBill: (data['estimatedBill'] as num?)?.toDouble() ?? 0,
           tier: (data['tier'] as num?)?.toInt() ?? 1,
+          periodStart: rawPeriodStart is Timestamp
+              ? rawPeriodStart.toDate()
+              : rawPeriodStart is String
+              ? DateTime.tryParse(rawPeriodStart)
+              : null,
         );
       }).toList();
 
