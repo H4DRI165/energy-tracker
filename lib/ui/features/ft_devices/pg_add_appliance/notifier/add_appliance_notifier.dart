@@ -61,6 +61,10 @@ class AddApplianceNotifier extends Notifier<AddAppliancePageState>
     state = state.copyWith(dailyHours: state.dailyHours - 0.5);
   }
 
+  void setHours(double value) {
+    state = state.copyWith(dailyHours: value.clamp(0.5, 24).toDouble());
+  }
+
   Future<bool> save() async {
     if (!state.canSave) return false;
 

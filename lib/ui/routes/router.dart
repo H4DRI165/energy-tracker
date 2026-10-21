@@ -165,6 +165,22 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => const AddAppliancePage(),
     ),
     GoRoute(
+      path: AppRoutes.applianceDetail,
+      builder: (context, state) {
+        final extra = state.extra;
+        if (extra is! Appliance) {
+          return const Scaffold(
+            body: Center(
+              child: Text(
+                'Invalid navigation. Please select an appliance.',
+              ),
+            ),
+          );
+        }
+        return ApplianceDetailPage(appliance: extra);
+      },
+    ),
+    GoRoute(
       path: AppRoutes.editAppliance,
       builder: (context, state) {
         final extra = state.extra;
