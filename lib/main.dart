@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -9,6 +10,9 @@ import 'package:energy_tracker/services/notification/service/provider/notificati
 import 'package:energy_tracker/services/observers/crashlytics_provider_observer.dart';
 import 'package:energy_tracker/services/tariff/tariff_repository.dart';
 import 'package:energy_tracker/services/theme/theme_mode_provider.dart';
+import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_notifier.dart';
+import 'package:energy_tracker/ui/features/ft_devices/pg_devices/notifier/devices_notifier.dart';
+import 'package:energy_tracker/ui/features/ft_usage/notifier/usage_notifier.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
@@ -65,17 +69,46 @@ Future<void> main() async {
     !kDebugMode,
   );
 
-  // Load the published tariff/AFA schedule before the first calculation.
-  // Falls back to the bundled schedule when offline or unpublished.
-  final tariff = await TariffRepository().load();
-  TariffRates.configure(tariff);
+  // Start immediately with the bundled schedule. The published schedule is
+  // fetched in the background so a slow/offline network never delays launch.
+  final tariffRepository = TariffRepository();
+  TariffRates.configure(await tariffRepository.loadBundled());
 
+  final container = ProviderContainer(
+    observers: const [CrashlyticsProviderObserver()],
+  );
   runApp(
-    const ProviderScope(
-      observers: [CrashlyticsProviderObserver()],
-      child: MainApp(),
+    UncontrolledProviderScope(
+      container: container,
+      child: const MainApp(),
     ),
   );
+
+  unawaited(_refreshRemoteTariff(container, tariffRepository));
+}
+
+Future<void> _refreshRemoteTariff(
+  ProviderContainer container,
+  TariffRepository repository,
+) async {
+  try {
+    final remote = await repository.fetchRemote();
+    if (remote == null) return;
+
+    TariffRates.configure(remote);
+    container
+      ..invalidate(usageProvider)
+      ..invalidate(dashboardProvider)
+      ..invalidate(devicesProvider);
+  } on Object catch (error) {
+    if (kDebugMode) {
+      developer.log(
+        'Remote tariff unavailable; using bundled schedule.',
+        name: 'TariffRepository',
+        error: error.runtimeType,
+      );
+    }
+  }
 }
 
 class MainApp extends ConsumerStatefulWidget {

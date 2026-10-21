@@ -22,10 +22,10 @@ class TariffRepository {
   static const _timeout = Duration(seconds: 2);
 
   Future<DomesticTariff> load() async {
-    final bundled = await _loadBundled();
+    final bundled = await loadBundled();
 
     try {
-      final remote = await _fetchRemote();
+      final remote = await fetchRemote();
       if (remote != null && remote.isValid) return remote;
     } on Object catch (error, stack) {
       developer.log(
@@ -41,7 +41,8 @@ class TariffRepository {
     return bundled;
   }
 
-  Future<DomesticTariff> _loadBundled() async {
+  /// Loads the always-available schedule without waiting for the network.
+  Future<DomesticTariff> loadBundled() async {
     try {
       final raw = await rootBundle.loadString(_assetPath);
       final parsed = DomesticTariff.fromJson(
@@ -53,13 +54,16 @@ class TariffRepository {
     }
   }
 
-  Future<DomesticTariff?> _fetchRemote() async {
+  /// Fetches the published schedule. Callers should handle timeouts and use a
+  /// bundled fallback; this method does not fall back itself.
+  Future<DomesticTariff?> fetchRemote() async {
     final snapshot = await _firestore.doc(_docPath).get().timeout(_timeout);
     if (!snapshot.exists) return null;
 
     final data = Map<String, dynamic>.from(snapshot.data()!);
     _normaliseTimestamps(data, ['effectiveFrom', 'effectiveTo', 'updatedAt']);
-    return DomesticTariff.fromJson(data);
+    final tariff = DomesticTariff.fromJson(data);
+    return tariff.isValid ? tariff : null;
   }
 
   void _normaliseTimestamps(Map<String, dynamic> data, List<String> keys) {
