@@ -1,3 +1,5 @@
+import 'package:energy_tracker/constants/tariff_rates.dart';
+
 class OnboardingPageState {
   const OnboardingPageState({
     this.currentStep = 0,
@@ -14,12 +16,11 @@ class OnboardingPageState {
 
   static const int totalSteps = 2;
   static const double minBudget = 50;
-  static const double maxBudget = 300;
+  static const double maxBudget = 500;
 
   String get estimatedKwh {
-    final low = (monthlyBudget / 0.30).round();
-    final high = (monthlyBudget / 0.25).round();
-    return '≈ $low–$high kWh estimated';
+    final kwh = TariffRates.estimateKwhFromBudget(monthlyBudget);
+    return '≈ ${kwh.toStringAsFixed(0)} kWh estimated';
   }
 
   double get progressValue => (currentStep + 1) / totalSteps;

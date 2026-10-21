@@ -240,7 +240,7 @@ class _StepBudget extends ConsumerWidget {
               value: monthlyBudget,
               min: OnboardingPageState.minBudget,
               max: OnboardingPageState.maxBudget,
-              divisions: 50, // RM 5 increments
+              divisions: 90, // RM 5 increments
               onChanged: notifier.setBudget,
             ),
           ),
@@ -254,19 +254,27 @@ class _StepBudget extends ConsumerWidget {
                   style: AppTextStyles.caption.copyWith(color: AppColors.text3),
                 ),
                 Text(
-                  'RM 300',
+                  'RM 500',
                   style: AppTextStyles.caption.copyWith(color: AppColors.text3),
                 ),
               ],
             ),
           ),
-          Text(
-            'Quick Select',
-            style: AppTextStyles.caption.copyWith(fontWeight: FontWeight.w600),
+          SizedBox(height: 20.h),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Quick Select',
+              style: AppTextStyles.caption.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
           SizedBox(height: 8.h),
           Wrap(
             spacing: 8.w,
+            runSpacing: 8.h,
+            alignment: WrapAlignment.center,
             children: _presets.map((preset) {
               final isSelected = monthlyBudget == preset;
               return FilterChip(
@@ -385,8 +393,14 @@ class _StepComplete extends ConsumerWidget {
           SizedBox(height: 10.h),
           const _SummaryItem(
             icon: '🔔',
-            title: 'Alerts enabled',
-            subtitle: '80% & 100% notifications',
+            title: 'Budget alerts',
+            subtitle: 'Manage them in Settings',
+          ),
+          SizedBox(height: 10.h),
+          const _SummaryItem(
+            icon: '📈',
+            title: 'Next: add a meter reading',
+            subtitle: 'Needed before usage can be calculated',
           ),
           const _CompleteErrorBanner(),
           SizedBox(height: 28.h),
@@ -435,18 +449,20 @@ class _SummaryItem extends StatelessWidget {
             ),
           ),
           SizedBox(width: 12.w),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: AppTextStyles.bodyMd.copyWith(
-                  fontWeight: FontWeight.w600,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: AppTextStyles.bodyMd.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-              SizedBox(height: 2.h),
-              Text(subtitle, style: AppTextStyles.bodySm),
-            ],
+                SizedBox(height: 2.h),
+                Text(subtitle, style: AppTextStyles.bodySm),
+              ],
+            ),
           ),
         ],
       ),
@@ -503,7 +519,7 @@ class _CompleteButton extends ConsumerWidget {
     );
 
     return GradientButton(
-      label: 'Start Tracking ⚡',
+      label: 'Start Tracking',
       isLoading: isLoading,
       onTap: onStartTracking,
     );
