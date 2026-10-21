@@ -45,6 +45,9 @@ class _BodyContent extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
+    final now = DateTime.now();
+    final daysInMonth = DateUtils.getDaysInMonth(now.year, now.month);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -59,6 +62,7 @@ class _BodyContent extends ConsumerWidget {
             kwh: state.currentKwh,
             bill: state.currentBill,
             monthLabel: state.currentMonthLabel,
+            monthProgressLabel: 'Day ${now.day} of $daysInMonth',
             status: _ReadingStatus(state: state),
           ),
         ),
@@ -120,31 +124,17 @@ class _ReadingStatus extends StatelessWidget {
     final lastReadingLabel = formattedDate == null
         ? 'No readings saved yet'
         : 'Last reading $formattedDate · $usageLabel';
-    final daysInMonth = DateUtils.getDaysInMonth(now.year, now.month);
 
     return Row(
       children: [
-        Icon(Icons.history_rounded, size: 14.r, color: AppColors.text3),
-        SizedBox(width: 6.w),
+        Icon(Icons.history_rounded, size: 13.r, color: AppColors.text3),
+        SizedBox(width: 5.w),
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                lastReadingLabel,
-                style: AppTextStyles.caption.copyWith(color: AppColors.text2),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              SizedBox(height: 1.h),
-              Text(
-                'Month-to-date · ${now.day} of $daysInMonth days',
-                style: AppTextStyles.caption.copyWith(
-                  color: AppColors.text3,
-                  fontSize: 10.sp,
-                ),
-              ),
-            ],
+          child: Text(
+            lastReadingLabel,
+            style: AppTextStyles.caption.copyWith(color: AppColors.text2),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],

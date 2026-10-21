@@ -7,6 +7,7 @@ class UsageSummaryRow extends StatelessWidget {
     required this.kwh,
     required this.bill,
     required this.monthLabel,
+    this.monthProgressLabel,
     this.status,
     super.key,
   });
@@ -14,6 +15,7 @@ class UsageSummaryRow extends StatelessWidget {
   final double kwh;
   final double bill;
   final String monthLabel;
+  final String? monthProgressLabel;
   final Widget? status;
 
   @override
@@ -21,34 +23,45 @@ class UsageSummaryRow extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          monthLabel,
-          style: AppTextStyles.bodySm.copyWith(color: AppColors.text2),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                monthLabel,
+                style: AppTextStyles.bodySm.copyWith(
+                  color: AppColors.text2,
+                ),
+              ),
+            ),
+            if (monthProgressLabel != null)
+              Text(
+                monthProgressLabel!,
+                style: AppTextStyles.caption.copyWith(
+                  color: AppColors.text3,
+                  fontSize: 10.sp,
+                ),
+              ),
+          ],
         ),
-        if (status != null) ...[
-          SizedBox(height: 4.h),
-          status!,
-        ],
         SizedBox(height: 8.h),
         Row(
           children: [
             Expanded(
               child: _SummaryStat(
-                label: 'kWh Used',
+                label: 'Usage',
                 value: kwh.toStringAsFixed(0),
                 unit: 'kWh',
                 color: AppColors.accent2,
               ),
             ),
             SizedBox(width: 10.w),
-            Expanded(
-              child: _BillStat(
-                bill: bill,
-                monthLabel: monthLabel,
-              ),
-            ),
+            Expanded(child: _BillStat(bill: bill)),
           ],
         ),
+        if (status != null) ...[
+          SizedBox(height: 9.h),
+          status!,
+        ],
       ],
     );
   }
@@ -100,13 +113,9 @@ class _SummaryStat extends StatelessWidget {
 }
 
 class _BillStat extends StatelessWidget {
-  const _BillStat({
-    required this.bill,
-    required this.monthLabel,
-  });
+  const _BillStat({required this.bill});
 
   final double bill;
-  final String monthLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -120,7 +129,7 @@ class _BillStat extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Est. Bill', style: AppTextStyles.caption),
+          Text('Est. bill', style: AppTextStyles.caption),
           SizedBox(height: 4.h),
           Text(
             'RM ${bill.toStringAsFixed(2)}',
@@ -128,7 +137,7 @@ class _BillStat extends StatelessWidget {
           ),
           SizedBox(height: 2.h),
           Text(
-            monthLabel,
+            'Month-to-date',
             style: AppTextStyles.caption.copyWith(
               color: AppColors.text3,
               fontSize: 10.sp,
