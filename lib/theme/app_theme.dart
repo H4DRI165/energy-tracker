@@ -194,9 +194,12 @@ abstract class AppTheme {
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) return AppColors.accent;
-          return AppColors.surface3;
+          return AppColors.text3.withValues(alpha: 0.22);
         }),
-        trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
+        trackOutlineColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return Colors.transparent;
+          return AppColors.text3.withValues(alpha: 0.5);
+        }),
       ),
 
       checkboxTheme: CheckboxThemeData(
