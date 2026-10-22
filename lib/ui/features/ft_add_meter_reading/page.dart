@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:energy_tracker/app.dart';
 import 'package:energy_tracker/ui/features/ft_add_meter_reading/notifier/notifier.dart';
 import 'package:energy_tracker/ui/features/ft_dashboard/notifier/dashboard_notifier.dart';
@@ -60,20 +62,22 @@ class _Header extends StatelessWidget {
       ),
       child: Row(
         children: [
-          GestureDetector(
-            onTap: () => context.pop(),
-            child: Container(
-              width: 36.r,
-              height: 36.r,
-              decoration: BoxDecoration(
-                color: AppColors.surface2,
+          IconButton(
+            onPressed: () => context.pop(),
+            tooltip: 'Back',
+            icon: Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: 16.r,
+            ),
+            style: IconButton.styleFrom(
+              minimumSize: Size(44.r, 44.r),
+              maximumSize: Size(44.r, 44.r),
+              padding: EdgeInsets.zero,
+              backgroundColor: AppColors.surface2,
+              foregroundColor: AppColors.text2,
+              side: BorderSide(color: AppColors.border),
+              shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Icon(
-                Icons.arrow_back_ios_new_rounded,
-                size: 16.r,
-                color: AppColors.text2,
               ),
             ),
           ),
@@ -166,8 +170,41 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
               isEdit: _isEdit,
               onPick: () => _pickDate(context),
             ),
+            if (_isEdit) ...[
+              SizedBox(height: 6.h),
+              Row(
+                children: [
+                  Icon(
+                    Icons.lock_outline_rounded,
+                    size: 12.r,
+                    color: AppColors.text3,
+                  ),
+                  SizedBox(width: 4.w),
+                  Expanded(
+                    child: Text(
+                      'Date is fixed while editing. Delete and re-add to '
+                      'change it.',
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.text3,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
             SizedBox(height: 16.h),
-            Text('Meter Reading (kWh)', style: AppTextStyles.label),
+            Row(
+              children: [
+                Text('Meter Reading (kWh)', style: AppTextStyles.label),
+                const Spacer(),
+                Text(
+                  'Full reading, not usage',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.text3,
+                  ),
+                ),
+              ],
+            ),
             SizedBox(height: 6.h),
             _MeterReadingField(
               controller: _readingController,
@@ -228,6 +265,7 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
   }
 
   Future<void> _handleSave() async {
+    FocusScope.of(context).unfocus();
     final readingState = ref.read(addReadingProvider);
 
     if (_isEdit) {
@@ -298,32 +336,17 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
         ),
       );
 
-      if (context.mounted) {
-        await Future.wait([
-          ref.read(usageProvider.notifier).refresh(),
-          ref.read(dashboardProvider.notifier).refresh(),
-        ]);
+      final refresh = Future.wait([
+        ref.read(usageProvider.notifier).refresh(),
+        ref.read(dashboardProvider.notifier).refresh(),
+      ]);
 
-        if (mounted) {
-          context.pop();
-        }
-      }
-    } else if (mounted) {
-      final message =
-          ref.read(addReadingProvider).errorMessage ??
-          'Could not save the reading. Please try again.';
+      if (mounted) context.pop();
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            message,
-            style: TextStyle(color: AppColors.onAccent),
-          ),
-          backgroundColor: AppColors.danger,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-          ),
+      unawaited(
+        refresh.then<void>(
+          (_) {},
+          onError: (Object _, StackTrace _) {},
         ),
       );
     }
@@ -345,11 +368,16 @@ class _LastReadingCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isLoading = ref.watch(
-      addReadingProvider.select((s) => s.isLoadingLastReading),
+    final data = ref.watch(
+      addReadingProvider.select(
+        (s) => (
+          isLoading: s.isLoadingLastReading,
+          loadError: s.loadError,
+        ),
+      ),
     );
 
-    if (isLoading) {
+    if (data.isLoading) {
       return Container(
         width: double.infinity,
         padding: EdgeInsets.all(20.r),
@@ -366,11 +394,70 @@ class _LastReadingCard extends ConsumerWidget {
       );
     }
 
+    if (data.loadError != null) {
+      return _ReadingLoadErrorCard(message: data.loadError!);
+    }
+
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(20.r),
       decoration: _cardDecoration,
       child: const _LastReadingCardContent(),
+    );
+  }
+}
+
+class _ReadingLoadErrorCard extends ConsumerWidget {
+  const _ReadingLoadErrorCard({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(20.r),
+      decoration: BoxDecoration(
+        color: AppColors.danger.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
+        border: Border.all(color: AppColors.danger.withValues(alpha: 0.28)),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.cloud_off_rounded,
+            size: 22.r,
+            color: AppColors.danger,
+          ),
+          SizedBox(height: 8.h),
+          Text(
+            'Could not check your readings',
+            textAlign: TextAlign.center,
+            style: AppTextStyles.bodyMd.copyWith(fontWeight: FontWeight.w700),
+          ),
+          SizedBox(height: 4.h),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: AppTextStyles.caption.copyWith(
+              color: AppColors.text3,
+              height: 1.4,
+            ),
+          ),
+          SizedBox(height: 6.h),
+          TextButton.icon(
+            onPressed: () => ref
+                .read(addReadingProvider.notifier)
+                .retryLoadingSurroundingReadings(),
+            icon: Icon(Icons.refresh_rounded, size: 16.r),
+            label: const Text('Retry'),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.danger,
+              visualDensity: VisualDensity.compact,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -429,10 +516,14 @@ class _LastReadingCardContent extends ConsumerWidget {
                   color: AppColors.warn,
                 ),
                 SizedBox(width: 6.w),
-                Text(
-                  'Must be below ${data.nextReading!.toStringAsFixed(0)} '
-                  'kWh (${data.nextReadingDate})',
-                  style: AppTextStyles.caption.copyWith(color: AppColors.warn),
+                Flexible(
+                  child: Text(
+                    'Must be below ${data.nextReading!.toStringAsFixed(0)} '
+                    'kWh (${data.nextReadingDate})',
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.warn,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -596,15 +687,22 @@ class _AutoCalcCard extends ConsumerWidget {
           hasUsage: s.hasUsage,
           lastReadingDate: s.lastReadingDate,
           isLoading: s.isLoadingLastReading,
+          loadError: s.loadError,
+          isSameAsLastReading: s.isSameAsLastReading,
         ),
       ),
     );
 
-    if (data.isLoading) return const SizedBox.shrink();
+    if (data.isLoading || data.loadError != null) {
+      return const SizedBox.shrink();
+    }
 
     if (!data.hasUsage) {
       if (!isEdit && data.lastReadingDate == null) {
         return const _BaselineHintCard();
+      }
+      if (data.isSameAsLastReading) {
+        return const _NoUsageHintCard();
       }
       return const SizedBox.shrink();
     }
@@ -630,12 +728,22 @@ class _AutoCalcCard extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                '⚡ Auto Calculated',
-                style: AppTextStyles.bodySm.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.accent,
-                ),
+              Row(
+                children: [
+                  Icon(
+                    Icons.calculate_outlined,
+                    size: 15.r,
+                    color: AppColors.accent,
+                  ),
+                  SizedBox(width: 6.w),
+                  Text(
+                    'Estimated impact',
+                    style: AppTextStyles.bodySm.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.accent,
+                    ),
+                  ),
+                ],
               ),
               SizedBox(height: 10.h),
               _CalcRow(
@@ -645,15 +753,16 @@ class _AutoCalcCard extends ConsumerWidget {
               ),
               SizedBox(height: 8.h),
               _CalcRow(
-                label: 'Total usage this month',
+                label: 'Month-to-date usage',
                 value: '${cumulativeKwh.toStringAsFixed(0)} kWh',
                 valueColor: AppColors.text,
               ),
               SizedBox(height: 8.h),
               _CalcRow(
-                label: 'Est. cost added',
-                value: 'RM ${incrementalCost.toStringAsFixed(0)}',
+                label: 'Estimated cost added',
+                value: '~RM ${incrementalCost.toStringAsFixed(2)}',
                 valueColor: AppColors.text,
+                onInfoTap: () => _showEstimatedCostInfo(context),
               ),
               SizedBox(height: 10.h),
               Divider(color: AppColors.border, height: 1),
@@ -675,6 +784,83 @@ class _AutoCalcCard extends ConsumerWidget {
           ),
         ),
         SizedBox(height: 16.h),
+      ],
+    );
+  }
+}
+
+void _showEstimatedCostInfo(BuildContext context) {
+  unawaited(
+    showAppBottomSheet<void>(
+      context: context,
+      builder: (_) => AppBottomSheet(
+        header: Text(
+          'Estimated cost added',
+          style: AppTextStyles.bodyLg.copyWith(fontWeight: FontWeight.w700),
+        ),
+        child: Text(
+          'This is the estimated change to this month’s TNB bill after adding '
+          'this reading. It includes the domestic tariff, EEI rebate and '
+          'applicable taxes.\n\nIt is not a separate charge, and your actual '
+          'TNB bill may differ.',
+          style: AppTextStyles.bodyMd.copyWith(
+            color: AppColors.text2,
+            height: 1.5,
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+class _NoUsageHintCard extends StatelessWidget {
+  const _NoUsageHintCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Container(
+          padding: EdgeInsets.all(14.r),
+          decoration: BoxDecoration(
+            color: AppColors.surface2,
+            borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                Icons.info_outline_rounded,
+                size: 18.r,
+                color: AppColors.text3,
+              ),
+              SizedBox(width: 10.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'No usage since the last reading',
+                      style: AppTextStyles.bodySm.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    SizedBox(height: 4.h),
+                    Text(
+                      'Check the number if your meter should have moved.',
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.text3,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 10.h),
       ],
     );
   }
@@ -765,21 +951,52 @@ class _CalcRow extends StatelessWidget {
     required this.label,
     required this.value,
     required this.valueColor,
+    this.onInfoTap,
   });
 
   final String label;
   final String value;
   final Color valueColor;
+  final VoidCallback? onInfoTap;
 
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: AppTextStyles.bodyMd.copyWith(color: AppColors.text2),
+        Expanded(
+          child: Row(
+            children: [
+              Flexible(
+                child: Text(
+                  label,
+                  style: AppTextStyles.bodyMd.copyWith(
+                    color: AppColors.text2,
+                  ),
+                ),
+              ),
+              if (onInfoTap != null) ...[
+                SizedBox(width: 4.w),
+                SizedBox(
+                  width: 24.r,
+                  height: 24.r,
+                  child: IconButton(
+                    onPressed: onInfoTap,
+                    tooltip: 'About estimated cost',
+                    padding: EdgeInsets.zero,
+                    constraints: BoxConstraints.tightFor(
+                      width: 24.r,
+                      height: 24.r,
+                    ),
+                    iconSize: 14.r,
+                    color: AppColors.text3,
+                    icon: const Icon(Icons.info_outline_rounded),
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
+        SizedBox(width: 12.w),
         Text(
           value,
           style: AppTextStyles.bodyMd.copyWith(
@@ -882,6 +1099,9 @@ class _SaveButton extends ConsumerWidget {
     final readingError = ref.watch(
       addReadingProvider.select((s) => s.readingError),
     );
+    final loadError = ref.watch(
+      addReadingProvider.select((s) => s.loadError),
+    );
     final hasReading = ref.watch(
       addReadingProvider.select((s) => s.currentReading > 0),
     );
@@ -889,6 +1109,8 @@ class _SaveButton extends ConsumerWidget {
     final String? disabledReason;
     if (isLoadingLastReading) {
       disabledReason = 'Checking your previous reading…';
+    } else if (loadError != null) {
+      disabledReason = 'Retry the reading lookup above to save';
     } else if (readingError == null && !hasReading) {
       disabledReason = 'Enter a reading above 0 to save';
     } else {
