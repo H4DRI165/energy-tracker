@@ -321,8 +321,9 @@ class _SweepOverlay extends StatelessWidget {
             animation: animation,
             builder: (context, _) {
               final t = Curves.easeInOutCubic.transform(animation.value);
+              final ltr = toDark;
 
-              // Edge travels from fully off-left to fully off-right.
+              // Edge position in sweep space
               final edge = -feather + (w + feather) * t;
               final a = (edge / w).clamp(0.0, 1.0);
               final b = ((edge + feather) / w).clamp(0.0, 1.0);
@@ -332,9 +333,12 @@ class _SweepOverlay extends StatelessWidget {
               final moonOpacity = ((p - 0.3) / 0.7).clamp(0.0, 1.0);
               final glow = Color.lerp(_sunColor, _moonColor, p)!;
 
-              final presence = math.sin(math.pi * t); // 0 → 1 → 0
-              final orbX = edge + feather / 2;
-              final orbY = h * 0.28 - presence * h * 0.08; // gentle arc
+              final presence = math.sin(math.pi * t);
+
+              // Screen-space positions: mirror when sweeping right to left.
+              final bandLeft = ltr ? edge : w - edge - feather;
+              final orbCenterX = bandLeft + feather / 2;
+              final orbY = h * 0.28 - presence * h * 0.08;
 
               return Stack(
                 alignment: Alignment.topLeft,
@@ -343,13 +347,16 @@ class _SweepOverlay extends StatelessWidget {
                   ShaderMask(
                     blendMode: BlendMode.dstIn,
                     shaderCallback: (rect) => LinearGradient(
+                      // Mirror the gradient direction and stops for R→L.
+                      begin: ltr ? Alignment.centerLeft : Alignment.centerRight,
+                      end: ltr ? Alignment.centerRight : Alignment.centerLeft,
                       colors: const [Color(0x00000000), Color(0xFF000000)],
                       stops: [a, b],
                     ).createShader(rect),
                     child: RawImage(image: image, fit: BoxFit.fill),
                   ),
                   Positioned(
-                    left: edge,
+                    left: bandLeft,
                     width: feather,
                     top: 0,
                     bottom: 0,
@@ -366,7 +373,7 @@ class _SweepOverlay extends StatelessWidget {
                     ),
                   ),
                   Positioned(
-                    left: orbX - orbSize / 2,
+                    left: orbCenterX - orbSize / 2,
                     top: orbY - orbSize / 2,
                     width: orbSize,
                     height: orbSize,

@@ -45,6 +45,71 @@ void main() {
     },
   );
 
+  test('blocks saving when surrounding readings could not be loaded', () {
+    const state = AddReadingPageState(
+      isLoadingLastReading: false,
+      currentReading: 500,
+      loadError: 'Could not load your previous reading.',
+    );
+
+    expect(state.canSave, isFalse);
+  });
+
+  test('identifies a reading that matches the previous meter value', () {
+    final state = AddReadingPageState(
+      isLoadingLastReading: false,
+      lastReading: 500,
+      lastReadingDate: DateTime(2026, 6, 20, 14, 30),
+      selectedDate: DateTime(2026, 6, 20, 18, 5),
+      currentReading: 500,
+    );
+
+    expect(state.usageKwh, 0);
+    expect(state.hasUsage, isFalse);
+    expect(state.isSameAsLastReading, isTrue);
+  });
+
+  test('includes a same-day reading in the cost preview', () {
+    final selectedDate = DateTime(2026, 10, 22);
+    final state = AddReadingPageState(
+      isLoadingLastReading: false,
+      lastReading: 300,
+      lastReadingDate: selectedDate,
+      selectedDate: selectedDate,
+      currentReading: 341,
+      monthToDateKwhBeforeThisReading: 300,
+    );
+
+    expect(state.usageKwh, 41);
+    expect(state.currentMonthUsageShare, 41);
+    expect(state.cumulativeKwh, 341);
+    expect(state.incrementalCost(), closeTo(15.39, 0.01));
+  });
+
+  test('shows the time for readings recorded on the same day', () {
+    final state = AddReadingPageState(
+      isLoadingLastReading: false,
+      lastReading: 500,
+      lastReadingDate: DateTime(2026, 6, 20, 14, 30),
+      nextReadingDate: DateTime(2026, 6, 20, 18, 5),
+      currentReading: 520,
+    );
+
+    expect(state.formattedLastReadingDate, 'Jun 20, 2:30 PM');
+    expect(state.formattedNextReadingDate, 'Jun 20, 6:05 PM');
+  });
+
+  test('keeps date-only labels for backdated readings', () {
+    final state = AddReadingPageState(
+      isLoadingLastReading: false,
+      lastReading: 500,
+      lastReadingDate: DateTime(2026, 6, 20),
+      currentReading: 520,
+    );
+
+    expect(state.formattedLastReadingDate, 'Jun 20');
+  });
+
   test('only previews the current month share of a long gap', () {
     final state = AddReadingPageState(
       isLoadingLastReading: false,

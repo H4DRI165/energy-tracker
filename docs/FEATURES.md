@@ -17,6 +17,8 @@ Current shipped behaviour, grouped by product area.
 
 - Email/password and Google sign-in.
 - Register, sign in and forgot-password pages share one animated auth shell.
+- The auth shell uses a full-width form on phones and a centered card on
+  tablets.
 - Email and password autofill hints, keyboard actions, password visibility
   toggles and accessible tap targets.
 - Password rules are enforced consistently: 8+ characters, uppercase letter,
@@ -43,6 +45,8 @@ Current shipped behaviour, grouped by product area.
 ## Dashboard
 
 - Month-to-date bill and projected full-month bill.
+- Projected bill is explained in plain language, including the daily-average
+  assumption and projected month-end kWh.
 - Budget progress with 80% and 100% states.
 - Same-period comparison against the previous month.
 - Daily average compared with a budget-derived daily target.
@@ -59,6 +63,8 @@ Current shipped behaviour, grouped by product area.
 - Automatic kWh delta, interval start and EEI tier.
 - Reading cannot be lower than the previous reading.
 - Long gaps are split across months and flagged as estimated.
+- The cost preview uses the same monthly allocation as the saved usage page,
+  including same-day readings.
 - Offline saves fail with a clear message instead of waiting forever.
 - Edit mode keeps the original date fixed.
 
@@ -100,6 +106,8 @@ Current shipped behaviour, grouped by product area.
 ## Settings
 
 - Profile card with edit profile.
+- Edit Profile supports avatar change/removal, locked fields while saving and
+  discard confirmation for unsaved changes.
 - Preferences: monthly budget, dark mode and notification settings.
 - Tools: tariff calculator.
 - About: version.
@@ -122,6 +130,10 @@ Current shipped behaviour, grouped by product area.
 - Animated palette transition with contrast-safe colors.
 - Shared bottom-sheet system with consistent animation, surface, handle,
   safe-area and scrolling.
+- Skeleton placeholders on first load; existing content stays visible during
+  refresh.
+- Responsive content widths keep the main tabs readable on tablets.
+- Animated bill and usage values ease between updates.
 - Notched centre add-reading FAB in the bottom navigation.
 - Bundled Lato and DM Sans fonts; no runtime font downloads.
 

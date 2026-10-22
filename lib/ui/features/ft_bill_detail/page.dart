@@ -83,13 +83,7 @@ class _BillDetailPageState extends ConsumerState<BillDetailPage> {
       );
     }
 
-    return SingleChildScrollView(
-      padding: EdgeInsets.symmetric(
-        horizontal: AppDimensions.screenPaddingH,
-        vertical: 8.h,
-      ),
-      child: _BodyContent(onEditReading: _handleEditReading),
-    );
+    return _BodyContent(onEditReading: _handleEditReading);
   }
 
   Future<void> _handleEditReading(ReadingRecord r) async {
@@ -160,22 +154,46 @@ class _BodyContent extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _BillSummaryCard(bill: bill),
-        SizedBox(height: 16.h),
-        BillBreakdownCard(
-          items: TariffRates.breakdownFor(
-            bill.kwh,
-            billingMonth: bill.date,
+        Padding(
+          padding: EdgeInsets.fromLTRB(
+            AppDimensions.screenPaddingH,
+            12.h,
+            AppDimensions.screenPaddingH,
+            0,
           ),
-          emptyLabel: 'No data available.',
-          padding: EdgeInsets.all(16.r),
+          child: _BillSummaryCard(bill: bill),
         ),
         SizedBox(height: 16.h),
-        _ReadingsSection(
-          bill: bill,
-          onEditReading: onEditReading,
+        Expanded(
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: EdgeInsets.fromLTRB(
+              AppDimensions.screenPaddingH,
+              0,
+              AppDimensions.screenPaddingH,
+              24.h,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                BillBreakdownCard(
+                  items: TariffRates.breakdownFor(
+                    bill.kwh,
+                    billingMonth: bill.date,
+                  ),
+                  emptyLabel: 'No data available.',
+                  padding: EdgeInsets.all(16.r),
+                ),
+                SizedBox(height: 16.h),
+                _ReadingsSection(
+                  bill: bill,
+                  onEditReading: onEditReading,
+                ),
+                SizedBox(height: 24.h),
+              ],
+            ),
+          ),
         ),
-        SizedBox(height: 24.h),
       ],
     );
   }
@@ -263,8 +281,9 @@ class _BillSummaryCard extends StatelessWidget {
             ],
           ),
           SizedBox(height: 6.h),
-          Text(
-            'RM ${bill.amount.toStringAsFixed(2)}',
+          AnimatedNumberText(
+            value: bill.amount,
+            formatter: (value) => 'RM ${value.toStringAsFixed(2)}',
             style: AppTextStyles.displayLg.copyWith(color: AppColors.text),
           ),
           SizedBox(height: 14.h),
@@ -280,6 +299,9 @@ class _BillSummaryCard extends StatelessWidget {
                 child: _BillSummaryStat(
                   label: 'ENERGY USED',
                   value: '${bill.kwh.toStringAsFixed(0)} kWh',
+                  animatedValue: bill.kwh,
+                  animatedFormatter: (value) =>
+                      '${value.toStringAsFixed(0)} kWh',
                 ),
               ),
               const _SummaryDivider(),
@@ -289,6 +311,9 @@ class _BillSummaryCard extends StatelessWidget {
                   value: effectiveRate == null
                       ? '—'
                       : 'RM ${effectiveRate.toStringAsFixed(2)}',
+                  animatedValue: effectiveRate,
+                  animatedFormatter: (value) =>
+                      'RM ${value.toStringAsFixed(2)}',
                   detail: effectiveRate == null ? null : 'per kWh',
                 ),
               ),
@@ -313,17 +338,29 @@ class _BillSummaryStat extends StatelessWidget {
   const _BillSummaryStat({
     required this.label,
     required this.value,
+    this.animatedValue,
+    this.animatedFormatter,
     this.detail,
     this.valueColor,
   });
 
   final String label;
   final String value;
+  final double? animatedValue;
+  final String Function(double value)? animatedFormatter;
   final String? detail;
   final Color? valueColor;
 
   @override
   Widget build(BuildContext context) {
+    final valueStyle = AppTextStyles.bodyMd.copyWith(
+      fontSize: 15.sp,
+      fontWeight: FontWeight.w700,
+      color: valueColor ?? AppColors.text,
+    );
+    final animatedValue = this.animatedValue;
+    final animatedFormatter = this.animatedFormatter;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -336,16 +373,21 @@ class _BillSummaryStat extends StatelessWidget {
           ),
         ),
         SizedBox(height: 5.h),
-        Text(
-          value,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: AppTextStyles.bodyMd.copyWith(
-            fontSize: 15.sp,
-            fontWeight: FontWeight.w700,
-            color: valueColor ?? AppColors.text,
+        if (animatedValue != null && animatedFormatter != null)
+          AnimatedNumberText(
+            value: animatedValue,
+            formatter: animatedFormatter,
+            style: valueStyle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          )
+        else
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: valueStyle,
           ),
-        ),
         if (detail != null) ...[
           SizedBox(height: 2.h),
           Text(

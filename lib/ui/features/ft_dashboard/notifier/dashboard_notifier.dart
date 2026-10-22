@@ -140,10 +140,9 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState>
 
       final projectedKwh =
           dailyAvg * DateUtils.getDaysInMonth(now.year, now.month);
-      final projectedBill = TariffRates.calculate(
-        projectedKwh,
-        billingMonth: now,
-      );
+      final projectedBill = kwhUsed > 0
+          ? TariffRates.calculate(projectedKwh, billingMonth: now)
+          : null;
       final weeklyUsage = _buildWeeklyUsage(weeklyKwh, now);
 
       return DashboardPageState(
@@ -155,6 +154,7 @@ class DashboardNotifier extends AsyncNotifier<DashboardPageState>
         daysLeft: daysLeft,
         percentageVsLastMonth: percentVsLast,
         projectedBill: projectedBill,
+        projectedKwh: projectedBill == null ? null : projectedKwh,
         weeklyUsage: weeklyUsage,
         readingCount: readings.length,
       );

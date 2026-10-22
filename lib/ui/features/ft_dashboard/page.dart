@@ -25,21 +25,8 @@ class DashboardPage extends ConsumerWidget {
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
               state.when(
-                loading: () =>
-                    const SliverToBoxAdapter(child: SizedBox.shrink()),
-                error: (_, _) =>
-                    const SliverToBoxAdapter(child: SizedBox.shrink()),
-                data: (state) => SliverToBoxAdapter(
-                  child: _Header(
-                    greeting: notifier.greeting,
-                  ),
-                ),
-              ),
-              state.when(
-                loading: () => SliverFillRemaining(
-                  child: Center(
-                    child: CircularProgressIndicator(color: AppColors.accent),
-                  ),
+                loading: () => const SliverToBoxAdapter(
+                  child: DashboardSkeleton(),
                 ),
                 error: (_, _) => SliverFillRemaining(
                   hasScrollBody: false,
@@ -86,52 +73,6 @@ class DashboardPage extends ConsumerWidget {
   }
 }
 
-class _Header extends ConsumerWidget {
-  const _Header({
-    required this.greeting,
-  });
-
-  final String greeting;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(dashboardProvider).value;
-
-    if (state == null) {
-      return const SizedBox.shrink();
-    }
-
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        AppDimensions.screenPaddingH,
-        12.sp,
-        AppDimensions.screenPaddingH,
-        16.sp,
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  greeting,
-                  style: AppTextStyles.bodySm.copyWith(color: AppColors.text2),
-                ),
-                SizedBox(height: 2.h),
-                Text(
-                  '${state.userName} ${state.greetingEmoji}',
-                  style: AppTextStyles.titleMd,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _BodyContent extends ConsumerWidget {
   const _BodyContent();
 
@@ -164,8 +105,11 @@ class _BodyContent extends ConsumerWidget {
             ),
           ),
         SliverPadding(
-          padding: EdgeInsets.symmetric(
-            horizontal: AppDimensions.screenPaddingH,
+          padding: EdgeInsets.fromLTRB(
+            AppContentWidth.horizontalPadding(context),
+            20.h,
+            AppContentWidth.horizontalPadding(context),
+            0,
           ),
           sliver: SliverList(
             delegate: SliverChildListDelegate(
@@ -179,6 +123,10 @@ class _BodyContent extends ConsumerWidget {
                   SizedBox(height: 14.h),
                 ],
                 const BillSummaryCard(),
+                if (state.projectedBill != null) ...[
+                  SizedBox(height: 14.h),
+                  const ProjectedBillCard(),
+                ],
                 SizedBox(height: 14.h),
                 const StatCardsRow(),
                 SizedBox(height: 14.h),
@@ -310,7 +258,7 @@ class ErrorBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.symmetric(
-        horizontal: AppDimensions.screenPaddingH,
+        horizontal: AppContentWidth.horizontalPadding(context),
         vertical: 8.h,
       ),
       child: Material(

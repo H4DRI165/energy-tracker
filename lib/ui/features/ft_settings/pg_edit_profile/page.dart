@@ -19,44 +19,105 @@ class EditProfilePage extends ConsumerStatefulWidget {
 }
 
 class _EditProfilePageState extends ConsumerState<EditProfilePage> {
+  bool _allowPop = false;
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(editProfileProvider);
     final hasChanges = state.value?.hasChanges ?? false;
+    final errorMessage = state.value?.errorMessage;
 
-    return GestureDetector(
-      onTap: () => FocusScope.of(context).unfocus(),
-      behavior: HitTestBehavior.opaque,
-      child: Scaffold(
-        backgroundColor: AppColors.bg,
-        body: SafeArea(
-          child: Column(
-            children: [
-              _Header(
-                isSaving: state.value?.isSaving ?? false,
-                hasChanges: hasChanges,
-                onSave: _handleSave,
-              ),
-              Expanded(
-                child: state.when(
-                  loading: () => Center(
-                    child: CircularProgressIndicator(color: AppColors.accent),
-                  ),
-                  error: (_, _) => ErrorView(
-                    onRetry: () => ref.invalidate(editProfileProvider),
-                    message: 'Failed to load profile',
-                  ),
-                  data: (state) => const _BodyContent(),
+    return PopScope(
+      canPop: _allowPop || !hasChanges,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) unawaited(_handleSystemBack());
+      },
+      child: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        behavior: HitTestBehavior.opaque,
+        child: Scaffold(
+          backgroundColor: AppColors.bg,
+          body: SafeArea(
+            child: Column(
+              children: [
+                _Header(
+                  isSaving: state.value?.isSaving ?? false,
+                  hasChanges: hasChanges,
+                  onBack: _handleBack,
+                  onSave: _handleSave,
                 ),
-              ),
-            ],
+                if (errorMessage != null)
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      AppDimensions.screenPaddingH,
+                      0,
+                      AppDimensions.screenPaddingH,
+                      12.h,
+                    ),
+                    child: _StatusBanner(
+                      message: errorMessage,
+                      isError: true,
+                    ),
+                  ),
+                Expanded(
+                  child: state.when(
+                    loading: () => Center(
+                      child: CircularProgressIndicator(color: AppColors.accent),
+                    ),
+                    error: (_, _) => ErrorView(
+                      onRetry: () => ref.invalidate(editProfileProvider),
+                      message: 'Failed to load profile',
+                    ),
+                    data: (state) => const _BodyContent(),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
+  Future<void> _handleBack() async {
+    final state = ref.read(editProfileProvider).value;
+    if (state?.isSaving ?? false) return;
+    if (!(state?.hasChanges ?? false)) {
+      context.pop();
+      return;
+    }
+    if (await _confirmDiscard() && mounted) {
+      context.pop();
+    }
+  }
+
+  Future<void> _handleSystemBack() async {
+    final state = ref.read(editProfileProvider).value;
+    if (state?.isSaving ?? false) return;
+    if (!(state?.hasChanges ?? false)) {
+      context.pop();
+      return;
+    }
+    if (await _confirmDiscard() && mounted) {
+      context.pop();
+    }
+  }
+
+  Future<bool> _confirmDiscard() async {
+    final discard = await ConfirmDialog.show(
+      context,
+      title: 'Discard changes?',
+      message: 'Your profile changes have not been saved.',
+      confirmLabel: 'Discard',
+      confirmColor: AppColors.danger,
+    );
+    if (!discard || !mounted) return false;
+    setState(() => _allowPop = true);
+    return true;
+  }
+
   Future<void> _handleSave() async {
+    FocusScope.of(context).unfocus();
     final hadChanges = ref.read(editProfileProvider).value?.hasChanges ?? false;
     final success = await ref.read(editProfileProvider.notifier).save();
 
@@ -88,17 +149,24 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
       ),
     );
 
-    if (!hadChanges) {
-      return;
-    }
+    if (!hadChanges) return;
 
-    await Future.wait([
+    final refresh = Future.wait([
       ref.read(dashboardProvider.notifier).refresh(),
       ref.read(settingsProvider.notifier).refresh(),
     ]);
 
-    if (!mounted) return;
-    context.pop();
+    if (mounted) {
+      setState(() => _allowPop = true);
+      context.pop();
+    }
+
+    unawaited(
+      refresh.then<void>(
+        (_) {},
+        onError: (Object _, StackTrace _) {},
+      ),
+    );
   }
 }
 
@@ -106,15 +174,19 @@ class _Header extends StatelessWidget {
   const _Header({
     required this.isSaving,
     required this.hasChanges,
+    required this.onBack,
     required this.onSave,
   });
 
   final bool isSaving;
   final bool hasChanges;
+  final VoidCallback onBack;
   final VoidCallback onSave;
 
   @override
   Widget build(BuildContext context) {
+    final canSave = hasChanges && !isSaving;
+
     return Padding(
       padding: EdgeInsets.fromLTRB(
         AppDimensions.screenPaddingH,
@@ -124,20 +196,23 @@ class _Header extends StatelessWidget {
       ),
       child: Row(
         children: [
-          GestureDetector(
-            onTap: () => context.pop(),
-            child: Container(
-              width: 36.r,
-              height: 36.r,
-              decoration: BoxDecoration(
-                color: AppColors.surface2,
+          IconButton(
+            onPressed: isSaving ? null : onBack,
+            tooltip: 'Back',
+            icon: Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: 16.r,
+            ),
+            style: IconButton.styleFrom(
+              minimumSize: Size(44.r, 44.r),
+              maximumSize: Size(44.r, 44.r),
+              padding: EdgeInsets.zero,
+              backgroundColor: AppColors.surface2,
+              foregroundColor: AppColors.text2,
+              disabledForegroundColor: AppColors.text3,
+              side: BorderSide(color: AppColors.border),
+              shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Icon(
-                Icons.arrow_back_ios_new_rounded,
-                size: 16.r,
-                color: AppColors.text2,
               ),
             ),
           ),
@@ -145,41 +220,52 @@ class _Header extends StatelessWidget {
           Expanded(
             child: Text('Edit Profile', style: AppTextStyles.titleMd),
           ),
-          GestureDetector(
-            onTap: (isSaving || !hasChanges) ? null : onSave,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: EdgeInsets.symmetric(
-                horizontal: 16.w,
-                vertical: 8.h,
+          Semantics(
+            button: true,
+            enabled: canSave,
+            label: isSaving ? 'Saving profile' : 'Save profile',
+            child: Material(
+              color: Colors.transparent,
+              child: Ink(
+                decoration: BoxDecoration(
+                  gradient: hasChanges ? AppColors.primaryGradient : null,
+                  color: hasChanges ? null : AppColors.surface2,
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+                  border: hasChanges
+                      ? null
+                      : Border.all(color: AppColors.border),
+                  boxShadow: hasChanges ? AppColors.btnPrimaryShadow : null,
+                ),
+                child: InkWell(
+                  onTap: canSave ? onSave : null,
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+                  child: Container(
+                    constraints: BoxConstraints(minHeight: 44.r),
+                    padding: EdgeInsets.symmetric(horizontal: 16.w),
+                    alignment: Alignment.center,
+                    child: isSaving
+                        ? SizedBox(
+                            width: 16.r,
+                            height: 16.r,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: hasChanges
+                                  ? AppColors.onAccent
+                                  : AppColors.text3,
+                            ),
+                          )
+                        : Text(
+                            'Save',
+                            style: AppTextStyles.bodyMd.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: hasChanges
+                                  ? AppColors.onAccent
+                                  : AppColors.text3,
+                            ),
+                          ),
+                  ),
+                ),
               ),
-              decoration: BoxDecoration(
-                gradient: hasChanges ? AppColors.primaryGradient : null,
-                color: hasChanges ? null : AppColors.surface2,
-                borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-                border: hasChanges ? null : Border.all(color: AppColors.border),
-                boxShadow: hasChanges ? AppColors.btnPrimaryShadow : null,
-              ),
-              child: isSaving
-                  ? SizedBox(
-                      width: 16.r,
-                      height: 16.r,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: hasChanges
-                            ? AppColors.onAccent
-                            : AppColors.text3,
-                      ),
-                    )
-                  : Text(
-                      'Save',
-                      style: AppTextStyles.bodyMd.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: hasChanges
-                            ? AppColors.onAccent
-                            : AppColors.text3,
-                      ),
-                    ),
             ),
           ),
         ],
@@ -266,11 +352,9 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
             textCapitalization: TextCapitalization.words,
             prefixIcon: Icons.person_outline_rounded,
             errorText: state.fullNameError,
+            enabled: !state.isSaving,
             maxLength: 60,
-            inputFormatters: [
-              LengthLimitingTextInputFormatter(60),
-              FilteringTextInputFormatter.allow(RegExp(r"[a-zA-Z\s'\-\.]")),
-            ],
+            inputFormatters: [LengthLimitingTextInputFormatter(60)],
           ),
           SizedBox(height: 16.h),
           AppTextField(
@@ -280,36 +364,22 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
             keyboardType: TextInputType.emailAddress,
             prefixIcon: Icons.email_outlined,
             readOnly: true,
-            trailingWidget: Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: 8.w,
-                vertical: 4.h,
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.surface3,
-                borderRadius: BorderRadius.circular(6.r),
-              ),
-              child: Text(
-                'Cannot edit',
-                style: AppTextStyles.caption.copyWith(
-                  color: AppColors.text3,
-                ),
-              ),
-            ),
+            enabled: !state.isSaving,
           ),
           SizedBox(height: 4.h),
           Text(
-            'Email address cannot be changed here. Contact support if needed.',
+            'Email is managed by your sign-in and cannot be changed here.',
             style: AppTextStyles.caption,
           ),
           SizedBox(height: 16.h),
           AppTextField(
-            label: 'TNB Account No.',
+            label: 'TNB Account No. (optional)',
             controller: _tnbController,
             hintText: 'e.g. 123456789012',
             keyboardType: TextInputType.number,
             prefixIcon: Icons.receipt_long_outlined,
             errorText: state.tnbAccountError,
+            enabled: !state.isSaving,
             maxLength: 12,
             inputFormatters: [
               FilteringTextInputFormatter.digitsOnly,
@@ -321,15 +391,6 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
             'Found on your TNB electricity bill.',
             style: AppTextStyles.caption,
           ),
-          SizedBox(height: 28.h),
-          if (state.errorMessage != null) ...[
-            _StatusBanner(
-              message: state.errorMessage!,
-              isError: true,
-            ),
-            SizedBox(height: 16.h),
-          ],
-          _AccountInfoCard(state: state),
           SizedBox(height: 32.h),
         ],
       ),
@@ -351,72 +412,154 @@ class _AvatarSection extends ConsumerWidget {
     final hasAnyImage =
         state.localPhotoFile != null || state.displayPhotoUrl != null;
 
-    return GestureDetector(
-      onTap: () => ref.read(editProfileProvider.notifier).pickAvatar(),
-      child: Center(
-        child: Stack(
-          children: [
-            Container(
-              width: 88.r,
-              height: 88.r,
-              decoration: BoxDecoration(
-                gradient: hasAnyImage ? null : AppColors.primaryGradient,
-                color: hasAnyImage ? AppColors.surface2 : null,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.accent.withValues(alpha: 0.30),
-                    blurRadius: 24,
-                    offset: const Offset(0, 8),
+    return Column(
+      children: [
+        Semantics(
+          button: true,
+          enabled: !state.isSaving,
+          label: hasAnyImage
+              ? 'Change or remove profile photo'
+              : 'Add profile photo',
+          child: GestureDetector(
+            onTap: state.isSaving
+                ? null
+                : () => _showAvatarOptions(
+                    context,
+                    ref,
+                    hasImage: hasAnyImage,
                   ),
-                ],
-              ),
-              child: ClipOval(child: _AvatarImage(state: state)),
-            ),
+            child: Center(
+              child: Stack(
+                children: [
+                  Container(
+                    width: 88.r,
+                    height: 88.r,
+                    decoration: BoxDecoration(
+                      gradient: hasAnyImage ? null : AppColors.primaryGradient,
+                      color: hasAnyImage ? AppColors.surface2 : null,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.accent.withValues(alpha: 0.30),
+                          blurRadius: 24,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: ClipOval(child: _AvatarImage(state: state)),
+                  ),
 
-            if (state.isSaving && state.localPhotoFile != null)
-              Positioned.fill(
-                child: Container(
-                  decoration: const BoxDecoration(
-                    color: Colors.black45,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: SizedBox(
-                      width: 22.r,
-                      height: 22.r,
-                      child: const CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
+                  if (state.isSaving && state.localPhotoFile != null)
+                    Positioned.fill(
+                      child: Container(
+                        decoration: const BoxDecoration(
+                          color: Colors.black45,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: SizedBox(
+                            width: 22.r,
+                            height: 22.r,
+                            child: const CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      width: 28.r,
+                      height: 28.r,
+                      decoration: BoxDecoration(
+                        color: AppColors.surface2,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: AppColors.border,
+                          width: 2,
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.camera_alt_outlined,
+                        size: 14.r,
+                        color: AppColors.text2,
                       ),
                     ),
                   ),
-                ),
-              ),
-
-            Positioned(
-              bottom: 0,
-              right: 0,
-              child: Container(
-                width: 28.r,
-                height: 28.r,
-                decoration: BoxDecoration(
-                  color: AppColors.surface2,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.border, width: 2),
-                ),
-                child: Icon(
-                  Icons.camera_alt_outlined,
-                  size: 14.r,
-                  color: AppColors.text2,
-                ),
+                ],
               ),
             ),
+          ),
+        ),
+        SizedBox(height: 8.h),
+        Text(
+          state.isSaving
+              ? 'Saving changes…'
+              : hasAnyImage
+              ? 'Tap to change photo'
+              : 'Tap to add a photo',
+          style: AppTextStyles.caption.copyWith(color: AppColors.text3),
+        ),
+      ],
+    );
+  }
+}
+
+void _showAvatarOptions(
+  BuildContext context,
+  WidgetRef ref, {
+  required bool hasImage,
+}) {
+  unawaited(
+    showAppBottomSheet<void>(
+      context: context,
+      builder: (sheetContext) => AppBottomSheet(
+        header: Text(
+          'Profile photo',
+          style: AppTextStyles.bodyLg.copyWith(fontWeight: FontWeight.w700),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(
+                Icons.photo_library_outlined,
+                color: AppColors.accent,
+              ),
+              title: const Text('Choose from gallery'),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                unawaited(
+                  ref.read(editProfileProvider.notifier).pickAvatar(),
+                );
+              },
+            ),
+            if (hasImage)
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(
+                  Icons.delete_outline_rounded,
+                  color: AppColors.danger,
+                ),
+                title: Text(
+                  'Remove photo',
+                  style: TextStyle(color: AppColors.danger),
+                ),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  ref.read(editProfileProvider.notifier).removePhoto();
+                },
+              ),
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
 }
 
 class _AvatarImage extends StatelessWidget {
@@ -504,89 +647,6 @@ class _InitialsFallback extends StatelessWidget {
           fontSize: 28.sp,
         ),
       ),
-    );
-  }
-}
-
-class _AccountInfoCard extends StatelessWidget {
-  const _AccountInfoCard({required this.state});
-  final EditProfilePageState state;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.all(16.r),
-      decoration: BoxDecoration(
-        color: AppColors.surface2,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.info_outline_rounded,
-                size: 16.r,
-                color: AppColors.accent,
-              ),
-              SizedBox(width: 8.w),
-              Text(
-                'Account Information',
-                style: AppTextStyles.bodyMd.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 14.h),
-          _InfoRow(
-            label: 'Display Name',
-            value: state.fullName.isNotEmpty ? state.fullName : '—',
-          ),
-          SizedBox(height: 8.h),
-          _InfoRow(
-            label: 'Email',
-            value: state.email.isNotEmpty ? state.email : '—',
-          ),
-          SizedBox(height: 8.h),
-          _InfoRow(
-            label: 'TNB Account',
-            value: state.tnbAccountNo.isNotEmpty ? state.tnbAccountNo : '—',
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  const _InfoRow({
-    required this.label,
-    required this.value,
-  });
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        SizedBox(
-          width: 100.w,
-          child: Text(label, style: AppTextStyles.bodySm),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            style: AppTextStyles.bodyMd.copyWith(
-              fontWeight: FontWeight.w500,
-            ),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
     );
   }
 }

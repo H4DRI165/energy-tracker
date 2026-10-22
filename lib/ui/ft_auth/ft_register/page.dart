@@ -18,44 +18,12 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   Widget build(BuildContext context) {
     return const AuthPageScaffold(
       topSpacing: 0,
-      header: _Header(),
+      header: AuthHeader(
+        title: 'Create your account',
+        subtitle: 'Start tracking your TNB usage and bills.',
+      ),
       footer: _LoginAccountRow(),
       child: _BodyContent(),
-    );
-  }
-}
-
-class _Header extends StatelessWidget {
-  const _Header();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        AuthBackButton(
-          onTap: () =>
-              context.canPop() ? context.pop() : context.go(AppRoutes.login),
-        ),
-        SizedBox(height: 4.h),
-        Text(
-          'Get Started',
-          style: AppTextStyles.overline.copyWith(color: AppColors.accent),
-        ),
-        SizedBox(height: 8.h),
-        Text(
-          'Create Account',
-          style: AppTextStyles.displayMd,
-        ),
-        SizedBox(height: 6.h),
-        Text(
-          'Track your TNB energy usage & bills',
-          style: TextStyle(
-            fontSize: 14.sp,
-            color: AppColors.text2,
-          ),
-        ),
-      ],
     );
   }
 }
@@ -286,8 +254,6 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
           isLoading: state.isLoading,
           onTap: _handleRegister,
         ),
-
-        SizedBox(height: 32.h),
       ],
     );
   }

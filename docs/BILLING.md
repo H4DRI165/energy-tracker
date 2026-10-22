@@ -91,6 +91,11 @@ six-month gap into one month.
 - First readings are baselines with zero usage.
 - Same-day readings attribute their delta to that day.
 
+The Add Reading preview uses `UsageAllocationService.monthShareForInterval` for
+the new interval and the same monthly allocation path as Usage for existing
+month-to-date usage. This keeps the preview and saved bill consistent, including
+same-day readings.
+
 ## 6. Reading edits and bill recalculation
 
 Readings form a global date-ordered chain. After an insert, edit or delete:

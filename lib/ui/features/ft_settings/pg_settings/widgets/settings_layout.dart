@@ -275,11 +275,6 @@ class SettingsToggleTile extends ConsumerWidget {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeThumbColor: AppColors.onAccent,
-            activeTrackColor: AppColors.accent,
-            inactiveTrackColor: AppColors.surface3,
-            inactiveThumbColor: AppColors.onAccent,
-            trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
         ],

@@ -43,6 +43,7 @@ class DashboardPageState {
     this.daysLeft = 0,
     this.percentageVsLastMonth = 0,
     this.projectedBill,
+    this.projectedKwh,
     this.weeklyUsage = const [],
     this.readingCount = 0,
     this.errorMessage,
@@ -58,6 +59,7 @@ class DashboardPageState {
   final int daysLeft;
   final double percentageVsLastMonth;
   final double? projectedBill;
+  final double? projectedKwh;
   final List<DailyUsage> weeklyUsage;
 
   final int readingCount;
@@ -127,6 +129,7 @@ class DashboardPageState {
     int? daysLeft,
     double? percentageVsLastMonth,
     Object? projectedBill = _unset,
+    Object? projectedKwh = _unset,
     List<DailyUsage>? weeklyUsage,
     int? readingCount,
     Object? errorMessage = _unset,
@@ -145,6 +148,9 @@ class DashboardPageState {
       projectedBill: identical(projectedBill, _unset)
           ? this.projectedBill
           : projectedBill as double?,
+      projectedKwh: identical(projectedKwh, _unset)
+          ? this.projectedKwh
+          : projectedKwh as double?,
       weeklyUsage: weeklyUsage ?? this.weeklyUsage,
       readingCount: readingCount ?? this.readingCount,
       errorMessage: identical(errorMessage, _unset)
@@ -172,6 +178,7 @@ class DashboardPageState {
           ? other.percentageVsLastMonth
           : null,
       projectedBill: other.projectedBill ?? projectedBill,
+      projectedKwh: other.projectedKwh ?? projectedKwh,
       weeklyUsage: other.weeklyUsage.isNotEmpty ? other.weeklyUsage : null,
       readingCount: other.readingCount != 0 ? other.readingCount : null,
       errorMessage: other.errorMessage ?? errorMessage,
@@ -192,6 +199,7 @@ class DashboardPageState {
         other.daysLeft == daysLeft &&
         other.percentageVsLastMonth == percentageVsLastMonth &&
         other.projectedBill == projectedBill &&
+        other.projectedKwh == projectedKwh &&
         listEquals(other.weeklyUsage, weeklyUsage) &&
         other.readingCount == readingCount &&
         other.errorMessage == errorMessage;
@@ -209,6 +217,7 @@ class DashboardPageState {
     daysLeft,
     percentageVsLastMonth,
     projectedBill,
+    projectedKwh,
     Object.hashAll(weeklyUsage),
     readingCount,
     errorMessage,

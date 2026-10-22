@@ -18,9 +18,7 @@ class UsagePage extends ConsumerWidget {
       color: AppColors.bg,
       child: SafeArea(
         child: state.when(
-          loading: () => Center(
-            child: CircularProgressIndicator(color: AppColors.accent),
-          ),
+          loading: () => const UsageSkeleton(),
           error: (e, _) => ErrorView(
             onRetry: () => ref.read(usageProvider.notifier).refresh(),
             message: 'Failed to load usage data',
@@ -53,9 +51,9 @@ class _BodyContent extends ConsumerWidget {
       children: [
         Padding(
           padding: EdgeInsets.fromLTRB(
-            AppDimensions.screenPaddingH,
-            12.h,
-            AppDimensions.screenPaddingH,
+            AppContentWidth.horizontalPadding(context),
+            20.h,
+            AppContentWidth.horizontalPadding(context),
             0,
           ),
           child: UsageSummaryRow(
@@ -75,9 +73,9 @@ class _BodyContent extends ConsumerWidget {
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               padding: EdgeInsets.fromLTRB(
-                AppDimensions.screenPaddingH,
+                AppContentWidth.horizontalPadding(context),
                 0,
-                AppDimensions.screenPaddingH,
+                AppContentWidth.horizontalPadding(context),
                 24.h,
               ),
               child: Column(
