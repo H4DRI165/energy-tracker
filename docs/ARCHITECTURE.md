@@ -140,10 +140,16 @@ calculations update without delaying launch.
 
 - `AppColors` supplies the semantic light/dark palette.
 - `AppDimensions` centralizes spacing, radii and component sizes.
+- `AppContentWidth` keeps main-tab content readable on tablets while
+  preserving normal mobile margins.
 - `AppTextStyles` supplies Lato headings and DM Sans body text.
 - `AppBottomSheet` + `showAppBottomSheet` provide one animation, surface,
   handle, safe-area and scrolling policy for all bottom sheets.
-- `AuthPageScaffold` provides the shared auth-page animation and layout.
+- `Skeleton` groups first-load placeholders under one shimmer, respects
+  reduced motion and exposes a single loading label to assistive technology.
+- `AnimatedNumberText` eases bill and usage values between updates.
+- `AuthPageScaffold` provides the shared auth-page animation, responsive
+  centered card and form scrolling behaviour.
 
 ## 11. Release pipeline
 
