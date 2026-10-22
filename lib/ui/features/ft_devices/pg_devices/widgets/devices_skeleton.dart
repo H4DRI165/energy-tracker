@@ -1,4 +1,5 @@
 import 'package:energy_tracker/theme/theme.dart';
+import 'package:energy_tracker/ui/components/display/content_width.dart';
 import 'package:energy_tracker/ui/components/display/skeleton.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -14,9 +15,9 @@ class DevicesSkeleton extends StatelessWidget {
       semanticsLabel: 'Loading appliances',
       child: ListView(
         padding: EdgeInsets.fromLTRB(
-          AppDimensions.screenPaddingH,
-          4.h,
-          AppDimensions.screenPaddingH,
+          AppContentWidth.horizontalPadding(context),
+          20.h,
+          AppContentWidth.horizontalPadding(context),
           24.h,
         ),
         children: [

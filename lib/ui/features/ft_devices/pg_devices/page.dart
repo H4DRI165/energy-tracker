@@ -27,62 +27,16 @@ class DevicesPage extends ConsumerWidget {
     return ColoredBox(
       color: AppColors.bg,
       child: SafeArea(
-        child: Column(
-          children: [
-            const _Header(),
-            Expanded(
-              child: isLoading && isEmpty
-                  ? const DevicesSkeleton()
-                  : errorMessage != null
-                  ? ErrorView(
-                      message: errorMessage,
-                      onRetry: () =>
-                          ref.read(devicesProvider.notifier).refresh(),
-                    )
-                  : isEmpty
-                  ? const _EmptyDevicesView()
-                  : const _BodyContent(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _Header extends StatelessWidget {
-  const _Header();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        AppDimensions.screenPaddingH,
-        12.h,
-        AppDimensions.screenPaddingH,
-        16.h,
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text('My Appliances', style: AppTextStyles.titleMd),
-          GestureDetector(
-            onTap: () => context.push(AppRoutes.addAppliance),
-            child: Container(
-              width: 36.r,
-              height: 36.r,
-              decoration: BoxDecoration(
-                color: AppColors.accent,
-                borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-              ),
-              child: Icon(
-                Icons.add_rounded,
-                size: 20.r,
-                color: AppColors.onAccent,
-              ),
-            ),
-          ),
-        ],
+        child: isLoading && isEmpty
+            ? const DevicesSkeleton()
+            : errorMessage != null
+            ? ErrorView(
+                message: errorMessage,
+                onRetry: () => ref.read(devicesProvider.notifier).refresh(),
+              )
+            : isEmpty
+            ? const _EmptyDevicesView()
+            : const _BodyContent(),
       ),
     );
   }
@@ -189,9 +143,9 @@ class _BodyContentState extends ConsumerState<_BodyContent>
         slivers: [
           SliverPadding(
             padding: EdgeInsets.fromLTRB(
-              AppDimensions.screenPaddingH,
-              4.h,
-              AppDimensions.screenPaddingH,
+              AppContentWidth.horizontalPadding(context),
+              20.h,
+              AppContentWidth.horizontalPadding(context),
               0,
             ),
             sliver: SliverList(
@@ -228,11 +182,29 @@ class _BodyContentState extends ConsumerState<_BodyContent>
                         ),
                       ),
                     ),
-                    if (showFilters)
+                    Tooltip(
+                      message: 'Add appliance',
+                      child: TextButton.icon(
+                        onPressed: () => context.push(AppRoutes.addAppliance),
+                        icon: Icon(Icons.add_rounded, size: 18.r),
+                        label: const Text('Add'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppColors.accent,
+                          minimumSize: const Size(0, 44),
+                          padding: EdgeInsets.symmetric(horizontal: 8.w),
+                          textStyle: AppTextStyles.bodySm.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (showFilters) ...[
+                      SizedBox(width: 2.w),
                       _SortButton(
                         sort: _sort,
                         onSelected: (value) => setState(() => _sort = value),
                       ),
+                    ],
                   ],
                 ),
                 SizedBox(height: 8.h),
@@ -242,7 +214,7 @@ class _BodyContentState extends ConsumerState<_BodyContent>
           if (visible.isEmpty)
             SliverPadding(
               padding: EdgeInsets.symmetric(
-                horizontal: AppDimensions.screenPaddingH,
+                horizontal: AppContentWidth.horizontalPadding(context),
               ),
               sliver: const SliverToBoxAdapter(
                 child: _NoFilterResults(),
@@ -251,7 +223,7 @@ class _BodyContentState extends ConsumerState<_BodyContent>
           else
             SliverPadding(
               padding: EdgeInsets.symmetric(
-                horizontal: AppDimensions.screenPaddingH,
+                horizontal: AppContentWidth.horizontalPadding(context),
               ),
               sliver: SliverList.builder(
                 itemCount: visible.length,
