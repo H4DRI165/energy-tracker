@@ -83,13 +83,7 @@ class _BillDetailPageState extends ConsumerState<BillDetailPage> {
       );
     }
 
-    return SingleChildScrollView(
-      padding: EdgeInsets.symmetric(
-        horizontal: AppDimensions.screenPaddingH,
-        vertical: 8.h,
-      ),
-      child: _BodyContent(onEditReading: _handleEditReading),
-    );
+    return _BodyContent(onEditReading: _handleEditReading);
   }
 
   Future<void> _handleEditReading(ReadingRecord r) async {
@@ -160,22 +154,46 @@ class _BodyContent extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _BillSummaryCard(bill: bill),
-        SizedBox(height: 16.h),
-        BillBreakdownCard(
-          items: TariffRates.breakdownFor(
-            bill.kwh,
-            billingMonth: bill.date,
+        Padding(
+          padding: EdgeInsets.fromLTRB(
+            AppDimensions.screenPaddingH,
+            12.h,
+            AppDimensions.screenPaddingH,
+            0,
           ),
-          emptyLabel: 'No data available.',
-          padding: EdgeInsets.all(16.r),
+          child: _BillSummaryCard(bill: bill),
         ),
         SizedBox(height: 16.h),
-        _ReadingsSection(
-          bill: bill,
-          onEditReading: onEditReading,
+        Expanded(
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: EdgeInsets.fromLTRB(
+              AppDimensions.screenPaddingH,
+              0,
+              AppDimensions.screenPaddingH,
+              24.h,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                BillBreakdownCard(
+                  items: TariffRates.breakdownFor(
+                    bill.kwh,
+                    billingMonth: bill.date,
+                  ),
+                  emptyLabel: 'No data available.',
+                  padding: EdgeInsets.all(16.r),
+                ),
+                SizedBox(height: 16.h),
+                _ReadingsSection(
+                  bill: bill,
+                  onEditReading: onEditReading,
+                ),
+                SizedBox(height: 24.h),
+              ],
+            ),
+          ),
         ),
-        SizedBox(height: 24.h),
       ],
     );
   }
