@@ -18,7 +18,6 @@ class BillSummaryCard extends ConsumerWidget {
 
     final isAlert = state.isNearBudget || state.isOverBudget;
     final billColor = state.billColor;
-    final projectedBill = state.projectedBill;
 
     return Container(
       padding: EdgeInsets.all(20.r),
@@ -80,16 +79,6 @@ class BillSummaryCard extends ConsumerWidget {
                           '${state.kwhUsed.toStringAsFixed(0)} kWh used',
                           style: AppTextStyles.bodyMd.copyWith(
                             color: AppColors.text2,
-                          ),
-                        ),
-                        SizedBox(height: 2.h),
-                        Text(
-                          projectedBill == null
-                              ? 'Add another reading to project this month'
-                              : 'Projected bill · RM '
-                                    '${projectedBill.toStringAsFixed(2)}',
-                          style: AppTextStyles.caption.copyWith(
-                            color: AppColors.text3,
                           ),
                         ),
                       ],
