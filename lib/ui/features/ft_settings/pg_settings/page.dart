@@ -34,9 +34,7 @@ class SettingsPage extends ConsumerWidget {
             const _Header(),
             Expanded(
               child: switch (status) {
-                _Status.loading => Center(
-                  child: CircularProgressIndicator(color: AppColors.accent),
-                ),
+                _Status.loading => const SettingsSkeleton(),
                 _Status.error => ErrorView(
                   onRetry: notifier.refresh,
                   message: 'Failed to load settings',

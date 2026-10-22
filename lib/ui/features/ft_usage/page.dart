@@ -18,9 +18,7 @@ class UsagePage extends ConsumerWidget {
       color: AppColors.bg,
       child: SafeArea(
         child: state.when(
-          loading: () => Center(
-            child: CircularProgressIndicator(color: AppColors.accent),
-          ),
+          loading: () => const UsageSkeleton(),
           error: (e, _) => ErrorView(
             onRetry: () => ref.read(usageProvider.notifier).refresh(),
             message: 'Failed to load usage data',

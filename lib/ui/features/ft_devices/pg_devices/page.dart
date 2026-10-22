@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:energy_tracker/app.dart';
 import 'package:energy_tracker/services/notifier/user_profile_notifier.dart';
 import 'package:energy_tracker/ui/features/ft_devices/pg_devices/notifier/notifier.dart';
+import 'package:energy_tracker/ui/features/ft_devices/pg_devices/widgets/devices_skeleton.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -30,10 +31,8 @@ class DevicesPage extends ConsumerWidget {
           children: [
             const _Header(),
             Expanded(
-              child: isLoading
-                  ? Center(
-                      child: CircularProgressIndicator(color: AppColors.accent),
-                    )
+              child: isLoading && isEmpty
+                  ? const DevicesSkeleton()
                   : errorMessage != null
                   ? ErrorView(
                       message: errorMessage,
