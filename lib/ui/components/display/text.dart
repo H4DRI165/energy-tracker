@@ -50,6 +50,7 @@ class AppTextFloatingLabelField extends StatelessWidget {
     this.enabled = true,
     this.clearable = false,
     this.readonly = false,
+    this.showCounter = false,
     this.padding,
     this.scrollPadding = const EdgeInsets.all(20),
   });
@@ -90,6 +91,7 @@ class AppTextFloatingLabelField extends StatelessWidget {
   final bool enabled;
   final bool clearable;
   final bool readonly;
+  final bool showCounter;
   final EdgeInsets? padding;
   final EdgeInsets scrollPadding;
 
@@ -212,6 +214,7 @@ class AppTextFloatingLabelField extends StatelessWidget {
                   suffixIcon: suffixIcon,
                   prefix: prefix,
                   suffix: suffix,
+                  counterText: showCounter ? null : '',
                 ),
                 keyboardType: keyboardType,
                 textCapitalization: textCapitalization,

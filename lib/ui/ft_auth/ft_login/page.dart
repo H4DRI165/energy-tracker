@@ -18,30 +18,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return const AuthPageScaffold(
-      header: _Header(),
+      topSpacing: 0,
+      header: AuthHeader(
+        title: 'Welcome back',
+        subtitle: 'Sign in to track your TNB usage and bills.',
+      ),
       footer: _RegisterAccountRow(),
       child: _BodyContent(),
-    );
-  }
-}
-
-class _Header extends StatelessWidget {
-  const _Header();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Welcome back', style: AppTextStyles.overline),
-        SizedBox(height: 8.h),
-        Text('Sign In', style: AppTextStyles.displayMd),
-        SizedBox(height: 6.h),
-        Text(
-          'Track your TNB energy usage',
-          style: AppTextStyles.bodyMd.copyWith(color: AppColors.text2),
-        ),
-      ],
     );
   }
 }

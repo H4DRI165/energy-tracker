@@ -56,46 +56,138 @@ class _AuthPageScaffoldState extends State<AuthPageScaffold>
     final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: const Color(0xFF060912),
       resizeToAvoidBottomInset: true,
-      body: SafeArea(
-        child: FadeTransition(
-          opacity: _fadeIn,
-          child: SlideTransition(
-            position: _slideIn,
-            child: Column(
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    keyboardDismissBehavior:
-                        ScrollViewKeyboardDismissBehavior.onDrag,
-                    padding: EdgeInsets.symmetric(
-                      horizontal: AppDimensions.screenPaddingH,
-                      vertical: AppDimensions.screenPaddingV,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(height: widget.topSpacing.h),
-                        widget.header,
-                        SizedBox(height: 32.h),
-                        widget.child,
-                      ],
-                    ),
-                  ),
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFF060912), Color(0xFF0D1A2E)],
                 ),
-                if (!keyboardOpen && widget.footer != null)
-                  Padding(
-                    padding:
-                        widget.footerPadding ??
-                        EdgeInsets.symmetric(
-                          horizontal: AppDimensions.screenPaddingH,
-                          vertical: 16.h,
-                        ),
-                    child: widget.footer,
-                  ),
-              ],
+              ),
             ),
+          ),
+          Positioned(
+            top: -120,
+            right: -90,
+            child: _AuthGlow(
+              size: 360.r,
+              color: const Color(0xFF00D4AA).withValues(alpha: 0.18),
+            ),
+          ),
+          Positioned(
+            bottom: -140,
+            left: -110,
+            child: _AuthGlow(
+              size: 420.r,
+              color: const Color(0xFF0099FF).withValues(alpha: 0.14),
+            ),
+          ),
+          SafeArea(
+            child: FadeTransition(
+              opacity: _fadeIn,
+              child: SlideTransition(
+                position: _slideIn,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final compact = constraints.maxWidth < 600;
+                    final padding = EdgeInsets.symmetric(
+                      horizontal: compact ? 14.w : 32.w,
+                      vertical: compact ? 20.h : 32.h,
+                    );
+                    final minHeight = (constraints.maxHeight - padding.vertical)
+                        .clamp(
+                          0.0,
+                          double.infinity,
+                        );
+
+                    return SingleChildScrollView(
+                      keyboardDismissBehavior:
+                          ScrollViewKeyboardDismissBehavior.onDrag,
+                      padding: padding,
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(minHeight: minHeight),
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 560),
+                            child: Container(
+                              width: double.infinity,
+                              padding: EdgeInsets.all(
+                                compact ? 20.r : 28.r,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.surface,
+                                borderRadius: BorderRadius.circular(24.r),
+                                border: Border.all(
+                                  color: AppColors.borderAccent,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.3),
+                                    blurRadius: 40,
+                                    offset: const Offset(0, 18),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  SizedBox(height: widget.topSpacing.h),
+                                  widget.header,
+                                  SizedBox(height: 32.h),
+                                  widget.child,
+                                  if (!keyboardOpen && widget.footer != null)
+                                    Padding(
+                                      padding:
+                                          widget.footerPadding ??
+                                          EdgeInsets.only(top: 20.h),
+                                      child: SizedBox(
+                                        width: double.infinity,
+                                        child: widget.footer,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AuthGlow extends StatelessWidget {
+  const _AuthGlow({
+    required this.size,
+    required this.color,
+  });
+
+  final double size;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(
+            colors: [color, Colors.transparent],
           ),
         ),
       ),
@@ -145,17 +237,23 @@ class AuthBackButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 48.r,
-      height: 48.r,
-      child: IconButton(
-        onPressed: onTap ?? () => Navigator.of(context).pop(),
-        tooltip: 'Back',
+    return IconButton(
+      onPressed: onTap ?? () => Navigator.of(context).pop(),
+      tooltip: 'Back',
+      padding: EdgeInsets.zero,
+      icon: Icon(
+        Icons.arrow_back_ios_new_rounded,
+        size: 16.r,
+      ),
+      style: IconButton.styleFrom(
+        minimumSize: Size(44.r, 44.r),
+        maximumSize: Size(44.r, 44.r),
         padding: EdgeInsets.zero,
-        icon: Icon(
-          Icons.arrow_back_ios_new_rounded,
-          size: 18.r,
-          color: AppColors.text2,
+        backgroundColor: AppColors.surface2,
+        foregroundColor: AppColors.text2,
+        side: BorderSide(color: AppColors.border),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
         ),
       ),
     );
