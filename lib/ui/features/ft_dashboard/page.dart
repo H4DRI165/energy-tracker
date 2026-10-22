@@ -106,9 +106,9 @@ class _BodyContent extends ConsumerWidget {
           ),
         SliverPadding(
           padding: EdgeInsets.fromLTRB(
-            AppDimensions.screenPaddingH,
-            12.h,
-            AppDimensions.screenPaddingH,
+            AppContentWidth.horizontalPadding(context),
+            20.h,
+            AppContentWidth.horizontalPadding(context),
             0,
           ),
           sliver: SliverList(
@@ -258,7 +258,7 @@ class ErrorBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.symmetric(
-        horizontal: AppDimensions.screenPaddingH,
+        horizontal: AppContentWidth.horizontalPadding(context),
         vertical: 8.h,
       ),
       child: Material(

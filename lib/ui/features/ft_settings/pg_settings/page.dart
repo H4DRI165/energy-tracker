@@ -29,60 +29,32 @@ class SettingsPage extends ConsumerWidget {
     return ColoredBox(
       color: AppColors.bg,
       child: SafeArea(
-        child: Column(
-          children: [
-            const _Header(),
-            Expanded(
-              child: switch (status) {
-                _Status.loading => const SettingsSkeleton(),
-                _Status.error => ErrorView(
-                  onRetry: notifier.refresh,
-                  message: 'Failed to load settings',
-                ),
-                _Status.data => _SettingsBody(
-                  onEditProfile: () async {
-                    await context.push(AppRoutes.editProfile);
-                  },
-                  onSignOut: () async {
-                    final confirmed = await ConfirmDialog.show(
-                      context,
-                      title: 'Sign Out?',
-                      message: 'Are you sure you want to sign out?',
-                      confirmLabel: 'Sign Out',
-                      confirmColor: AppColors.danger,
-                    );
-                    if (!confirmed) return;
+        child: switch (status) {
+          _Status.loading => const SettingsSkeleton(),
+          _Status.error => ErrorView(
+            onRetry: notifier.refresh,
+            message: 'Failed to load settings',
+          ),
+          _Status.data => _SettingsBody(
+            onEditProfile: () async {
+              await context.push(AppRoutes.editProfile);
+            },
+            onSignOut: () async {
+              final confirmed = await ConfirmDialog.show(
+                context,
+                title: 'Sign Out?',
+                message: 'Are you sure you want to sign out?',
+                confirmLabel: 'Sign Out',
+                confirmColor: AppColors.danger,
+              );
+              if (!confirmed) return;
 
-                    final success = await notifier.signOut();
-                    if (!success) return;
-                    if (context.mounted) context.go(AppRoutes.login);
-                  },
-                ),
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _Header extends StatelessWidget {
-  const _Header();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        AppDimensions.screenPaddingH,
-        12.h,
-        AppDimensions.screenPaddingH,
-        16.h,
-      ),
-      child: Row(
-        children: [
-          Text('Settings', style: AppTextStyles.titleMd),
-        ],
+              final success = await notifier.signOut();
+              if (!success) return;
+              if (context.mounted) context.go(AppRoutes.login);
+            },
+          ),
+        },
       ),
     );
   }
@@ -102,9 +74,11 @@ class _SettingsBody extends ConsumerWidget {
     final isDark = ref.watch(themeModeProvider);
 
     return SingleChildScrollView(
-      padding: EdgeInsets.symmetric(
-        horizontal: AppDimensions.screenPaddingH,
-        vertical: 4.h,
+      padding: EdgeInsets.fromLTRB(
+        AppContentWidth.horizontalPadding(context),
+        20.h,
+        AppContentWidth.horizontalPadding(context),
+        0,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
