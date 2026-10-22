@@ -1,3 +1,4 @@
+export 'animated_number.dart';
 export 'cards.dart';
 export 'charge_line_item.dart';
 export 'chart.dart';

@@ -1,4 +1,5 @@
 import 'package:energy_tracker/theme/theme.dart';
+import 'package:energy_tracker/ui/components/display/animated_number.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -49,7 +50,7 @@ class UsageSummaryRow extends StatelessWidget {
             Expanded(
               child: _SummaryStat(
                 label: 'Usage',
-                value: kwh.toStringAsFixed(0),
+                value: kwh,
                 unit: 'kWh',
                 color: AppColors.accent2,
               ),
@@ -76,7 +77,7 @@ class _SummaryStat extends StatelessWidget {
   });
 
   final String label;
-  final String value;
+  final double value;
   final String unit;
   final Color color;
 
@@ -94,8 +95,9 @@ class _SummaryStat extends StatelessWidget {
         children: [
           Text(label, style: AppTextStyles.caption),
           SizedBox(height: 4.h),
-          Text(
-            value,
+          AnimatedNumberText(
+            value: value,
+            formatter: (value) => value.toStringAsFixed(0),
             style: AppTextStyles.statMd.copyWith(color: color),
           ),
           SizedBox(height: 2.h),
@@ -131,8 +133,9 @@ class _BillStat extends StatelessWidget {
         children: [
           Text('Est. bill', style: AppTextStyles.caption),
           SizedBox(height: 4.h),
-          Text(
-            'RM ${bill.toStringAsFixed(2)}',
+          AnimatedNumberText(
+            value: bill,
+            formatter: (value) => 'RM ${value.toStringAsFixed(2)}',
             style: AppTextStyles.statMd.copyWith(color: AppColors.accent),
           ),
           SizedBox(height: 2.h),
