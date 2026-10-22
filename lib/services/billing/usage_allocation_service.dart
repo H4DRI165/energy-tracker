@@ -113,6 +113,38 @@ class UsageAllocationService {
     return result;
   }
 
+  /// Current-month share of one reading interval.
+  ///
+  /// Same-day intervals are zero-length and belong entirely to the reading
+  /// month, matching [monthly]. Longer intervals use the same day-overlap
+  /// split as [monthly].
+  static double monthShareForInterval({
+    required double kwh,
+    required DateTime start,
+    required DateTime end,
+    required DateTime month,
+  }) {
+    if (kwh <= 0) return 0;
+
+    final startDate = _dateOnly(start);
+    final endDate = _dateOnly(end);
+    if (!endDate.isAfter(startDate)) {
+      return _sameMonth(endDate, month) ? kwh : 0;
+    }
+
+    final intervalDays = endDate.difference(startDate).inDays;
+    if (intervalDays <= 0) return 0;
+
+    final monthStart = DateTime(month.year, month.month);
+    final monthEnd = DateTime(month.year, month.month + 1);
+    final overlapStart = startDate.isAfter(monthStart) ? startDate : monthStart;
+    final overlapEnd = endDate.isBefore(monthEnd) ? endDate : monthEnd;
+    final overlapDays = overlapEnd.difference(overlapStart).inDays;
+    if (overlapDays <= 0) return 0;
+
+    return kwh * overlapDays / intervalDays;
+  }
+
   /// Daily kWh for compact charts. Days without usage are omitted.
   static Map<String, double> dailyKwh({
     required List<ReadingRecord> readings,
@@ -193,6 +225,9 @@ class UsageAllocationService {
 
   static DateTime _dateOnly(DateTime date) =>
       DateTime(date.year, date.month, date.day);
+
+  static bool _sameMonth(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month;
 
   static String _monthKey(DateTime date) =>
       '${date.year}-${date.month.toString().padLeft(2, '0')}';

@@ -15,6 +15,7 @@ class AddReadingPageState {
     this.selectedDate,
     this.notes = '',
     this.readingError,
+    this.loadError,
     this.errorMessage,
   });
 
@@ -29,6 +30,7 @@ class AddReadingPageState {
   final DateTime? selectedDate;
   final String notes;
   final String? readingError;
+  final String? loadError;
   final String? errorMessage;
 
   double get usageKwh {
@@ -49,17 +51,12 @@ class AddReadingPageState {
     final start = lastReadingDate;
     if (start == null) return 0;
 
-    final endDate = DateTime(end.year, end.month, end.day);
-    final startDate = DateTime(start.year, start.month, start.day);
-    final monthStart = DateTime(end.year, end.month);
-    final effectiveStart = startDate.isBefore(monthStart)
-        ? monthStart
-        : startDate;
-    final totalDays = endDate.difference(startDate).inDays;
-    if (totalDays <= 0) return 0;
-
-    final shareDays = endDate.difference(effectiveStart).inDays;
-    return usageKwh * shareDays.clamp(0, totalDays) / totalDays;
+    return UsageAllocationService.monthShareForInterval(
+      kwh: usageKwh,
+      start: start,
+      end: end,
+      month: end,
+    );
   }
 
   int? get intervalDays {
@@ -92,18 +89,26 @@ class AddReadingPageState {
   bool get hasUsage => usageKwh > 0;
 
   bool get canSave =>
-      !isLoadingLastReading && currentReading > 0 && readingError == null;
+      !isLoadingLastReading &&
+      loadError == null &&
+      currentReading > 0 &&
+      readingError == null;
 
   bool get isBaselineReading => lastReadingDate == null;
 
+  bool get isSameAsLastReading =>
+      currentReading > 0 &&
+      lastReadingDate != null &&
+      (currentReading - lastReading).abs() < 0.0001;
+
   String get formattedLastReadingDate {
     if (lastReadingDate == null) return 'No previous reading';
-    return lastReadingDate!.shortDayLabel;
+    return lastReadingDate!.shortDayTimeLabel;
   }
 
   String get formattedNextReadingDate {
     if (nextReadingDate == null) return '';
-    return nextReadingDate!.shortDayLabel;
+    return nextReadingDate!.shortDayTimeLabel;
   }
 
   static const Object _unset = Object();
@@ -120,6 +125,7 @@ class AddReadingPageState {
     DateTime? selectedDate,
     String? notes,
     Object? readingError = _unset,
+    Object? loadError = _unset,
     Object? errorMessage = _unset,
   }) {
     return AddReadingPageState(
@@ -144,6 +150,9 @@ class AddReadingPageState {
       readingError: identical(readingError, _unset)
           ? this.readingError
           : readingError as String?,
+      loadError: identical(loadError, _unset)
+          ? this.loadError
+          : loadError as String?,
       errorMessage: identical(errorMessage, _unset)
           ? this.errorMessage
           : errorMessage as String?,

@@ -6,6 +6,7 @@ import 'package:energy_tracker/models/reading_record.dart';
 import 'package:energy_tracker/services/auth/providers/current_uid_provider.dart';
 import 'package:energy_tracker/services/billing/bill_recalculation_service.dart';
 import 'package:energy_tracker/services/billing/reading_chain_service.dart';
+import 'package:energy_tracker/services/billing/usage_allocation_service.dart';
 import 'package:energy_tracker/services/network/network_status.dart';
 import 'package:energy_tracker/ui/components/logging/app_logger.dart';
 import 'package:energy_tracker/ui/components/logging/notifier/loggable_notifier.dart';
@@ -58,6 +59,9 @@ class AddReadingNotifier extends Notifier<AddReadingPageState>
     );
   }
 
+  bool _isCurrentLoad(int requestId, DateTime selectedDate) =>
+      requestId == _loadRequestId && state.selectedDate == selectedDate;
+
   DateTime _cutoffFor(DateTime selectedDate) {
     final now = DateTime.now();
     final isToday =
@@ -78,10 +82,18 @@ class AddReadingNotifier extends Notifier<AddReadingPageState>
 
   Future<void> _loadSurroundingReadings(DateTime selectedDate) async {
     final requestId = ++_loadRequestId;
+    state = state.copyWith(
+      isLoadingLastReading: true,
+      loadError: null,
+    );
+
     final uid = ref.read(currentUidProvider).value;
     if (uid == null) {
       if (requestId == _loadRequestId) {
-        state = state.copyWith(isLoadingLastReading: false);
+        state = state.copyWith(
+          isLoadingLastReading: false,
+          loadError: 'Could not verify your account. Please sign in again.',
+        );
       }
       return;
     }
@@ -139,9 +151,7 @@ class AddReadingNotifier extends Notifier<AddReadingPageState>
           : _parse(beforeSnap.docs.first);
       final next = nextSnap.docs.isEmpty ? null : _parse(nextSnap.docs.first);
 
-      if (requestId != _loadRequestId || state.selectedDate != selectedDate) {
-        return;
-      }
+      if (!_isCurrentLoad(requestId, selectedDate)) return;
 
       state = state.copyWith(
         isLoadingLastReading: false,
@@ -150,6 +160,7 @@ class AddReadingNotifier extends Notifier<AddReadingPageState>
         nextReading: next?.reading,
         nextReadingDate: next?.date,
         monthToDateKwhBeforeThisReading: monthToDateBefore,
+        loadError: null,
         readingError: _validateReading(
           reading: state.currentReading,
           lastReading: before?.reading ?? 0,
@@ -169,10 +180,10 @@ class AddReadingNotifier extends Notifier<AddReadingPageState>
         },
       );
 
-      if (requestId == _loadRequestId) {
+      if (_isCurrentLoad(requestId, selectedDate)) {
         state = state.copyWith(
           isLoadingLastReading: false,
-          errorMessage: mapFirebaseError(e.code),
+          loadError: mapFirebaseError(e.code),
         );
       }
     } on TimeoutException catch (e, st) {
@@ -182,10 +193,10 @@ class AddReadingNotifier extends Notifier<AddReadingPageState>
         st,
         context: {'selected_date': selectedDate.toIso8601String()},
       );
-      if (requestId == _loadRequestId) {
+      if (_isCurrentLoad(requestId, selectedDate)) {
         state = state.copyWith(
           isLoadingLastReading: false,
-          errorMessage:
+          loadError:
               'Could not load your previous reading. Check your connection '
               'and try again.',
         );
@@ -200,10 +211,10 @@ class AddReadingNotifier extends Notifier<AddReadingPageState>
           'is_editing': _editingDate != null,
         },
       );
-      if (requestId == _loadRequestId) {
+      if (_isCurrentLoad(requestId, selectedDate)) {
         state = state.copyWith(
           isLoadingLastReading: false,
-          errorMessage:
+          loadError:
               'Could not load your previous reading. Check your connection '
               'and try again.',
         );
@@ -222,16 +233,20 @@ class AddReadingNotifier extends Notifier<AddReadingPageState>
         .collection('users')
         .doc(uid)
         .collection('readings')
-        .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
         .where('date', isLessThan: Timestamp.fromDate(cutoff))
         .get();
 
-    return snap.docs
+    final readings = snap.docs
         .where((d) => d.id != _editingReadingId)
-        .fold<double>(
-          0,
-          (total, d) => total + ((d.data()['kwh'] as num?)?.toDouble() ?? 0),
-        );
+        .map((d) => ReadingRecord.fromDoc(d.id, d.data()))
+        .toList();
+    final allocations = UsageAllocationService.monthly(
+      readings: readings,
+      from: startOfMonth,
+      to: selectedDate,
+    );
+
+    return allocations.isEmpty ? 0 : allocations.last.kwh;
   }
 
   ({double reading, DateTime date, String id}) _parse(
@@ -255,12 +270,12 @@ class AddReadingNotifier extends Notifier<AddReadingPageState>
     if (reading <= 0) return null;
 
     if (lastReading > 0 && reading < lastReading) {
-      final label = lastDate != null ? ' (${lastDate.shortDayLabel})' : '';
+      final label = lastDate != null ? ' (${lastDate.shortDayTimeLabel})' : '';
       return 'Must be above ${lastReading.toStringAsFixed(0)} kWh$label';
     }
 
     if (nextReading != null && reading > nextReading) {
-      final label = nextDate != null ? ' (${nextDate.shortDayLabel})' : '';
+      final label = nextDate != null ? ' (${nextDate.shortDayTimeLabel})' : '';
       return 'Must be below ${nextReading.toStringAsFixed(0)} kWh$label';
     }
 
@@ -288,6 +303,19 @@ class AddReadingNotifier extends Notifier<AddReadingPageState>
       isLoadingLastReading: true,
       nextReading: null,
       nextReadingDate: null,
+      readingError: null,
+      loadError: null,
+      errorMessage: null,
+    );
+    unawaited(Future.microtask(() => _loadSurroundingReadings(date)));
+  }
+
+  void retryLoadingSurroundingReadings() {
+    final date = state.selectedDate ?? DateTime.now();
+    state = state.copyWith(
+      isLoadingLastReading: true,
+      loadError: null,
+      errorMessage: null,
     );
     unawaited(Future.microtask(() => _loadSurroundingReadings(date)));
   }

@@ -146,6 +146,41 @@ void main() {
     });
   });
 
+  group('UsageAllocationService.monthShareForInterval', () {
+    test('puts a same-day interval entirely in its month', () {
+      final share = UsageAllocationService.monthShareForInterval(
+        kwh: 41,
+        start: DateTime(2026, 10, 22, 8),
+        end: DateTime(2026, 10, 22, 18),
+        month: DateTime(2026, 10),
+      );
+
+      expect(share, 41);
+    });
+
+    test('splits a cross-month interval by day overlap', () {
+      final share = UsageAllocationService.monthShareForInterval(
+        kwh: 160,
+        start: DateTime(2026, 7, 20),
+        end: DateTime(2026, 8, 5),
+        month: DateTime(2026, 7),
+      );
+
+      expect(share, closeTo(120, 0.0001));
+    });
+
+    test('returns zero for an interval outside the month', () {
+      final share = UsageAllocationService.monthShareForInterval(
+        kwh: 100,
+        start: DateTime(2026, 7),
+        end: DateTime(2026, 7, 20),
+        month: DateTime(2026, 8),
+      );
+
+      expect(share, 0);
+    });
+  });
+
   group('UsageAllocationService.dailyKwh', () {
     test('distributes an interval across days and includes the latest day', () {
       final daily = UsageAllocationService.dailyKwh(
