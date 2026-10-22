@@ -74,7 +74,8 @@ class EditProfileNotifier extends AsyncNotifier<EditProfilePageState>
         hasChanges:
             value.trim() != _originalFullName ||
             s.tnbAccountNo.trim() != _originalTnbAccountNo ||
-            s.localPhotoFile != null,
+            s.localPhotoFile != null ||
+            (s.removePhoto && s.photoUrl != null),
       ),
     );
   }
@@ -88,7 +89,8 @@ class EditProfileNotifier extends AsyncNotifier<EditProfilePageState>
         hasChanges:
             s.fullName.trim() != _originalFullName ||
             value.trim() != _originalTnbAccountNo ||
-            s.localPhotoFile != null,
+            s.localPhotoFile != null ||
+            (s.removePhoto && s.photoUrl != null),
       ),
     );
   }
@@ -100,8 +102,26 @@ class EditProfileNotifier extends AsyncNotifier<EditProfilePageState>
     state = AsyncData(
       current.copyWith(
         localPhotoFile: file,
+        removePhoto: false,
         successMessage: null,
         hasChanges: true,
+      ),
+    );
+  }
+
+  void removePhoto() {
+    final current = state.value;
+    if (current == null) return;
+
+    state = AsyncData(
+      current.copyWith(
+        localPhotoFile: null,
+        removePhoto: true,
+        successMessage: null,
+        hasChanges:
+            current.fullName.trim() != _originalFullName ||
+            current.tnbAccountNo.trim() != _originalTnbAccountNo ||
+            current.photoUrl != null,
       ),
     );
   }
@@ -166,6 +186,7 @@ class EditProfileNotifier extends AsyncNotifier<EditProfilePageState>
 
     String? uploadedPath;
     final oldPhotoUrl = current.photoUrl;
+    final shouldRemovePhoto = current.removePhoto && current.photoUrl != null;
 
     try {
       final user = FirebaseAuth.instance.currentUser;
@@ -184,18 +205,27 @@ class EditProfileNotifier extends AsyncNotifier<EditProfilePageState>
         newPhotoUrl = await ref.getDownloadURL();
       }
 
-      await _firestore.collection('users').doc(user.uid).set({
+      final updates = <String, dynamic>{
         'fullName': current.fullName.trim(),
         'tnbAccountNo': current.tnbAccountNo.trim(),
         'updatedAt': FieldValue.serverTimestamp(),
-        'photoUrl': ?newPhotoUrl,
-        if (newPhotoVersion != null)
-          'photoUpdatedAt': Timestamp.fromMillisecondsSinceEpoch(
-            newPhotoVersion,
-          ),
-      }, SetOptions(merge: true));
+      };
+      if (newPhotoUrl != null) {
+        updates['photoUrl'] = newPhotoUrl;
+        updates['photoUpdatedAt'] = Timestamp.fromMillisecondsSinceEpoch(
+          newPhotoVersion!,
+        );
+      } else if (shouldRemovePhoto) {
+        updates['photoUrl'] = FieldValue.delete();
+        updates['photoUpdatedAt'] = FieldValue.delete();
+      }
 
-      if (newPhotoUrl != null && oldPhotoUrl != null) {
+      await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .set(updates, SetOptions(merge: true));
+
+      if ((newPhotoUrl != null || shouldRemovePhoto) && oldPhotoUrl != null) {
         try {
           await FirebaseStorage.instance.refFromURL(oldPhotoUrl).delete();
         } on FirebaseException catch (e, st) {
@@ -220,9 +250,11 @@ class EditProfileNotifier extends AsyncNotifier<EditProfilePageState>
         (s) => s.copyWith(
           isSaving: false,
           successMessage: 'Profile updated successfully.',
-          photoUrl: newPhotoUrl ?? s.photoUrl,
-          photoVersion: newPhotoVersion ?? s.photoVersion,
+          photoUrl: newPhotoUrl ?? (shouldRemovePhoto ? null : s.photoUrl),
+          photoVersion:
+              newPhotoVersion ?? (shouldRemovePhoto ? null : s.photoVersion),
           localPhotoFile: null,
+          removePhoto: false,
           hasChanges: false,
         ),
       );

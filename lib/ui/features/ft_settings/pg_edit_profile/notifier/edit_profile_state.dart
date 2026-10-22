@@ -16,6 +16,7 @@ class EditProfilePageState {
     this.localPhotoFile,
     this.isUploadingPhoto = false,
     this.photoVersion,
+    this.removePhoto = false,
   });
 
   final bool isLoading;
@@ -32,9 +33,11 @@ class EditProfilePageState {
   final XFile? localPhotoFile;
   final bool isUploadingPhoto;
   final int? photoVersion;
+  final bool removePhoto;
   static const Object _unset = Object();
 
   String? get displayPhotoUrl {
+    if (removePhoto) return null;
     if (photoUrl == null || photoVersion == null) return photoUrl;
     final uri = Uri.parse(photoUrl!);
     return uri
@@ -78,6 +81,7 @@ class EditProfilePageState {
     Object? localPhotoFile = _unset,
     bool? isUploadingPhoto,
     Object? photoVersion = _unset,
+    bool? removePhoto,
   }) {
     return EditProfilePageState(
       isLoading: isLoading ?? this.isLoading,
@@ -108,6 +112,7 @@ class EditProfilePageState {
       photoVersion: identical(photoVersion, _unset)
           ? this.photoVersion
           : photoVersion as int?,
+      removePhoto: removePhoto ?? this.removePhoto,
     );
   }
 }

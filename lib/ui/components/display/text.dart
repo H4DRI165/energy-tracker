@@ -254,6 +254,7 @@ class AppTextField extends StatelessWidget {
     this.textCapitalization = TextCapitalization.none,
     this.errorText,
     this.readOnly = false,
+    this.enabled = true,
     this.trailingWidget,
     this.maxLength,
     this.inputFormatters,
@@ -268,12 +269,15 @@ class AppTextField extends StatelessWidget {
   final TextCapitalization textCapitalization;
   final String? errorText;
   final bool readOnly;
+  final bool enabled;
   final Widget? trailingWidget;
   final int? maxLength;
   final List<TextInputFormatter>? inputFormatters;
 
   @override
   Widget build(BuildContext context) {
+    final isMuted = readOnly || !enabled;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -281,7 +285,7 @@ class AppTextField extends StatelessWidget {
         SizedBox(height: 6.h),
         Container(
           decoration: BoxDecoration(
-            color: readOnly
+            color: isMuted
                 ? AppColors.surface3.withValues(alpha: 0.5)
                 : AppColors.surface2,
             borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
@@ -298,7 +302,7 @@ class AppTextField extends StatelessWidget {
               Icon(
                 prefixIcon,
                 size: 18.r,
-                color: readOnly ? AppColors.text3 : AppColors.text2,
+                color: isMuted ? AppColors.text3 : AppColors.text2,
               ),
               SizedBox(width: 10.w),
               Expanded(
@@ -307,10 +311,11 @@ class AppTextField extends StatelessWidget {
                   keyboardType: keyboardType,
                   textCapitalization: textCapitalization,
                   readOnly: readOnly,
+                  enabled: enabled,
                   maxLength: maxLength,
                   inputFormatters: inputFormatters,
                   style: AppTextStyles.bodyLg.copyWith(
-                    color: readOnly ? AppColors.text3 : AppColors.text,
+                    color: isMuted ? AppColors.text3 : AppColors.text,
                   ),
                   decoration: InputDecoration(
                     hintText: hintText,
