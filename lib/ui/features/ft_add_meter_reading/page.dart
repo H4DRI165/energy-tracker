@@ -353,7 +353,7 @@ class _BodyContentState extends ConsumerState<_BodyContent> {
   }
 }
 
-final _cardDecoration = BoxDecoration(
+BoxDecoration get _cardDecoration => BoxDecoration(
   gradient: AppColors.heroGradient,
   borderRadius: BorderRadius.all(
     Radius.circular(AppDimensions.radiusLg),
